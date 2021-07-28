@@ -1,0 +1,65 @@
+version: '3.8'
+services:
+    web:
+        build: .
+        command: >
+            sh -c "
+            python3.6 manage.py wait_for_db &&
+            python3.6 manage.py makemigrations &&
+            python3.6 manage.py migrate &&
+            python3.6 manage.py runserver 0.0.0.0:8000"
+        volumes: 
+            - .:/srv/redifod/
+        environment:
+            - DB_HOST=db
+            - DB_NAME=flowspy
+            - DB_USER=fod
+            - DB_PASS=heix6ieG  
+        depends_on: 
+            - db
+        ports:
+            - 8000:8000   
+    db:
+        image: postgres:13
+        restart: always
+        environment:
+            - POSTGRES_HOST_AUTH_METHOD=trust
+            - POSTGRES_DB=flowspy 
+            - POSTGRES_USER=fod
+            - POSTGRES_PASSWORD=heix6ieG
+        ports:
+             - 5432:5432
+    redis:
+        image: redis:6
+    worker:
+        build: .
+        command: >
+            sh -c "celery -A flowspy worker -l INFO"
+        depends_on: 
+            - redis
+            - web
+        environment:
+            - DB_HOST=db
+            - DB_NAME=flowspy
+            - DB_USER=fod
+            - DB_PASS=heix6ieG     
+    beat:
+        build: .
+        command: >
+            sh -c "celery -A flowspy beat -l INFO"
+        depends_on: 
+            - redis
+            - web
+        environment:
+            - DB_HOST=db
+            - DB_NAME=flowspy
+            - DB_USER=fod
+            - DB_PASS=heix6ieG             
+networks:
+    default:
+        name: redifod_network
+        driver: bridge
+    
+
+
+    

@@ -1,0 +1,6 @@
+docker build -t juniper .
+docker run -it --name juniper -p 830:830 --rm juniper:latest
+
+netopeer2-cli
+> connect -l netconf -p 830 localhost
+Password: netconf

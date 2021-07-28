@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Dashboard" %}{% endblock %}
+
+
+{% block contentplaceholder %}
+<style>
+
+.fade-carousel {
+    position: relative;
+    height: 100vh;
+}
+.fade-carousel .carousel-inner .item {
+    height: 100vh;
+}
+.fade-carousel .carousel-indicators > li {
+    margin: 0 2px;
+    background-color: #f39c12;
+    border-color: #f39c12;
+    opacity: .7;
+}
+.fade-carousel .carousel-indicators > li.active {
+  width: 10px;
+  height: 10px;
+  opacity: 1;
+}
+</style>
+
+
+<div class="carousel fade-carousel slide" data-ride="carousel" id="bs-carousel">
+    <!-- Overlay -->
+    <div class="overlay"></div>    
+    <!-- Wrapper for slides -->
+    <div class="carousel-inner">
+      <div class="item slides active">
+        <div class="slide-1"></div>
+        <div class="hero">
+          <hgroup>
+              <img src="{{ MEDIA_URL }}{{ graphs }}" alt="Image not available at the moment, sorry for any inconvenience">
+          </hgroup>
+        </div>
+      </div>
+    </div> 
+  </div>
+
+{% endblock %}
+
+
+
+{% block pagejsbottom %}
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% block sidenav %}{% endblock %}
+{% load i18n %}
+   {% block extraheadbottom %}
+<style>
+	@media (min-width: 768px) {
+		#page-wrapper {
+		    border-left: none;
+		    margin: 0;
+		}
+}
+.errorlist{
+	list-style: none outside none;
+}
+</style>
+{% endblock %}
+{% block title %}
+
+		{% trans "Overview Login" %}
+
+{% endblock %}
+
+
+    {% block contentplaceholder %}
+    <div class="container">
+    <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">{% trans "Overview Login" %}</h1>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+
+
+<div class="row">
+                <div class="col-lg-8">
+                	<div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <i class="fa fa-user fa-fw"></i> Login
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+    <form class="form-horizontal" method="post" action="{% url 'altlogin' %}" role="form">
+
+            {% csrf_token %}
+            {% load unescape %}
+            {% if form.non_field_errors %}
+            <div class="form-group {% if form.non_field_errors %} has-error {% endif %}" style="color: #A94442;">
+            	{{ form.non_field_errors|unescape}}
+            	</div>
+            {% endif %}
+
+                 <div class="form-group {% if form.username.errors %} has-error {% endif %}">
+        <label for="id_username" class="col-md-2 control-label"><b>{% trans "Username" %}</b></label>
+        <div class="col-md-8">
+            {% render_field form.username class+="form-control"  %}
+            {% if form.username.errors %} <span class="help-block"> {{ form.username.errors|join:", " }} </span>
+            {% endif %}
+        </div>
+        </div>
+        <div class="form-group {% if form.password.errors %} has-error {% endif %}">
+        <label for="id_password" class="col-md-2 control-label"><b>{% trans "Password" %}</b></label>
+        <div class="col-md-8">
+            {% render_field form.password class+="form-control" %}
+            {% if form.password.errors %} <span class="help-block"> {{ form.password.errors|join:", " }} </span>
+            {% endif %}
+        </div>
+        </div>
+        			 <div class="form-group">
+			 	<div class="col-md-2"></div>
+			 	 <div class="col-md-8">
+			<button type="submit" id="applybutton" value="{% trans 'Login' %}" class="btn btn-md btn-primary">Login</button>
+				</div>
+			</div>
+        	<input name="next" id="next" type="hidden" value="{% url 'group-routes' %}">
+            </form>
+            </div>
+            </div>
+            </div>
+            </div>
+           </div>
+    {% endblock %}
+

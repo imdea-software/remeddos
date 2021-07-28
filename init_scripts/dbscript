@@ -1,0 +1,13 @@
+INSERT INTO then_action ('rate-limit','action') VALUES ('accept','');
+INSERT INTO then_action ('rate-limit','action') VALUES ('discard','');
+INSERT INTO then_action ('rate-limit','action') VALUES ('rate-limit','10M');
+INSERT INTO then_action ('rate-limit','action') VALUES ('rate-limit','15M');
+INSERT INTO then_action ('rate-limit','action') VALUES ('rate-limit','20M');
+INSERT INTO then_action ('rate-limit','action') VALUES ('rate-limit','30M');
+INSERT INTO then_action ('rate-limit','action') VALUES ('rate-limit','50M');
+INSERT INTO then_action ('rate-limit','action') VALUES ('rate-limit','70M');
+INSERT INTO then_action ('rate-limit','action') VALUES ('rate-limit','90M');
+INSERT INTO then_action ('rate-limit','action') VALUES ('rate-limit','1G');
+INSERT INTO then_action ('rate-limit','action') VALUES ('rate-limit','2G');
+INSERT INTO then_action ('rate-limit','action') VALUES ('rate-limit','5G');
+INSERT INTO then_action ('rate-limit','action') VALUES ('rate-limit','10G');

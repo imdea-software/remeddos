@@ -1,0 +1,85 @@
+--- settings.py.dist	2019-04-15 13:53:37.134588742 +0200
++++ settings.py	2019-04-15 16:27:39.330868912 +0200
+@@ -32,7 +32,7 @@
+ djcelery.setup_loader()
+ from celery.schedules import crontab
+ 
+-DEBUG = False
++DEBUG = True
+ TEMPLATE_DEBUG = DEBUG
+ 
+ ADMINS = (
+@@ -53,8 +53,8 @@
+ 
+ DATABASES = {
+     'default': {
+-        'ENGINE': 'django.db.backends.',  # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+-        'NAME': '',
++        'ENGINE': 'django.db.backends.sqlite3',  # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
++        'NAME': 'example-data',
+         'USER': '',
+         'PASSWORD': '',
+         'HOST': '',                      # Set to empty string for localhost.
+@@ -96,7 +96,9 @@
+ # If you set this to False, Django will not use timezone-aware datetimes.
+ USE_TZ = True
+ 
+-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
++PROJECT_PATH = os.path.abspath(os.path.dirname(__file__))
++STATIC_ROOT = os.path.join(BASE_DIR)
++STATICFILES_DIRS = ( os.path.join(BASE_DIR, 'static'), )
+ STATIC_URL = '/static/'
+ STATICFILES_FINDERS = (
+     'django.contrib.staticfiles.finders.FileSystemFinder',
+@@ -106,6 +108,7 @@
+ # Templates
+ TEMPLATE_DIRS = (
+     os.path.join(BASE_DIR, 'templates'),
++    os.path.join('/srv/venv/django/contrib/admin/templates/'),
+ )
+ 
+ TEMPLATE_LOADERS = (
+@@ -139,7 +142,7 @@
+ WSGI_APPLICATION = 'flowspy.wsgi.application'
+ 
+ AUTHENTICATION_BACKENDS = (
+-    'djangobackends.shibauthBackend.shibauthBackend',
++    #'djangobackends.shibauthBackend.shibauthBackend',
+     'django.contrib.auth.backends.ModelBackend',
+ )
+ 
+@@ -177,25 +180,20 @@
+ LOGGING = {
+     'version': 1,
+     'disable_existing_loggers': False,
+-    'filters': {
+-        'require_debug_false': {
+-            '()': 'django.utils.log.RequireDebugFalse'
+-        }
+-    },
+     'handlers': {
+-        'mail_admins': {
+-            'level': 'ERROR',
+-            'filters': ['require_debug_false'],
+-            'class': 'django.utils.log.AdminEmailHandler'
+-        }
++        'file': {
++            'level': 'DEBUG',
++            'class': 'logging.FileHandler',
++            'filename': 'debug.log',
++        },
+     },
+     'loggers': {
+-        'django.request': {
+-            'handlers': ['mail_admins'],
+-            'level': 'ERROR',
++        'django': {
++            'handlers': ['file'],
++            'level': 'DEBUG',
+             'propagate': True,
+         },
+-    }
++    },
+ }
+ 
+ LOGIN_URL = '/welcome'

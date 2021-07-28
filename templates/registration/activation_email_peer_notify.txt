@@ -1,0 +1,8 @@
+{{ user.get_full_name }} has registered for a new Firewall on Demand account on behalf of your Institution: {{ peer }}
+
+Username: {{ user.username }}
+E-mail: {{ user.email }}
+
+The user will be notified via e-mail about the account activation
+
+In case this user does not belong to your institution or attempts to user the service without being compliant to your Institutions' regulation please do contact us.

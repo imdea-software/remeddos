@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}
+	{% if edit %}
+		{% trans "Edit Rule" %} {{form.data.name}}
+	{% else %}
+		{% trans "Create new Rule" %}
+	{% endif %}
+{% endblock %}
+
+{% block breadcrumbs %}
+ <li class="active"><span class="divider">/</span>
+	{% if edit %}
+		{% trans "Edit rule" %} {{form.data.name}}
+	{% else %}
+	{% trans "Create rule" %}
+	{% endif %}
+</li>
+{% endblock %}
+{% block extrahead %}
+    <link href="{% static 'css/plugins/morris/morris-0.4.3.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/plugins/timeline/timeline.css' %}" rel="stylesheet">
+    <link href="{% static 'datepicker/css/datepicker.css' %}" rel="stylesheet">
+
+{% endblock %}
+
+{% block extraheadbottom %}
+<style type="text/css">
+#rule_form_container input:not([type="submit"]), #rule_form_container select {
+    background: none repeat scroll 0 0 #FFFFFF;
+    border: 1px solid #DDDDDD;
+	-moz-border-radius: 3px; border-radius:3px; -webkit-border-radius: 3px;
+    float: left;
+    font-family: "Century Gothic",Helvetica,sans-serif;
+    font-size: 13px;
+    outline: medium none;
+    padding: 5px;
+    width: 180px;
+}
+
+
+#rule_form_container{
+	-moz-border-radius: 10px 10px 10px 10px; border-radius:10px; -webkit-border-radius: 10px;
+	-moz-box-shadow: 0 0 3px #AAAAAA; box-shadow: 0 0 3px #AAAAAA; -webkit-box-shadow: 0 0 3px #AAAAAA;
+	background-color: #F9F9F9;
+	border: 2px solid #FFFFFF;
+	overflow: hidden;
+    width: 800px;
+	}
+#rule_form_container div label {
+    color: #666666;
+    float: left;
+    font-family: "Century Gothic",Helvetica,sans-serif;
+    font-size: 15px;
+    font-weight: bold;
+    line-height: 26px;
+    margin-right: 15px;
+    text-align: right;
+    text-shadow: 1px 1px 1px #FFFFFF;
+    width: 180px;
+}
+#rule_form_container p.submit {
+    background: none repeat scroll 0 0 transparent;
+    border: medium none;
+    box-shadow: none;
+}
+
+.errorlist{
+	list-style: none outside none;
+}
+
+</style>
+ <link href="{% static 'js/select2/select2.css' %}" rel="stylesheet">
+ <link href="{% static 'js/select2/select2-bootstrap.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block pagejsbottom %}
+<script type="text/javascript" src="{% static 'datepicker/js/bootstrap-datepicker.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/select2/select2.js' %}"></script>
+<script>
+	$(document).ready( function(){
+		$('#id_then').removeAttr("multiple");
+		{% if user.is_superuser %}
+			$("#id_applier").select2();
+		{% endif %}
+		$("#id_protocol").select2();
+		$("#id_then").select2();
+
+		$('#id_expires').datepicker({
+			startDate: '+1d',
+			endDate: '+{{maxexpires|add:-1}}d',
+			autoclose: true
+		});
+		$('#setFromAll').click(function(){
+			$("#id_source").val('0.0.0.0/0');
+		});
+
+
+		/*$('#id_then').attr("multiple", "");*/
+		/*
+		$( "#id_expires" ).datepicker({ dateFormat: 'yy-mm-dd' , maxDate: '+10d', minDate: '+1d', changeMonth: false, changeYear: false }).datepicker( $.datepicker.regional[ "el" ] );
+		*/
+		{% comment %}
+		$('#then_diag').dialog({
+			height: 220,
+            width: 340,
+			modal: true,
+			autoOpen: false,
+			buttons: {
+		'{% trans "Add" %}': function() {
+			$.ajax({
+			url:"{% url 'add-rate-limit' %}",
+			data:$("#add_rl_form").serialize(),
+			type: "POST",
+			cache: false,
+			success:function(data){
+					try {
+						value = data.pk;
+						text = data.value;
+						$('#id_then').append($("<option></option>").attr("value",value).text(text));
+						$('#then_diag').dialog('close');
+					}
+					catch (exception) {
+						$('#then_diag').html(data);
+					}
+				}
+				});
+		},
+		'{% trans "Cancel" %}': function() {
+			$('#then_diag').dialog('close');
+		}
+	}
+		});
+		{% endcomment %}
+
+		{% comment %}
+		$("#new_then_actions").button({
+            icons: {
+                primary: "ui-icon-plusthick"
+            },
+			})
+			.click(function(){
+				$.ajax({
+					url: "{% url 'add-rate-limit' %}",
+					cache: false,
+					success: function(data){
+						$("#then_diag").html(data);
+					}
+				});
+				$('#then_diag').dialog('open');
+				return false;
+			});
+
+			{% endcomment %}
+
+			function reArrangeSelect(elementId) {
+ 			   $("#"+elementId).html($("#"+elementId+" option").sort(function(a, b) {
+        			return parseInt(a.text) == parseInt(b.text) ? 0 : parseInt(a.text) < parseInt(b.text) ? -1 : 1
+    			}));
+			}
+	});
+
+</script>
+{% endblock %}
+{% block contentplaceholder %}
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header"> {% if edit %}{% trans "Edit rule" %}: {{routename}}
+    {% else %}{% trans "Apply for a new rule" %}
+    {% endif %}</h1>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+
+<div class="row">
+                <div class="col-lg-8">
+                	<div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <i class="fa fa-shield fa-fw"></i> Firewall Rule
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+    <form method="POST" role="form" class="form-horizontal">
+
+            {% csrf_token %}
+            {% load unescape %}
+            {% if form.non_field_errors %}
+            <div class="form-group {% if form.non_field_errors %} has-error {% endif %}" style="color: #A94442;">
+            	{{ form.non_field_errors|unescape}}
+            	</div>
+            {% endif %}
+            <fieldset {%  if edit %}  style="display:none;" {%  endif %}>
+				
+			{% if edit %}		
+			<input type="hidden" name="name" value="routename" id="id_name">
+			{% else %}
+					<div class="form-group {% if form.name.errors %} has-error {% endif %}">
+					<label for="id_name" class="col-md-2 control-label"><b>{% trans "Name" %}</b></label>
+					<div class="col-md-8">
+						{% render_field form.name class+="form-control" placeholder="Eg. ntpattack. A unique identifier will be added as a suffix" %}
+						{% if form.name.errors %} <span class="help-block"> {{ form.name.errors|join:", " }} </span>
+						{% endif %}
+					</div>
+					</div>
+			{% endif %}
+            </fieldset>
+            {% if user.is_superuser %}
+            <fieldset>
+            	<hr>
+                   <div class="form-group {% if form.applier.errors %} has-error {% endif %}">
+        		<label for="id_name" class="col-md-2 control-label"><b>{% trans "Applier" %}</b></label>
+		        <div class="col-md-8">
+		            {% render_field form.applier class+="form-control" %}
+		            {% if form.applier.errors %} <span class="help-block"> {{ form.applier.errors|join:", " }} </span>
+		            {% endif %}
+		        </div>
+		        </div>
+                </fieldset>
+                {% else %}
+                 <input type="hidden" id="id_applier" name="applier" value="{{applier}}"/>
+                {% endif %}
+				<fieldset>
+					<hr>
+					<div class="form-group {% if form.source.errors %} has-error {% endif %}">
+					<label for="id_source" class="col-md-2 control-label"><b>{% trans "Source Address" %}</b></label>
+					<div class="col-md-6">
+						{% render_field form.source class+="form-control" placeholder=form.source.help_text %}
+						{% if form.source.errors %} <span class="help-block"> {{ form.source.errors|join:", " }} </span>
+						{% endif %}
+					</div>
+					<div class="col-md-2">
+						<img src="{% static 'threat_source.png' %}" style="height: 30px;"/> 
+					</div>
+					</div>
+	
+					<div class="form-group {% if form.destination.errors %} has-error {% endif %}">
+					<label for="id_destination" class="col-md-2 control-label"><b>{% trans "Destination Address" %}</b></label>
+					<div class="col-md-6">
+						{% render_field form.destination class+="form-control" placeholder=form.destination.help_text %}
+						{% if form.destination.errors %} <span class="help-block"> {{ form.destination.errors|join:", " }} </span>
+						{% endif %}
+					</div>
+					<div class="col-md-2">
+						<img src="{% static 'secure_destination.png' %}" style="height: 30px;"/>
+					</div>
+					</div>
+	
+					<div class="form-group {% if form.protocol.errors %} has-error {% endif %}">
+					<label for="id_protocol" class="col-md-2 control-label" style="font-weight: normal;">{% trans "Protocol(s)" %}</label>
+					<div class="col-md-8">
+						{% render_field form.protocol class+="form-control" %}
+						{% if form.protocol.errors %} <span class="help-block"> {{ form.protocol.errors|join:", " }} </span>
+						{% endif %}
+					</div>
+					</div>	
+					</fieldset>
+					
+						
+					<fieldset>
+						<hr>
+						<div class="form-group {% if form.packetlength.errors %} has-error {% endif %}">
+						<label for="id_packetlength" class="col-md-2 control-label"><b>{% trans "Packet Length" %}</b></label>
+						<div class="col-md-6">
+							{% render_field form.packetlength class+="form-control" %}
+							{% if form.packetlength.errors %} <span class="help-block"> {{ form.packetlength.errors|join:", " }} </span>
+							{% endif %}
+						</div>
+						</div>
+								
+						<div class="form-group {% if form.tcpflag.errors %} has-error {% endif %}">
+						<label for="id_tcpflag" class="col-md-2 control-label"><b>{% trans "TCP Flags" %}</b></label>
+						<div class="col-md-6">
+							{% render_field form.tcpflag class+="form-control"  %}
+							{% if form.tcpflag.errors %} <span class="help-block"> {{ form.tcpflag.errors|join:", " }} </span>
+							{% endif %}
+						</div>
+						</div>
+					</fieldset>
+					<!-- ICMP -->
+					<fieldset>
+						<hr>
+						   <div class="form-group {% if form.icmpcode.errors %} has-error {% endif %}">
+						<label for="id_icmpcode" class="col-md-2 control-label">{% trans "ICMP Code" %}</label>
+						<div class="col-md-8">
+							{% render_field form.icmpcode class+="form-control" %}
+							{% if form.icmpcode.errors %} <span class="help-block"> {{ form.icmpcode.errors|join:", " }} </span>
+							{% endif %}
+						</div>
+						</div>
+		
+						<div class="form-group {% if form.icmptype.errors %} has-error {% endif %}">
+						  <label for="id_icmptype" class="col-md-2 control-label">{% trans "ICMP Type" %}</label>
+						<div class="col-md-8">
+							{% render_field form.icmptype class+="form-control" %}
+							{% if form.icmptype.errors %} <span class="help-block"> {{ form.icmptype.errors|join:", " }} </span>
+							{% endif %}
+						</div>
+						</div>
+					</fieldset>
+
+					<!-- End of ICMP -->
+
+					
+		        <!--  PORTS -->
+		        <fieldset>
+                <hr>
+		        <div class="form-group ">
+		        	<label class="col-md-10" style="font-weight: normal;"><small>{% trans "Select source/destination port(s) for both source/destination (Example: 80,100-120,443)" %}</small></label>
+		        </div>
+		        <div class="form-group {% if form.sourceport.errors %} has-error {% endif %} {% if form.destinationport.errors %} has-error {% endif %} {% if form.port.errors %} has-error {% endif %}">
+        		<label for="id_sourceport" class="col-md-2 control-label" style="font-weight: normal;">{% trans "Src. Port(s)" %}</label>
+		        <div class="col-md-2">
+		            {% render_field form.sourceport class+="form-control" %}
+		            {% if form.sourceport.errors %} <span class="help-block"> {{ form.sourceport.errors|join:", " }} </span>
+		            {% endif %}
+		        </div>
+				<label for="id_destinationport" class="col-md-1 control-label" style="font-weight: normal;">{% trans "Dest. Port(s)" %}</label>
+		        <div class="col-md-2">
+		            {% render_field form.destinationport class+="form-control"  %}
+		            {% if form.destinationport.errors %} <span class="help-block"> {{ form.destinationport.errors|join:", " }} </span>
+		            {% endif %}
+		        </div>
+		        </div>
+			</fieldset>
+
+		        <!--  END OF PORTS -->
+
+				
+
+            <fieldset>
+				<hr>
+               	<div class="form-group {% if form.then.errors %} has-error {% endif %}">
+        		<label for="id_then" class="col-md-2 control-label">{% trans "Then Actions" %}</label>
+		        <div class="col-md-8">
+		            {% render_field form.then class+="form-control" %}
+		            {% if form.then.errors %} <span class="help-block"> {{ form.then.errors|join:", " }} </span>
+		            {% endif %}
+		        </div>
+		        </div>
+
+            </fieldset>
+            <fieldset>
+				<hr>
+                <div class="form-group {% if form.expires.errors %} has-error {% endif %}">
+                  <label for="id_expires" class="col-md-2 control-label">{% trans "Expires" %}</label>
+		        <div class="col-md-8">
+		            {% render_field form.expires class+="form-control datepicker" data-date-format="yyyy-mm-dd" placeholder="For a not expiring rule, leave the field empty" %}
+		            {% if form.expires.errors %} <span class="help-block"> {{ form.expires.errors|join:", " }} </span>
+		            {% endif %}
+		        </div>
+		        </div>
+            </fieldset>
+
+
+            <fieldset>
+			<hr>
+        <div class="form-group {% if form.comments.errors %} has-error {% endif %}">
+        		<label for="id_comments" class="col-md-2 control-label">{% trans "Comments" %}</label>
+		        <div class="col-md-8">
+		            {% render_field form.comments class+="form-control" placeholder="Give a short description of the intended use of this rule, that justifies the parameter selection above. Feel free to include any additional comments." %}
+		            {% if form.comments.errors %} <span class="help-block"> {{ form.comments.errors|join:", " }} </span>
+		            {% endif %}
+		        </div>
+		        </div>
+
+
+            </fieldset>
+			 <div class="form-group">
+			 	<div class="col-md-2"></div>
+			 	 <div class="col-md-8">
+			<button type="submit" id="applybutton" value="{% trans 'Apply' %}" class="btn btn-md btn-primary">Apply</button>
+				</div>
+			</div>
+
+
+    </form>
+</div></div></div></div>
+<div id="then_diag" title="Add new rate-limit value">
+</div>
+<!-- <div id="port_diag" title="{% trans "Add new port" %}">
+</div> -->
+
+{% endblock %}
