@@ -64,7 +64,7 @@ here = lambda x: os.path.join(os.path.abspath(os.path.dirname(__file__)), x)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
-ALLOWED_HOSTS = ['localhost:8000','redifod.redimadrid.es','localhost','rabbitmq']
+ALLOWED_HOSTS = ['localhost:8000','redifod.redimadrid.es','localhost','rabbitmq','193.145.15.172','10.10.4.90']
 SITE_ID = 1
 
 # Place a sequence of random chars here
@@ -291,7 +291,6 @@ USE_X_FORWARDED_HOST = True
 
 # broker configuration for celery
 POLLS_TUBE = 'polls'
-#result_backend = "amqp://127.0.0.1:5672//"
 CELERY_BROKER_URL = "redis://redis:6379"
 RESULT_BACKEND = "redis://redis:6379"
 CELERY_CONCURRENCY = 1
@@ -525,3 +524,6 @@ DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 ##############################################################################
 ##############################################################################
 
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_SSL_REDIRECT = True

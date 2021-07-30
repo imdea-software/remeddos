@@ -11,7 +11,6 @@ from django.urls import reverse
 def get_network(ip):
     try:
         address = IPNetwork(ip)
-        print('type of address inside validators/get_network', address)
     except Exception:
         return (False, _('Invalid network address format'))
     else:
