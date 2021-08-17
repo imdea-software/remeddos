@@ -54,7 +54,13 @@ services:
             - DB_HOST=db
             - DB_NAME=flowspy
             - DB_USER=fod
-            - DB_PASS=heix6ieG             
+            - DB_PASS=heix6ieG
+    netconf:
+        image: sysrepo/sysrepo-netopeer2:latest
+        ports: 
+            - 830:830
+        depends_on: 
+            - web             
 networks:
     default:
         name: redifod_network

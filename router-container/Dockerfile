@@ -91,3 +91,107 @@ RUN /usr/local/bin/sysrepoctl -i -g /opt/dev/junos-extension.yang
 
 COPY supervisord.conf /etc/supervisord.conf
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+
+
+# OTHER VERSION :
+
+FROM ubuntu:18.04
+
+# defaults
+RUN \
+	apt-get update && apt-get install -y \
+    # general tools
+    git \
+    cmake \
+    build-essential \
+    vim \
+    supervisor \
+    # libyang
+    libpcre3-dev \
+    pkg-config \
+    # sysrepo
+    libavl-dev \
+    libev-dev \
+    libprotobuf-c-dev \
+    protobuf-c-compiler \
+    # netopeer2 \
+    libssh-dev \
+    libssl-dev \
+    # bindings
+    swig \
+    python-dev
+
+# Adding netconf user
+RUN adduser --system netconf
+RUN mkdir -p /home/netconf/.ssh
+RUN echo "netconf:netconf" | chpasswd && adduser netconf sudo
+
+
+# Clearing and setting authorized ssh keys
+RUN \
+	echo '' > /home/netconf/.ssh/authorized_keys && \
+	ssh-keygen -A && \
+	ssh-keygen -t rsa -b 4096 -P '' -f /home/netconf/.ssh/id_rsa && \
+	cat /home/netconf/.ssh/id_rsa.pub >> /home/netconf/.ssh/authorized_keys
+
+
+# Updating shell to bash
+RUN sed -i s#/home/netconf:/bin/false#/home/netconf:/bin/bash# /etc/passwd
+
+RUN mkdir /opt/dev
+WORKDIR /opt/dev
+
+
+# libyang
+RUN \
+      git clone -b devel https://github.com/CESNET/libyang.git && \
+      cd libyang && mkdir build && cd build && \
+      git checkout devel && \
+      cmake -DCMAKE_BUILD_TYPE:String="Debug" -DENABLE_BUILD_TESTS=OFF .. && \
+      make -j2 && \
+      make install && \
+      ldconfig
+
+# sysrepo
+RUN \
+      git clone -b devel https://github.com/sysrepo/sysrepo.git && \
+      cd sysrepo && mkdir build && cd build && \
+      git checkout devel && \
+      cmake -DCMAKE_BUILD_TYPE:String="Debug" -DENABLE_TESTS=OFF -DREPOSITORY_LOC:PATH=/etc/sysrepo .. && \
+      make -j2 && \
+      make install && \
+      ldconfig
+
+# libnetconf2
+RUN \
+      git clone -b devel https://github.com/CESNET/libnetconf2.git && \
+      cd libnetconf2 && mkdir build && cd build && \
+      git checkout devel && \
+      cmake -DCMAKE_BUILD_TYPE:String="Debug" -DENABLE_BUILD_TESTS=OFF .. && \
+      make -j2 && \
+      make install && \
+      ldconfig
+
+
+# netopeer2
+RUN \
+      cd /opt/dev && \
+      cd Netopeer2/server && mkdir build && cd build && \
+      cmake -DCMAKE_BUILD_TYPE:String="Debug" .. && \
+      make -j2 && \
+      make install && \
+      cd ../../cli && mkdir build && cd build && \
+      cmake -DCMAKE_BUILD_TYPE:String="Debug" .. && \
+      make -j2 && \
+      make install
+
+ENV EDITOR vim
+EXPOSE 830
+
+COPY ./router-container/configuration.yang /opt/dev/configuration.yang
+COPY ./router-container/junos-extension.yang /opt/dev/junos-extension.yang
+RUN /usr/local/bin/sysrepoctl -i -g /opt/dev/configuration.yang
+RUN /usr/local/bin/sysrepoctl -i -g /opt/dev/junos-extension.yang
+
+COPY supervisord.conf /etc/supervisord.conf
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]

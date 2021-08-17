@@ -53,7 +53,7 @@ EMAIL_HOST_PASSWORD=os.environ.get('EMAIL_HOST_PASSWORD')
 
 
 
-DEBUG = False
+DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -524,6 +524,3 @@ DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 ##############################################################################
 ##############################################################################
 
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SECURE_SSL_REDIRECT = True
