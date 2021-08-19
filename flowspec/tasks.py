@@ -387,6 +387,7 @@ def routes_sync():
     from flowspec.models import Route
     from utils.proxy import Retriever
     from xml.etree import ElementTree as ET
+    options =  [];flow = [];route = []
     retriever = Retriever()
     router_config = retriever.fetch_config_str()
     routes = Route.objects.all()
@@ -409,14 +410,16 @@ def routes_sync():
     routenames = [x.name for x in routes]
     diff = set(routenames).difference(names)
     notsynced_routes = list(diff)
-    for route in notsynced_routes:
-        route = Route.objects.get(name=route)
-        if (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):
-            print('rute: ', route)
-            route.commit_add()
-            logger.info('Status: %s route out of sync: %s, saving route.' %(route.status, route.name))
-        else:
-            if (route.status == 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE'):
-                route.check_sync()                
-  
+    if notsynced_routes:
+        for route in notsynced_routes:
+            route = Route.objects.get(name=route)
+            if (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):            
+                route.commit_add()
+                logger.info('Status: %s route out of sync: %s, saving route.' %(route.status, route.name))
+            else:
+                if route.status == 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE':
+                    logger.info('Route: %s route status: %s'%(route.status, route.name))
+                    route.check_sync()             
+    else:
+        logger.info('There are no routes out of sync')
  

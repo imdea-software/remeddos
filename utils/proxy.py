@@ -241,7 +241,10 @@ class Applier(object):
 
     def get_existing_routes(self):
         config_parsed = self.get_existing_config()
-        if config_parsed.routing_options and config_parsed.routing_options.__len__()>0:
+        import lxml.etree as ET
+        parser = ET.XMLParser(recover=True)
+        data = ET.ElementTree(ET.tostring(config_parsed))
+        if data.routing_options and data.routing_options.__len__()>0:
           flow = config_parsed.routing_options[0]
           logger.info("proxy::get_existing_routes(): config_parsed.flow="+str(flow))
           routes_existing = flow.routes

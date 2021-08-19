@@ -240,8 +240,8 @@ class Route(models.Model):
             peer = username.peer_tag
         else:
             peer = None
-        r =  Route.objects.get(name = self.name)
-        routename=r
+        route =  Route.objects.get(name = self.name)
+        routename=route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
         if not settings.DISABLE_EMAIL_NOTIFICATION:

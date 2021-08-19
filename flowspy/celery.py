@@ -17,7 +17,7 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 app.conf.beat_schedule = {
     "every-day-route-sync": {
-        "task": "flowspec.tasks.route_sync",
+        "task": "flowspec.tasks.routes_sync",
         "schedule": crontab(minute=1, hour=1),
         "args": (),
     },

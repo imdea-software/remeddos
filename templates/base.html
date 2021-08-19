@@ -129,6 +129,38 @@
         <!-- /.navbar-static-top -->
         
 		{% block sidenav %}
+        <nav class="navbar-nav navbar-static-side" role="navigation">
+        	{% if user.is_authenticated %}
+            <div class="panel-body">
+                <ul class="nav" id="side-menu">
+                    <li>
+                        <a href="#" class="btn btn-sm btn-outline btn-dark"><i class="fa fa-dashboard fa-fw"></i> {% trans "Dashboard" %}</a>
+                    </li>
+                    <li>
+                        <a href="#" class="btn btn-sm btn-outline btn-dark"><i class="fa fa-shield fa-fw"></i> {% trans "Rules" %}</a>
+                    </li>
+                    <li>
+                        <a href="#" class="btn btn-sm btn-outline btn-dark"><i class="fa fa-plus-circle fa-fw"></i> {% trans "Add Rule" %}</a>
+                    </li>
+                    {% if perms.accounts.overview %}<li>
+                            <a href="{% url 'overview' %}" class="btn btn-sm btn-outline btn-dark"><i class="fa fa-desktop fa-fw"></i> {% trans "Overview" %}</a>
+                        </li>{% endif %}
+                    {% if user.is_superuser %}
+                        <li><a href="#"  class="btn btn-sm btn-outline btn-dark"><i class="fa fa-cogs fa-fw"></i> {% trans "Admin" %}</a>
+                        </li>
+						{% endif %}
+                    {% if user.get_profile.peers.all %}
+				        <li>
+				            <a href="#"><i class="fa fa-user fa-fw"></i> {% trans "My profile" %}</a>
+				        </li>
+				    {% endif %}
+                </ul>
+                <!-- /#side-menu -->
+            </div>
+            {% endif %}
+            <!-- /.sidebar-collapse -->
+        </nav>
+        <!-- /.navbar-static-side -->
         
 		{% endblock %} 
         <div id="page-wrapper">
