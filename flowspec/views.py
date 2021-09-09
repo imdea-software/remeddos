@@ -36,6 +36,7 @@ from ipaddr import *
 from django.db.models import Q
 from django.contrib.auth import authenticate, login
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.management import call_command
 
 from django.forms.models import model_to_dict
 
@@ -644,71 +645,6 @@ def user_profile(request):
         },
     )
 
-
-
-""" def user_activation_notify(user):
-    if not settings.DISABLE_EMAIL_NOTIFICATION:
-        current_site = Site.objects.get_current()
-        peers = user.get_profile().peers.all()
-
-        # Email subject *must not* contain newlines
-        # TechCs will be notified about new users.
-        # Platform admins will activate the users.
-        subject = render_to_string(
-            'registration/activation_email_subject.txt',
-            {
-                'site': current_site
-            }
-        )
-        subject = ''.join(subject.splitlines())
-        registration_profile = RegistrationProfile.objects.create_profile(user)
-        message = render_to_string(
-            'registration/activation_email.txt',
-            {
-                'activation_key': registration_profile.activation_key,
-                'expiration_days': settings.ACCOUNT_ACTIVATION_DAYS,
-                'site': current_site,
-                'user': user
-            }
-        )
-        if settings.NOTIFY_ADMIN_MAILS:
-            admin_mails = settings.NOTIFY_ADMIN_MAILS
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + subject,
-                message,
-                settings.SERVER_EMAIL,
-                admin_mails,
-                []
-            )
-        for peer in peers:
-            try:
-                PeerNotify.objects.get(peer=peer, user=user)
-            except:
-                peer_notification = PeerNotify(peer=peer, user=user)
-                peer_notification.save()
-                # Mail to domain techCs plus platform admins (no activation hash sent)
-                subject = render_to_string(
-                    'registration/activation_email_peer_notify_subject.txt',
-                    {
-                        'site': current_site,
-                        'peer': peer
-                    }
-                )
-                subject = ''.join(subject.splitlines())
-                message = render_to_string(
-                    'registration/activation_email_peer_notify.txt',
-                    {
-                        'user': user,
-                        'peer': peer
-                    }
-                )
-                send_new_mail(
-                    settings.EMAIL_SUBJECT_PREFIX + subject,
-                    message,
-                    settings.SERVER_EMAIL,
-                    get_peer_techc_mails(user, peer), []) """
-
-
 @login_required
 @never_cache
 def add_rate_limit(request):
@@ -1004,12 +940,9 @@ def display_graphs(request,route_slug):
     graphs = fetch_graphs(source, destination, item_id,name)
     return render(request,'graphs.html',{'routename':name,'graphs':graphs})
 
-@login_required
-@never_cache
-def routes_sync():
+def get_routes_router():
     retriever = Retriever()
-    router_config = retriever.fetch_config_str()
-    routes = Route.objects.all()
+    router_config = retriever.fetch_config_str()    
     tree = ET.fromstring(router_config)
     data = [d for d in tree]
     config = [c for c in data]
@@ -1018,7 +951,77 @@ def routes_sync():
     for option_nodes in options:
         flow = option_nodes 
     for flow_nodes in flow:
-        route = flow_nodes      
+        routes = flow_nodes   
+    return routes
+
+def sync_router(request):
+    peers = request.user.profile.peers.all(); peer = str([p for p in peers])
+    then = [] ; then_action = [] ; name = [] ; protocol = [] ; destination = [] ; source = '' ; src_port =  '' ; dest_port = '' ; tcpflags = '' ; icmpcode = ''; icmptype = ''; packetlength = ''
+    message = '' ; applier = User.objects.get(username=request.user)
+    retriever = Retriever(); router_config = retriever.fetch_config_str(); 
+    routes = get_routes_router()
+    then_action_dict = {}
+    for children in routes:
+        for child in children:
+            if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}then': 
+                for thenaction in child:                    
+                    th = thenaction.tag ; start = th.find('}') ; then = th[start+1::]
+                    then_action_dict[then] = thenaction.text if thenaction.text != None else "" 
+            if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name': name = child.text
+            n = name.find('_'); name_peer = name[n+1::]
+            if name_peer in peer:
+                if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}match':
+                    for c in child:
+                        if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}protocol':protocol = c.text
+                        if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination-port':dest_port = c.text
+                        if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source-port':src_port = c.text
+                        if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination':destination = c.text
+                        if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}tcp-flags': tcpflags = c.text 
+                        if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-code': icmpcode = c.text 
+                        if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type': icmptype = c.text 
+                        if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length': packetlength = c.text 
+                        if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source': source = c.text
+                                     
+        if name_peer in peer:
+            prot = ''
+            try:
+                route=Route(name=name,applier=applier,source=source,sourceport=src_port,destination=destination,destinationport=dest_port,icmpcode=icmpcode,icmptype=icmptype,packetlength=packetlength,tcpflag=tcpflags,status='ACTIVE')
+                route.save()
+            except Exception as e:                    
+                message = (f'There was an error when trying to sync all routes from the router. {e} ')
+            print('tipo de protocolo ', type(protocol))
+            if isinstance(protocol,(list)):
+                for p in protocol:
+                    prot = MatchProtocol.objects.get(protocol=p)
+                    print('here2? ')
+                    route.protocol.add(prot)
+            else:
+                prot = MatchProtocol.objects.get(protocol=protocol)
+                print('protocolo ', prot, type(prot))
+                print('ruta ',route, type(route))
+                route.protocol.add(prot)
+            then_action=then_action_dict.items()
+            if len(then_action_dict) > 1:
+                for key,value in then_action:
+                    print('key ', key,' value ',value)
+                    if value == '':
+                        th_act = ThenAction.objects.get_or_create(action=key,action_value=None)
+                        route.then.add(th_act)
+                    else:
+                        th_act = ThenAction.objects.get_or_create(action=key,action_value=value)
+                        route.then.add(th_act)
+            message = 'All the routes have been properly syncronised with the database'     
+            
+        else:
+                message = 'There are no peers associated with the user currently logged in.'
+    
+    return render(request,'routes_synced.html',{'message':message})
+
+@login_required
+@never_cache
+def routes_sync(request):
+    routes = Route.objects.all()
+    route = get_routes_router()
     names = []
     for children in route:
         for child in children:
@@ -1027,13 +1030,45 @@ def routes_sync():
             else:
                 pass  
     routenames = [x.name for x in routes]
+    message = []
     diff = set(routenames).difference(names)
     notsynced_routes = list(diff)
-    for route in notsynced_routes:
-        route = Route.objects.get(name=route)
-        if (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):
-            route.commit_add()
-            logger.info('Status: %s route out of sync: %s, saving route.' %(route.status, route.name))
-        else:
-            if (route.status == 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE'):
-                route.check_sync()   
+    if notsynced_routes:
+        for route in notsynced_routes:
+            route = Route.objects.get(name=route)
+            if (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):
+                route.commit_add()
+                message = ('Status: %s route out of sync: %s, saving route.' %(route.status, route.name))
+            else:
+                if (route.status == 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE'):
+                    route.check_sync() 
+                    message = ('Status: %s route  %s, checking route.' %(route.status, route.name))
+    else:
+        message = 'There are no routes out of sync.'
+    return render(request,'routes_synced.html',{'message':message})
+
+
+
+@login_required
+@never_cache
+def backup(request):
+    try:
+        call_command('dbbackup')
+        message = 'The back up was succesfully created.'
+        return render(request,'routes_synced.html',{'message':message}) 
+    except Exception as e:
+        message = ('An error came up and the database was not created. %s'%e)
+        return render(request,'routes_synced.html',{'message':message})
+
+@login_required
+@never_cache
+def restore(request):
+    try:
+        call_command('makemigrations')
+        call_command('migrate')
+        call_command('dbrestore', interactive=False)
+        message = 'The back up was succesfully restore. We recommend you to also sync all your firewall routes.'
+        return render(request,'routes_synced.html',{'message':message}) 
+    except Exception as e:
+        message = ('An error came up and the database was not created. ',e)
+        return render(request,'routes_synced.html',{'message':message})

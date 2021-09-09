@@ -183,7 +183,6 @@ class RouteForm(forms.ModelForm):
             existing_routes = existing_routes.filter(port=None)
         if icmpcode:
             if int(icmpcode) not in range(0,255):
-                print(' er que pasa aqui',type(icmpcode))
                 raise forms.ValidationError(_('The ICMP code {} introduced does not match any registered code.').format(icmpcode))
         
         if icmptype:

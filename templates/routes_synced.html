@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+
+{% block extrahead %}
+	<link href="{% static 'b3theme/css/plugins/morris/morris-0.4.3.min.css' %}" rel="stylesheet">
+    <link href="{% static 'b3theme/css/plugins/timeline/timeline.css' %}" rel="stylesheet">
+    <style type="text/css">
+
+
+	.dl-horizontal dt {
+    width: 70px;
+}
+.dl-horizontal dd {
+    margin-left: 90px;
+}
+</style>
+{% endblock %}
+
+
+{% block title %}{% trans "Synced Routes" %}{% endblock %}
+{% block contentplaceholder %}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-12 col-md-12 col-sm-12 center">
+        <h2> Synced Routes</h2>
+    </div>
+    </div>
+    <div class="jumbotron info">
+     {{ message }}
+    </div>
+</div>
+{% endblock %}

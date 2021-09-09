@@ -1,5 +1,7 @@
 from django.core.mail import send_mail
 from django.conf import settings
+from django.contrib.auth.models import User
+from accounts.models import *  
 
 import os
 import logging
@@ -40,3 +42,11 @@ def get_peer_techc_mails(user, peer):
     return mail
 
 
+def get_peers(username):
+  user = User.objects.get(username=username)
+  up = UserProfile.objects.get(user=user)
+  peers = up.peers.all()
+  peername = ''
+  for peer in peers:
+    peername = peer.peer_name
+  return peername

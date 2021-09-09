@@ -23,8 +23,12 @@ urlpatterns = [
     path('load_js/<str:file>', views.load_jscript, name="load-js"),
     re_path(r'^overview/?$', views.overview, name="overview"),
     path('routes_sync/', views.routes_sync, name="rsync"),
+    path('sync_router/', views.sync_router, name="router-sync"),
+    path('backup/',views.backup,name="backup"),
+    path('restore/',views.restore,name="restore"),
     path('edit/<slug:route_slug>/',views.routedetails,name="route-details"),
     re_path(r'^routestats/(?P<route_slug>[\w-]+)/$', views.routestats, name="routestats"),
     re_path(r'^setup/', views.setup, name='setup'),
+    
 ]
 

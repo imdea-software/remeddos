@@ -37,6 +37,9 @@ class UserProfile(models.Model):
     def __str__(self):
         return self.username()
 
+    def get_peers(self):
+        return self.peers.all()
+
     def get_address_space(self):
         networks = self.domain.networks.all()
         if not networks:

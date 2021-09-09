@@ -29,7 +29,7 @@ from django.urls import reverse
 import json
 from django.core import serializers
 
-from flowspec.helpers import send_new_mail, get_peer_techc_mails
+from flowspec.helpers import *
 from utils import proxy as PR
 from ipaddr import *
 import datetime
@@ -39,7 +39,6 @@ import logging
 from flowspec.junos import create_junos_name
 
 
-#import beanstalkc
 from utils.randomizer import id_generator as id_gen
 
 import flowspec.tasks
@@ -205,10 +204,16 @@ class Route(models.Model):
         verbose_name_plural = "Rules"
 
     def save(self, *args, **kwargs):
-        if not self.pk:
-            suff = id_gen()
-            self.name = "%s_%s" % (self.name, suff)
-        super(Route, self).save(*args, **kwargs)
+        applier = self.applier
+        peer_suff = get_peers(applier)
+        name = self.name
+        if not self.pk and name.endswith('_%s'%(peer_suff)):
+            super(Route, self).save(*args, **kwargs)
+        else:
+            if not self.pk:
+                peer_suff = get_peers(applier)
+                self.name = "%s_%s" % (self.name, peer_suff)
+                super(Route, self).save(*args, **kwargs)
 
     def clean(self, *args, **kwargs):
         from django.core.exceptions import ValidationError

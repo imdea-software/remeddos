@@ -87,3 +87,4 @@ pybix==0.0.8
 pyzabbix==1.0.0
 netaddr==0.8.0
 pillow==8.3.1
+django-dbbackup==3.3.0
