@@ -377,9 +377,10 @@ def add_route(request):
         form = RouteForm(request_data)
         if form.is_valid():
             route = form.save(commit=False)
+            print('lets see ', route)
             if not request.user.is_superuser:
                 route.applier = request.user
-            route.status = "PENDING"
+            #route.status = "PENDING"
             route.response = "Applying"
             route.source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
             route.destination = IPNetwork('%s/%s' % (IPNetwork(route.destination).network.compressed, IPNetwork(route.destination).prefixlen)).compressed
@@ -388,11 +389,15 @@ def add_route(request):
             except:
                 # in case the header is not provided
                 route.requesters_address = 'unknown'
-            route.save()
+            c = route.save()
+            print('ha guardado', c)
             form.save_m2m()
                 # We have to make the commit after saving the form
                 # in order to have all the m2m relations.
+            print('route estado ', route.status)
             route.commit_add()
+            route.save()
+            print('route estado 2 ', route.status)
             return HttpResponseRedirect(reverse("group-routes"))
         else:
             if not request.user.is_superuser:
@@ -487,7 +492,7 @@ def edit_route(request, route_slug):
             if not request.user.is_superuser:
                 route.applier = request.user
             if bool(set(changed_data) and set(critical_changed_values)) or (not route_original.status == 'ACTIVE'):
-                route.status = "PENDING"
+                #route.status = "PENDING"
                 route.response = "Applying"
                 route.source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
                 route.destination = IPNetwork('%s/%s' % (IPNetwork(route.destination).network.compressed, IPNetwork(route.destination).prefixlen)).compressed
@@ -581,6 +586,7 @@ def verify_delete_user(request, route_slug):
 @login_required
 @never_cache
 def delete_route(request, route_slug):
+    print('trace 1')
     route = get_object_or_404(Route, name=route_slug)
     peers = route.applier.profile.peers.all()
     username = None
@@ -605,6 +611,7 @@ def delete_route(request, route_slug):
                 break
     requester_peer = username
     if applier_peer == requester_peer or request.user.is_superuser:
+        print('trace 2')
         route.status = "PENDING"
         route.expires = datetime.date.today()
         if not request.user.is_superuser:
@@ -615,12 +622,21 @@ def delete_route(request, route_slug):
         except:
             # in case the header is not provided
             route.requesters_address = 'unknown'
-        route.save()
+        print('trace 3 ')
         route.commit_delete()
+        route.status= "INACTIVE"
+        route.save()
     return HttpResponseRedirect(reverse("group-routes"))
 
-
-
+def force_delete(route_slug):
+    route = Route.objects.get(name=route_slug)
+    route.status = "INACTIVE"
+    route.save()
+    if route.status == "INACTIVE":
+        print('yes')
+        print(route.status)
+    else:
+        print(route.status)
 @login_required
 @never_cache
 def user_profile(request):
@@ -780,14 +796,6 @@ def overview(request):
     else:
         return HttpResponseRedirect(reverse("altlogin"))
 
-
-""" @login_required
-@never_cache
-def user_logout(request):
-    logout(request)
-    return HttpResponseRedirect(settings.SHIB_LOGOUT_URL or reverse('group-routes')) """
-
-
 @never_cache
 def load_jscript(request,file):
     long_polling_timeout = int(settings.POLL_SESSION_UPDATE) * 1000 + 10000
@@ -879,7 +887,7 @@ def setup(request):
 
 
 
-def managing_files(string_items):
+""" def managing_files(string_items):
     files = []
     src = './'
     dest = settings.MEDIA_ROOT
@@ -893,13 +901,14 @@ def managing_files(string_items):
     # rename files with the id for each graph   
     for f in files:
         src = settings.MEDIA_ROOT + f
-        os.rename(src,settings.MEDIA_ROOT+string_items+'.png')
+        os.rename(src,settings.MEDIA_ROOT+string_items+'.png') """
 
 
 def fetch_graphs(source, destination, item_id,routename):
     # by default pybix downloads the img into the output path so
     # checks if there's a graph associated with that id first if not 
     # it will collect the img & will change the image's name and direction to make it more accessible
+    dest = settings.MEDIA_ROOT
     route = get_object_or_404(Route, name=routename)
     string_items = '_'.join([str(item) for item in item_id])
     graphs = string_items+'.png'
@@ -913,7 +922,7 @@ def fetch_graphs(source, destination, item_id,routename):
         fwg = Graph(graph_img=graph.get_by_item_ids(item_id),route=route)
         fwg.graph_img=graphs
         fwg.save()
-    managing_files(string_items)
+    managing_files(string_items, dest)
     return graphs
 
 @verified_email_required
@@ -953,96 +962,92 @@ def get_routes_router():
     for flow_nodes in flow:
         routes = flow_nodes   
     return routes
-
-def sync_router(request):
-    peers = request.user.profile.peers.all(); peer = str([p for p in peers])
-    then = [] ; then_action = [] ; name = [] ; protocol = [] ; destination = [] ; source = '' ; src_port =  '' ; dest_port = '' ; tcpflags = '' ; icmpcode = ''; icmptype = ''; packetlength = ''
-    message = '' ; applier = User.objects.get(username=request.user)
-    retriever = Retriever(); router_config = retriever.fetch_config_str(); 
-    routes = get_routes_router()
-    then_action_dict = {}
-    for children in routes:
-        for child in children:
-            if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}then': 
-                for thenaction in child:                    
-                    th = thenaction.tag ; start = th.find('}') ; then = th[start+1::]
-                    then_action_dict[then] = thenaction.text if thenaction.text != None else "" 
-            if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name': name = child.text
-            n = name.find('_'); name_peer = name[n+1::]
-            if name_peer in peer:
-                if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}match':
-                    for c in child:
-                        if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}protocol':protocol = c.text
-                        if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination-port':dest_port = c.text
-                        if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source-port':src_port = c.text
-                        if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination':destination = c.text
-                        if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}tcp-flags': tcpflags = c.text 
-                        if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-code': icmpcode = c.text 
-                        if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type': icmptype = c.text 
-                        if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length': packetlength = c.text 
-                        if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source': source = c.text
-                                     
-        if name_peer in peer:
-            prot = ''
-            try:
-                route=Route(name=name,applier=applier,source=source,sourceport=src_port,destination=destination,destinationport=dest_port,icmpcode=icmpcode,icmptype=icmptype,packetlength=packetlength,tcpflag=tcpflags,status='ACTIVE')
-                route.save()
-            except Exception as e:                    
-                message = (f'There was an error when trying to sync all routes from the router. {e} ')
-            print('tipo de protocolo ', type(protocol))
-            if isinstance(protocol,(list)):
-                for p in protocol:
-                    prot = MatchProtocol.objects.get(protocol=p)
-                    print('here2? ')
-                    route.protocol.add(prot)
-            else:
-                prot = MatchProtocol.objects.get(protocol=protocol)
-                print('protocolo ', prot, type(prot))
-                print('ruta ',route, type(route))
-                route.protocol.add(prot)
-            then_action=then_action_dict.items()
-            if len(then_action_dict) > 1:
-                for key,value in then_action:
-                    print('key ', key,' value ',value)
-                    if value == '':
-                        th_act = ThenAction.objects.get_or_create(action=key,action_value=None)
-                        route.then.add(th_act)
-                    else:
-                        th_act = ThenAction.objects.get_or_create(action=key,action_value=value)
-                        route.then.add(th_act)
-            message = 'All the routes have been properly syncronised with the database'     
-            
-        else:
-                message = 'There are no peers associated with the user currently logged in.'
     
+def sync_router(request):
+    # find what peer organisation does the user belong to
+    peer = get_peers(request.user)
+    # first initialize all the needed vars    
+    applier = User.objects.get(username=request.user); routes = get_routes_router() ; fw_rules = []; message = ''
+    # for getting the route parameters is needed to run through the xml 
+    for children in routes:
+        then = '' ; then_action = '' ; protocol = [] ; destination = [] ; source = '' ; src_port =  '' ; dest_port = '' ; tcpflags = '' ; icmpcode = ''; icmptype = ''; packetlength = ''; prot = '';  name_fw = ''
+        for child in children:
+            if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name': 
+                name_fw = child.text
+                if (peer in name_fw):
+                    name_peer = child.text
+                    fw_rules.append(child.text)                              
+            # if the user peer organisation is found on the router the program will collect all the vars info    
+            if (peer in name_fw):  
+                for child in children:
+                    if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}then':
+                        for thenaction in child:                    
+                            th = thenaction.tag ; start = th.find('}') ; then = th[start+1::]
+                            then_action = thenaction.text
+                    if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}match':
+                        for c in child:
+                            if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}protocol': protocol = c.text
+                            if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination-port':dest_port = c.text
+                            if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source-port':src_port = c.text
+                            if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination':destination = c.text
+                            if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}tcp-flags': tcpflags = c.text 
+                            if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-code': icmpcode = c.text 
+                            if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type': icmptype = c.text 
+                            if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length' and c.text != '': packetlength = c.text
+                            if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source': source = c.text                            
+            if (peer in name_fw):
+                try:
+                    route = Route(name=name_fw,applier=applier,source=source,sourceport=src_port,destination=destination,destinationport=dest_port,icmpcode=icmpcode,icmptype=icmptype,packetlength=packetlength,tcpflag=tcpflags,status="ACTIVE")  
+                        # check if the route is already in our DB
+                    if not Route.objects.filter(name=route.name).exists():
+                        route.save()
+                        if isinstance(protocol,(list)):
+                            for p in protocol:
+                                prot, created = MatchProtocol.objects.get_or_create(protocol=p)
+                                route.protocol.add(prot.pk)
+                        else:
+                            prot, created = MatchProtocol.objects.get_or_create(protocol=protocol)
+                            route.protocol.add(prot)
+                        th_act, created = ThenAction.objects.get_or_create(action=then,action_value=then_action)
+                        route.then.add(th_act.pk)
+                        message ='All the routes have been properly syncronised with the database'                    
+                    else:
+                        message = 'Routes have already been syncronised.'
+                        pass
+                except Exception as e:                    
+                    message = (f'There was an error when trying to sync all routes from the router. {e}')
     return render(request,'routes_synced.html',{'message':message})
 
 @login_required
 @never_cache
 def routes_sync(request):
-    routes = Route.objects.all()
-    route = get_routes_router()
-    names = []
+    routes = Route.objects.all(); route = get_routes_router()
+    peer = get_peers(request.user); names = []
     for children in route:
         for child in children:
             if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
-                names.append(child.text)
+                if child.text.endswith('_%s'%peer):
+                    names.append(child.text)
+                    
             else:
                 pass  
     routenames = [x.name for x in routes]
-    message = []
-    diff = set(routenames).difference(names)
+    message = ''
+    diff = (set(routenames).difference(names))
     notsynced_routes = list(diff)
+    print('not ', notsynced_routes)
     if notsynced_routes:
         for route in notsynced_routes:
             route = Route.objects.get(name=route)
             if (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):
-                route.commit_add()
-                message = ('Status: %s route out of sync: %s, saving route.' %(route.status, route.name))
+                route.save()
+                print('Status: %s route out of sync: %s, saving route.' %(route.status, route.name))
             else:
-                if (route.status == 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE'):
+                if (route.has_expired()==True) or (route.status == 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE'):
+                    print('route ', route.status, route.has_expired())
                     route.check_sync() 
-                    message = ('Status: %s route  %s, checking route.' %(route.status, route.name))
+                    print('Status: %s route  %s, checking route.' %(route.status, route.name))
+        message = 'Routes syncronised.'
     else:
         message = 'There are no routes out of sync.'
     return render(request,'routes_synced.html',{'message':message})
@@ -1072,3 +1077,28 @@ def restore(request):
     except Exception as e:
         message = ('An error came up and the database was not created. ',e)
         return render(request,'routes_synced.html',{'message':message})
+
+def managing_files(string_items, dest):
+    files = [] if dest != settings.MEDIA_ROOT else string_items
+    src = './'
+    # locate the file dir & move files
+    if dest == settings.MEDIA_ROOT:
+        for f_name in os.listdir('./'):
+            if f_name.endswith('.png'):
+                files.append(f_name)
+        for f in files:
+            src = './' + f
+            shutil.move(src,dest)    
+    # rename files with the id for each file  
+    for f in files:
+        if dest == settings.MEDIA_ROOT:
+            src = settings.MEDIA_ROOT + f
+            os.rename(src,settings.MEDIA_ROOT+string_items+'.png')
+        elif dest == settings.BACK_UP_DIR:
+            src = dest
+            os.rename(src,settings.BACK_UP_DIR+string_items+'.psql')
+        else:
+            print('There was an error when trying to rename the files')
+
+def choose_backup():
+    pass
