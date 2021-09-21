@@ -132,23 +132,20 @@
         <nav class="navbar-nav navbar-static-side" role="navigation">
         	{% if user.is_authenticated %}
                 <ul class="nav" id="side-menu">
-                    <li>
-                        <a href="{% url 'restore' %}" class="btn btn-md btn-outline btn-dark"><i class="fa fa-dashboard fa-fw"></i> {% trans "Restore DB" %}</a>
-                    </li>
-                    <li>
-                        <a href="{% url 'backup' %}" class="btn btn-md btn-outline btn-dark"><i class="fa fa-shield fa-fw"></i> {% trans "Back up DB" %}</a>
-                    </li>
-                    <li>
-                        <a href="{% url 'router-sync' %}" class="btn btn-md btn-outline btn-dark"><i class="fa fa-shield fa-fw"></i> {% trans "Sync Router" %}</a>
-                    </li>
-                    <li>
+
+
+                <div class="dropdown">
+                   <button class="btn btn-outline dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true"> Manage Storage <i class="fa fa-caret-down"></i> </button> 
+                    
+                    <ul class="dropdown-menu">
+                        <li><a href="{% url 'backup' %}" class="btn btn-md btn-outline btn-dark"><i class="fa fa-shield fa-fw"></i> {% trans "Back up DB" %}</a></li>
+                        <li><a href="{% url 'restore' %}" class="btn btn-md btn-outline btn-dark"><i class="fa fa-dashboard fa-fw"></i> {% trans "Restore from BackUp" %}</a></li>
+                        <li><a href="{% url 'rsync' %}" class="btn btn-md btn-outline btn-dark"><i class="fa fa-dashboard fa-fw"></i> {% trans "Restore from DB" %}</a></li>
+                        <li><a href="{% url 'router-sync' %}" class="btn btn-md btn-outline btn-dark"><i class="fa fa-shield fa-fw"></i> {% trans "Restore from Router" %}</a></li>
+                    </ul>
+                </div>
                         <a href="#" class="btn btn-md btn-outline btn-dark"><i class="fa fa-plus-circle fa-fw"></i> {% trans "Geni" %}</a>
                     </li>
-                    {% if user.profile.peers.all %}
-				        <li>
-				            <a href="{% url 'user-profile' %}" class="btn btn-sm btn-outline btn-dark"><i class="fa fa-user fa-fw"></i> {% trans "My profile" %}</a>
-				        </li>
-				    {% endif %}
                 </ul>
                 <!-- /#side-menu -->
             {% endif %}

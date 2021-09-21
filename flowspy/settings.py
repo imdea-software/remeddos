@@ -80,9 +80,10 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASS'),
         'HOST':'db',
         'PORT':'5432',
+        'OPTIONS': {'sslmode':'disable'},
     }, 
 }
-
+DBBACKUP_CONNECTORS = {'connector':'dbbackup.db.postgresql.PgDumpBinaryConnector'}
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -190,8 +191,13 @@ INSTALLED_APPS = (
     'allauth.socialaccount',
     'dbbackup',
 )
+
+#---DBBACKUP 
 DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
-DBBACKUP_STORAGE_OPTIONS = {'location': os.path.join(BASE_DIR,'_backup/')}
+BACK_UP_DIR = os.path.join(BASE_DIR,'_backup/')
+DBBACKUP_STORAGE_OPTIONS = {'location': BACK_UP_DIR}
+DBBACKUP_FILE_NAME_TEMPLATE='redifod-{databasename}-{datetime}.sql'
+
 #---STATIC 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 STATIC_URL = "/static/"
@@ -327,69 +333,6 @@ POLL_SESSION_UPDATE = 60.0
 #==Slack Notifications
 SLACK_TOKEN=os.environ.get('SLACK_TOKEN')
 SLACK_CHANNEL=os.environ.get('CHANNEL')
-
-
-# Shibboleth
-SHIB_ADMIN_DOMAIN = 'redifod.redimadrid.es'
-SHIB_LOGOUT_URL = 'https://127.0.0.1/Shibboleth.sso/Logout'
-
-##############################################################################
-# Shibboleth attribute map
-
-# general info on these shibboleth attribute definitions:
-# *_DISPLAY_NAME and *_ADDINFO should give edugain-global names and definitions and so match definitions in /etc/shibboleth/attribute-map.xml
-# as values of the * variables (SHIB_ENTITLEMENT, SHIB_USERNAME, SHIB_MAIL, SHIB_FIRSTNAME, SHIB_LASTNAME) are in principle only host-config-local keys
-#
-# values of *_DISPLAY* are shown in edugain/login-related error messages for users; 
-# instead, the values of * variables (e.g. SHIB_ENTITLEMENT, ...) are of no use for users and just confusing!
-#
-# specifically:
-# *_DISPLAY_NAME should be a single string fully identifying the required attribute in an human-readable fashion
-# *_DISPLAY_ADDINFO should be a string and should correspondingly contain descriptions for each array element of the value of the * variable
-
-# e.g. for SHIB_ENTITLEMENT = "HTTP_ENTITLEMENT" => 
-# 
-# key in /etc/shibboleth/attribute-map.xml is "entitlement":
-#    <Attribute name="urn:mace:dir:attribute-def:eduPersonEntitlement" id="entitlement"/>
-#    <Attribute name="urn:oid:1.3.6.1.4.1.5923.1.1.1.7" id="entitlement"-->
-
-SHIB_ENTITLEMENT = ['HTTP_SHIB_EP_ENTITLEMENT'] # value in settings.py.dist
-#SHIB_ENTITLEMENT = ['HTTP_ENTITLEMENT']
-SHIB_ENTITLEMENT_DISPLAY_NAME = "eduPersonEntitlement"
-SHIB_ENTITLEMENT_DISPLAY_ADDINFO = "urn:oid:1.3.6.1.4.1.5923.1.1.1.7; the value of this attribute also has to include 'urn:mace:example.com:pki:user'"
-#SHIB_ENTITLEMENT_DISPLAY_ADDINFO = "urn:oid:1.3.6.1.4.1.5923.1.1.1.7"
-
-# (";"-separated) part of value of attribute with key SHIB_ENTITLEMENT needed in order to be considered a valid user:
-# if SHIB_AUTH_ENTITLEMENT is empty no constraint on SHIB_ENTITLEMENT attribute value is enforced (can even be missing)
-SHIB_AUTH_ENTITLEMENT = 'urn:mace:example.com:pki:user'
-#SHIB_AUTH_ENTITLEMENT = '' # is also in settings_local.py so override it there
-
-SHIB_USERNAME = ['HTTP_EPPN'] # in settings.py.dist # originally used for SHIB_USERNAME
-SHIB_USERNAME_DISPLAY_NAME = "eduPersonPrincipalName"
-SHIB_USERNAME_DISPLAY_ADDINFO = "urn:mace:dir:attribute-def:eduPersonPrincipalName or urn:oid:1.3.6.1.4.1.5923.1.1.1.6"
-#SHIB_USERNAME = ['HTTP_PERSISTENT_ID']
-#SHIB_USERNAME_DISPLAY_NAME = "PERSISTENT_ID"
-#SHIB_USERNAME_DISPLAY_ADDINFO = "urn:oid:1.3.6.1.4.1.5923.1.1.1.10"
-
-SHIB_SLUGIFY_USERNAME = False # value in settings.py.dist
-#SHIB_SLUGIFY_USERNAME = True
-
-SHIB_MAIL = ['mail', 'HTTP_MAIL', 'HTTP_SHIB_INETORGPERSON_MAIL']
-SHIB_MAIL_DISPLAY_NAME = "MAIL"
-SHIB_MAIL_DISPLAY_ADDINFO = "urn:mace:dir:attribute-def:mail or urn:oid:0.9.2342.19200300.100.1.3 or SHIB_INETORGPERSON_MAIL"
-
-# both optional:
-SHIB_FIRSTNAME = ['HTTP_SHIB_INETORGPERSON_GIVENNAME'] # value in settings.py.dist
-#SHIB_FIRSTNAME = ['HTTP_GIVENNAME']
-SHIB_FIRSTNAME_DISPLAY_NAME = "GIVENNAME"
-SHIB_FIRSTNAME_DISPLAY_ADDINFO = "urn:mace:dir:attribute-def:givenName or urn:oid:2.5.4.42"
-
-SHIB_LASTNAME = ['HTTP_SHIB_PERSON_SURNAME'] # value in settings.py.dist
-#SHIB_LASTNAME = ['HTTP_SURNAME']
-SHIB_LASTNAME_DISPLAY_NAME = "SURNAME"
-SHIB_LASTNAME_DISPLAY_ADDINFO = "urn:mace:dir:attribute-def:sn or urn:oid:2.5.4.4"
-
-##############################################################################
 
 # BCC mail addresses
 NOTIFY_ADMIN_MAILS = ["admin@example.com"]

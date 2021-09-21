@@ -91,14 +91,14 @@ MATCH_PROTOCOL = (
 )
 
 ROUTE_STATES = (
-    ("ACTIVE", "ACTIVE"),
-    ("ERROR", "ERROR"),
-    ("EXPIRED", "EXPIRED"),
-    ("PENDING", "PENDING"),
-    ("OUTOFSYNC", "OUTOFSYNC"),
-    ("INACTIVE", "INACTIVE"),
-    ("ADMININACTIVE", "ADMININACTIVE"),
-)
+        ("ACTIVE", "ACTIVE"),
+        ("ERROR", "ERROR"),
+        ("EXPIRED", "EXPIRED"),
+        ("PENDING", "PENDING"),
+        ("OUTOFSYNC", "OUTOFSYNC"),
+        ("INACTIVE", "INACTIVE"),
+        ("ADMININACTIVE", "ADMININACTIVE"),
+    ) 
 
 
 #def days_offset(): return datetime.date.today() + datetime.timedelta(days = settings.EXPIRATION_DAYS_OFFSET)
@@ -148,7 +148,7 @@ class ThenAction(models.Model):
         unique_together = ("action", "action_value")
 
 
-class Route(models.Model):
+class Route(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"))
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Network address. Use address/CIDR notation"), verbose_name=_("Source Address"))
@@ -157,7 +157,6 @@ class Route(models.Model):
     destinationport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Destination Port"))
     port = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Port"))
     dscp = models.ManyToManyField(MatchDscp, blank=True, verbose_name="DSCP")
-    #fragmenttype = models.ManyToManyField(FragmentType, blank=True, verbose_name="Fragment Type")
     icmpcode = models.CharField(max_length=32, blank=True, null=True, verbose_name="ICMP Code")
     icmptype = models.CharField(max_length=32, blank=True, null=True, verbose_name="ICMP Type")
     packetlength = models.CharField(max_length=65535, blank=True, null=True, verbose_name="Packet Length")
@@ -166,12 +165,12 @@ class Route(models.Model):
     then = models.ManyToManyField(ThenAction, verbose_name=_("Then"))
     filed = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
-    status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
     expires = models.DateField(default=days_offset, verbose_name=_("Expires"), blank=True, null=True)
     response = models.CharField(max_length=512, blank=True, null=True, verbose_name=_("Response"))
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
-
+    status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
+    state = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
     @property
     def applier_username(self):
         if self.applier:
@@ -196,7 +195,7 @@ class Route(models.Model):
             return None
 
     def __str__(self):
-        return self.name
+        return "%s, %s, %s, %s, %s, %s, %s"%(self.name,self.expires, self.applier, self.status,self.source,self.destination, self.expires)
 
     class Meta:
         db_table = u'route'
@@ -207,13 +206,17 @@ class Route(models.Model):
         applier = self.applier
         peer_suff = get_peers(applier)
         name = self.name
-        if not self.pk and name.endswith('_%s'%(peer_suff)):
+        if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route, self).save(*args, **kwargs)
+            self.refresh_from_db()
+            print('yes')
         else:
             if not self.pk:
                 peer_suff = get_peers(applier)
                 self.name = "%s_%s" % (self.name, peer_suff)
                 super(Route, self).save(*args, **kwargs)
+                self.refresh_from_db()
+                print('yes')
 
     def clean(self, *args, **kwargs):
         from django.core.exceptions import ValidationError
@@ -245,9 +248,16 @@ class Route(models.Model):
             peer = username.peer_tag
         else:
             peer = None
-        route =  Route.objects.get(name = self.name)
-        routename=route
-        response = add(routename)
+        #ad try and except for repeated names
+        try:
+            route = Route.objects.get(name=self.name)
+            routename = route
+            response = add(routename)
+            route.refresh_from_db()
+            print('this is the response ', response)
+            route.status= "ACTIVE"
+        except Exception as e:
+            logger.info('There was error while trying to save the route: ', e)
         logger.info('Got add job id: %s' % response)
         if not settings.DISABLE_EMAIL_NOTIFICATION:
             fqdn = Site.objects.get_current().domain
@@ -276,6 +286,7 @@ class Route(models.Model):
         else:
             peer = None
         response = edit(self)
+        self.refresh_from_db()
         if not settings.DISABLE_EMAIL_NOTIFICATION:
             fqdn=Site.objects.get_current().domain
             admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
@@ -292,6 +303,7 @@ class Route(models.Model):
             
     def commit_delete(self, *args, **kwargs):
         username = None
+        name = self.name
         reason_text = ''
         reason = ''
         if "reason" in kwargs:
@@ -310,13 +322,16 @@ class Route(models.Model):
             peer = username.peer_tag
         else:
             peer = None
-        response = delete(self, reason=reason)
-        logger.info('Got delete job id: %s' % response)
+        try:
+            response = delete(self, reason=reason)
+            logger.info('Got delete job id: %s' % name)
+        except Exception as e:
+            logger.info('Error while trying to delete route: %s'%self.name)
         if not settings.DISABLE_EMAIL_NOTIFICATION:
             fqdn = Site.objects.get_current().domain
             admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
             )
-            mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
+            mail_body = render_to_string('rule_action.txt',{'route': name,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
             user_mail = '%s' % self.applier.email
             user_mail = user_mail.split(';')
             send_new_mail(
@@ -578,17 +593,6 @@ class Route(models.Model):
 
     def get_absolute_url(self):
         return reverse('route-details', kwargs={'route_slug': self.name})
-
-
-""" def send_message(msg, user):
-#    username = user.username
-    peer = user
-    b = beanstalkc.Connection()
-    b.use(settings.POLLS_TUBE)
-    tube_message = json.dumps({'message': str(msg), 'username': peer})
-    b.put(tube_message)
-    b.close() """
-
 
 
 class Validation(models.Model):

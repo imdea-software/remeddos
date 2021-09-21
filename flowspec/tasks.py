@@ -32,7 +32,8 @@ def add(route, callback=None):
     try:
         applier = PR.Applier(route_object=route)
         commit, response = applier.apply()
-        if commit:
+        print('this is commit ', commit, ' this is response ', response)
+        if commit:            
             status = "ACTIVE"
         else:
             status = "ERROR"
@@ -50,10 +51,11 @@ def add(route, callback=None):
         route.response = "Task timeout"
         route.save()
         #logger.info("[%s] Rule add: %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
-    except Exception:
+    except Exception as e:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
+        print('There has been an exception ',e)
         logger.info("[%s] Rule add: %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
     except TransactionManagementError: 
         route.status = "ERROR"
@@ -130,10 +132,11 @@ def delete(route, **kwargs):
         route.response = "Task timeout"
         route.save()
         logger.info("[%s] Suspending rule : %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
-    except Exception:
+    except Exception as e:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
+        print('There has been an exception ',e)
         #logger.info("[%s] Suspending rule : %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
 
 
@@ -393,7 +396,7 @@ def routes_sync():
     routes = Route.objects.all()
     tree = ET.fromstring(router_config)
     data = [d for d in tree]
-    config = [c for c in data]
+    config = [c for c in data]   
     for config_nodes in config:
         options = config_nodes
     for option_nodes in options:
@@ -414,10 +417,12 @@ def routes_sync():
         for route in notsynced_routes:
             route = Route.objects.get(name=route)
             if (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):            
+                print('print 2')
                 route.commit_add()
                 logger.info('Status: %s route out of sync: %s, saving route.' %(route.status, route.name))
             else:
-                if route.status == 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE':
+                if (route.has_expired()==True) or (route.status == 'EXPIRED' or route.status != 'ADMININACTIVE' or route.status != 'INACTIVE'):
+                    print('print 3')
                     logger.info('Route: %s route status: %s'%(route.status, route.name))
                     route.check_sync()             
     else:
