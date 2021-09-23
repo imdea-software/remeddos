@@ -64,7 +64,7 @@ here = lambda x: os.path.join(os.path.abspath(os.path.dirname(__file__)), x)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
-ALLOWED_HOSTS = ['localhost:8000','redifod.redimadrid.es','localhost','rabbitmq','193.145.15.172','10.10.4.90']
+ALLOWED_HOSTS = ['redifod.redimadrid.es','127.0.0.1','localhost','193.145.15.172','10.10.4.90','db']
 SITE_ID = 1
 
 # Place a sequence of random chars here
@@ -80,10 +80,9 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASS'),
         'HOST':'db',
         'PORT':'5432',
-        'OPTIONS': {'sslmode':'disable'},
     }, 
 }
-DBBACKUP_CONNECTORS = {'connector':'dbbackup.db.postgresql.PgDumpBinaryConnector'}
+#DBBACKUP_CONNECTORS = {'connector':'dbbackup.db.postgresql.PgDumpBinaryConnector'}
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name

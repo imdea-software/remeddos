@@ -154,7 +154,6 @@ def batch_delete(routes, **kwargs):
         commit, response = applier.apply(configuration=conf)
         reason_text = ''
         if commit:
-            print('inside if')
             status = "INACTIVE"
             if "reason" in kwargs and kwargs['reason'] == 'EXPIRED':
                 status = 'EXPIRED'
@@ -240,8 +239,7 @@ def notify_expired():
                         admin_url = "https://%s%s" % \
                         (fqdn,
                         "/edit/%s"%route.name)
-                        mail_body = render_to_string("rule_action.txt",
-                                                {"route": route, 'expiration_days':expiration_days, 'action':'expires', 'url':admin_url})
+                        mail_body = render_to_string("rule_action.txt", {"route": route, 'expiration_days':expiration_days, 'action':'expires', 'url':admin_url})
                         days_num = ' days'
                         expiration_days_text = "%s %s" %('in',expiration_days)
                         if expiration_days == 0:
@@ -416,13 +414,11 @@ def routes_sync():
     if notsynced_routes:
         for route in notsynced_routes:
             route = Route.objects.get(name=route)
-            if (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):            
-                print('print 2')
+            if (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):
                 route.commit_add()
-                logger.info('Status: %s route out of sync: %s, saving route.' %(route.status, route.name))
+                logger.info('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
             else:
                 if (route.has_expired()==True) or (route.status == 'EXPIRED' or route.status != 'ADMININACTIVE' or route.status != 'INACTIVE'):
-                    print('print 3')
                     logger.info('Route: %s route status: %s'%(route.status, route.name))
                     route.check_sync()             
     else:

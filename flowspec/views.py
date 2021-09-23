@@ -377,10 +377,10 @@ def add_route(request):
         form = RouteForm(request_data)
         if form.is_valid():
             route = form.save(commit=False)
-            print('lets see ', route)
+            print('lets see ', route.status)
             if not request.user.is_superuser:
                 route.applier = request.user
-            #route.status = "PENDING"
+            #route.status= "PENDING"
             route.response = "Applying"
             route.source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
             route.destination = IPNetwork('%s/%s' % (IPNetwork(route.destination).network.compressed, IPNetwork(route.destination).prefixlen)).compressed
@@ -389,14 +389,13 @@ def add_route(request):
             except:
                 # in case the header is not provided
                 route.requesters_address = 'unknown'
-            c = route.save()
-            print('ha guardado', c)
+            route.save()
+            route.status ='ACTIVE'
+            print('ha guardado')
             form.save_m2m()
                 # We have to make the commit after saving the form
                 # in order to have all the m2m relations.
-            print('route estado ', route.status)
             route.commit_add()
-            route.save()
             print('route estado 2 ', route.status)
             return HttpResponseRedirect(reverse("group-routes"))
         else:
@@ -459,7 +458,7 @@ def edit_route(request, route_slug):
             ('Insufficient rights on administrative networks. Cannot add rule. Contact your administrator')
         )
         return HttpResponseRedirect(reverse("group-routes"))    
-    if route_edit.status == 'PENDING':
+    if route_edit.status== 'PENDING':
         messages.add_message(
             request,
             messages.WARNING,
@@ -487,12 +486,12 @@ def edit_route(request, route_slug):
             changed_data = form.changed_data
             route = form.save(commit=False)
             route.name = route_original.name
-            route.status = route_original.status
+            route.status= route_original.status
             route.response = route_original.response
             if not request.user.is_superuser:
                 route.applier = request.user
-            if bool(set(changed_data) and set(critical_changed_values)) or (not route_original.status == 'ACTIVE'):
-                #route.status = "PENDING"
+            if bool(set(changed_data) and set(critical_changed_values)) or (not route_original.status== 'ACTIVE'):
+                #route.status= "PENDING"
                 route.response = "Applying"
                 route.source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
                 route.destination = IPNetwork('%s/%s' % (IPNetwork(route.destination).network.compressed, IPNetwork(route.destination).prefixlen)).compressed
@@ -503,7 +502,7 @@ def edit_route(request, route_slug):
                     route.requesters_address = 'unknown'
 
             route.save()
-            if bool(set(changed_data) and set(critical_changed_values)) or (not route_original.status == 'ACTIVE'):
+            if bool(set(changed_data) and set(critical_changed_values)) or (not route_original.status== 'ACTIVE'):
                 form.save_m2m()
                 route.commit_edit()
             return HttpResponseRedirect(reverse("group-routes"))
@@ -524,7 +523,7 @@ def edit_route(request, route_slug):
                 }
             )
     else:
-        if (not route_original.status == 'ACTIVE'):
+        if (not route_original.status== 'ACTIVE'):
             route_edit.expires = datetime.date.today() + datetime.timedelta(days=settings.EXPIRATION_DAYS_OFFSET-1)
         dictionary = model_to_dict(route_edit, fields=[], exclude=[])
         
@@ -612,7 +611,8 @@ def delete_route(request, route_slug):
     requester_peer = username
     if applier_peer == requester_peer or request.user.is_superuser:
         print('trace 2')
-        route.status = "PENDING"
+        route.status= "INACTIVE"
+        route.status="INACTIVE"
         route.expires = datetime.date.today()
         if not request.user.is_superuser:
             route.applier = request.user
@@ -622,17 +622,22 @@ def delete_route(request, route_slug):
         except:
             # in case the header is not provided
             route.requesters_address = 'unknown'
-        print('trace 3 ')
         route.commit_delete()
         route.status= "INACTIVE"
-        route.save()
+        route.status='INACTIVE'
+        try:
+            route.save()
+            print('trace 3 ', route.status, route.status)
+        except Exception as e:
+            print('plsx an error ,', e)
+
     return HttpResponseRedirect(reverse("group-routes"))
 
 def force_delete(route_slug):
     route = Route.objects.get(name=route_slug)
-    route.status = "INACTIVE"
+    route.status= "INACTIVE"
     route.save()
-    if route.status == "INACTIVE":
+    if route.status== "INACTIVE":
         print('yes')
         print(route.status)
     else:
@@ -1039,14 +1044,14 @@ def routes_sync(request):
     if notsynced_routes:
         for route in notsynced_routes:
             route = Route.objects.get(name=route)
-            if (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):
+            if (route.has_expired()==False) and (route.status== 'ACTIVE' or route.status== 'OUTOFSYNC'):
                 route.save()
-                print('Status: %s route out of sync: %s, saving route.' %(route.status, route.name))
+                print('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
             else:
-                if (route.has_expired()==True) or (route.status == 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE'):
+                if (route.has_expired()==True) or (route.status== 'EXPIRED' and route.status!= 'ADMININACTIVE' and route.status!= 'INACTIVE'):
                     print('route ', route.status, route.has_expired())
                     route.check_sync() 
-                    print('Status: %s route  %s, checking route.' %(route.status, route.name))
+                    print('status: %s route  %s, checking route.' %(route.status, route.name))
         message = 'Routes syncronised.'
     else:
         message = 'There are no routes out of sync.'

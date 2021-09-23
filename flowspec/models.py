@@ -170,14 +170,12 @@ class Route(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
-    state = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
     @property
     def applier_username(self):
         if self.applier:
             return self.applier.username
         else:
             return None
-
        
     @property
     def applier_username_nice(self):
@@ -203,20 +201,16 @@ class Route(models.Model):
         verbose_name_plural = "Rules"
 
     def save(self, *args, **kwargs):
-        applier = self.applier
-        peer_suff = get_peers(applier)
-        name = self.name
+        userprofile = UserProfile.objects.get(user=self.applier)
+        peers = str(userprofile.peers.all()); start = peers.find(':'); end = peers.find('>')
+        peer_suff = peers[start+2:end]
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route, self).save(*args, **kwargs)
-            self.refresh_from_db()
-            print('yes')
+        elif not self.pk:
+            name = self.name
+            self.name = "%s_%s" % (self.name, peer_suff)
         else:
-            if not self.pk:
-                peer_suff = get_peers(applier)
-                self.name = "%s_%s" % (self.name, peer_suff)
-                super(Route, self).save(*args, **kwargs)
-                self.refresh_from_db()
-                print('yes')
+            super(Route, self).save(*args, **kwargs)                
 
     def clean(self, *args, **kwargs):
         from django.core.exceptions import ValidationError
@@ -253,9 +247,7 @@ class Route(models.Model):
             route = Route.objects.get(name=self.name)
             routename = route
             response = add(routename)
-            route.refresh_from_db()
-            print('this is the response ', response)
-            route.status= "ACTIVE"
+            self.status= "ACTIVE"
         except Exception as e:
             logger.info('There was error while trying to save the route: ', e)
         logger.info('Got add job id: %s' % response)
@@ -352,7 +344,7 @@ class Route(models.Model):
 
     def check_sync(self):
         if not self.is_synced():
-            self.status = "OUTOFSYNC"
+            self.status= "OUTOFSYNC"
             self.save()
 
     def is_synced(self):
@@ -362,7 +354,7 @@ class Route(models.Model):
         try:
             routes = device.routing_options[0].routes
         except Exception as e:
-            self.status = "EXPIRED"
+            self.status= "EXPIRED"
             self.save()
             logger.error('No routing options on device. Exception: %s' % e)
             return True
@@ -501,12 +493,12 @@ class Route(models.Model):
                         logger.info('Icmp type fields do not match')
                 except:
                     pass
-                if found and self.status != "ACTIVE":
+                if found and self.status!= "ACTIVE":
                     logger.error('Rule is applied on device but appears as offline')
-                    self.status = "ACTIVE"
+                    self.status= "ACTIVE"
                     self.save()
                     found = True
-            if self.status == "ADMININACTIVE" or self.status == "INACTIVE" or self.status == "EXPIRED":
+            if self.status== "ADMININACTIVE" or self.status== "INACTIVE" or self.status== "EXPIRED":
                 found = True
         return found
 
@@ -578,7 +570,7 @@ class Route(models.Model):
 
     @property
     def days_to_expire(self):
-        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.statenot in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days
