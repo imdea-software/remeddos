@@ -31,6 +31,7 @@ import os
 from celery.schedules import crontab
 from dotenv import load_dotenv, find_dotenv
 
+
 load_dotenv(find_dotenv())
 
 #===Important variables
@@ -82,7 +83,7 @@ DATABASES = {
         'PORT':'5432',
     }, 
 }
-#DBBACKUP_CONNECTORS = {'connector':'dbbackup.db.postgresql.PgDumpBinaryConnector'}
+DBBACKUP_CONNECTORS = {'connector':'dbbackup.db.postgresql.PgDumpBinaryConnector'}
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name

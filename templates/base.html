@@ -69,6 +69,7 @@
                     <div class="navbar-header navbar-left"  style="margin-top: 10px;">
                       <a class="navbar-brand " href="{% url 'dashboard' %}">
                         <span class="label label-danger">REDIFod - REDIMadrid</span>
+                        <a href="{% url 'restore' %}" class="btn btn-md btn-outline btn-dark"><i class="fa fa-dashboard fa-fw"></i> {% trans "Restore from database" %}</a>
                       </a>
                     </div> 
        
@@ -110,6 +111,7 @@
 				    	{% if user.is_superuser %}
 						<li class="divider"></li>
                         <li><a href="{% url 'admin:index' %}"><i class="fa fa-cogs"></i> {% trans "Admin" %}</a>
+                            
                         </li>
 						{% endif %}
                         <li class="divider"></li>

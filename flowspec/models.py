@@ -209,6 +209,7 @@ class Route(models.Model):
         elif not self.pk:
             name = self.name
             self.name = "%s_%s" % (self.name, peer_suff)
+            super(Route, self).save(*args, **kwargs) 
         else:
             super(Route, self).save(*args, **kwargs)                
 

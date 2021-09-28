@@ -38,6 +38,7 @@ from django.contrib.auth import authenticate, login
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.management import call_command
 
+
 from django.forms.models import model_to_dict
 
 
@@ -390,13 +391,10 @@ def add_route(request):
                 # in case the header is not provided
                 route.requesters_address = 'unknown'
             route.save()
-            route.status ='ACTIVE'
-            print('ha guardado')
             form.save_m2m()
                 # We have to make the commit after saving the form
                 # in order to have all the m2m relations.
             route.commit_add()
-            print('route estado 2 ', route.status)
             return HttpResponseRedirect(reverse("group-routes"))
         else:
             if not request.user.is_superuser:
@@ -890,9 +888,7 @@ def setup(request):
     else:
         raise PermissionDenied
 
-
-
-""" def managing_files(string_items):
+def managing_files(string_items):
     files = []
     src = './'
     dest = settings.MEDIA_ROOT
@@ -906,7 +902,7 @@ def setup(request):
     # rename files with the id for each graph   
     for f in files:
         src = settings.MEDIA_ROOT + f
-        os.rename(src,settings.MEDIA_ROOT+string_items+'.png') """
+        os.rename(src,settings.MEDIA_ROOT+string_items+'.png')
 
 
 def fetch_graphs(source, destination, item_id,routename):
@@ -1040,7 +1036,6 @@ def routes_sync(request):
     message = ''
     diff = (set(routenames).difference(names))
     notsynced_routes = list(diff)
-    print('not ', notsynced_routes)
     if notsynced_routes:
         for route in notsynced_routes:
             route = Route.objects.get(name=route)
@@ -1062,28 +1057,36 @@ def routes_sync(request):
 @login_required
 @never_cache
 def backup(request):
+    now = datetime.datetime.now()
+    current_time = now.strftime("%H:%M")
+    current_date = now.strftime("%d-%B-%Y") 
     try:
-        call_command('dbbackup')
+        call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
         message = 'The back up was succesfully created.'
         return render(request,'routes_synced.html',{'message':message}) 
     except Exception as e:
         message = ('An error came up and the database was not created. %s'%e)
         return render(request,'routes_synced.html',{'message':message})
 
+@verified_email_required
 @login_required
-@never_cache
-def restore(request):
-    try:
-        call_command('makemigrations')
-        call_command('migrate')
-        call_command('dbrestore', interactive=False)
-        message = 'The back up was succesfully restore. We recommend you to also sync all your firewall routes.'
-        return render(request,'routes_synced.html',{'message':message}) 
-    except Exception as e:
-        message = ('An error came up and the database was not created. ',e)
-        return render(request,'routes_synced.html',{'message':message})
+def restore_backup(request):
+    if request.method=='GET':
+        CHOICES_FILES = []
+        for f in os.listdir(settings.BACK_UP_DIR):
+            CHOICES_FILES.append(f)
+        return render(request,'backup_menu.html',{'files':CHOICES_FILES})    
+    if request.method=='POST':
+        filename = request.POST.get("value", "")
+        try:
+            call_command(f"dbrestore", interactive=False, input_filename=filename)
+            message = 'The back up was succesfully restore. We recommend you to also sync all your firewall routes from the router'
+            return render(request,'routes_synced.html',{'message':message}) 
+        except Exception as e:
+            message = ('An error came up and the database was not created. ',e)
+            return render(request,'routes_synced.html',{'message':message})
 
-def managing_files(string_items, dest):
+""" def managing_files(string_items, dest):
     files = [] if dest != settings.MEDIA_ROOT else string_items
     src = './'
     # locate the file dir & move files
@@ -1103,7 +1106,6 @@ def managing_files(string_items, dest):
             src = dest
             os.rename(src,settings.BACK_UP_DIR+string_items+'.psql')
         else:
-            print('There was an error when trying to rename the files')
+            print('There was an error when trying to rename the files') """
 
-def choose_backup():
-    pass
+

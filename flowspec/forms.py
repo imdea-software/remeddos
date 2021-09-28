@@ -22,6 +22,11 @@ import datetime
 import re
 from django.core.mail import send_mail
 from utils.portrange import parse_portrange
+from flowspy.settings import *
+import os 
+
+
+
 
 class PortRangeForm(forms.CharField):
     class Meta:
@@ -302,6 +307,17 @@ class ValidationForm(forms.ModelForm):
     
     def clean(self):
         super(ValidationForm, self).clean()
-
         value=self.cleaned_data.get('value')
         return self.cleaned_data
+
+
+
+class BackupForm(forms.Form):   
+    backup_file = forms.CharField(label="Back up file")
+
+    def clean(self):
+        super(BackupForm, self).clean()
+        value=self.cleaned_data.get('backupfile')
+        if value in settings.CHOICES_FILES:
+            return self.cleaned_data
+        

@@ -1,7 +1,7 @@
 from django.core.mail import send_mail
 from django.conf import settings
-from django.contrib.auth.models import User
-from accounts.models import *  
+from accounts.models import * 
+from flowspy.settings import * 
 
 import os
 import logging
@@ -50,3 +50,9 @@ def get_peers(username):
   for peer in peers:
     peername = peer.peer_name
   return peername
+
+def get_back_up_files():
+    files = []
+    for f in os.listdir(settings.BACK_UP_DIR):
+      files.append(f)
+    return files
