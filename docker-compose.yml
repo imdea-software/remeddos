@@ -21,8 +21,6 @@ services:
             - 8000:8000   
     db:
         image: postgres:13
-        volumes:
-            - ./init.sql:/docker-entrypoint-initdb.d/init.sql
         restart: always
         environment:
             - POSTGRES_HOST_AUTH_METHOD=trust

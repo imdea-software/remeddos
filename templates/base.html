@@ -69,7 +69,6 @@
                     <div class="navbar-header navbar-left"  style="margin-top: 10px;">
                       <a class="navbar-brand " href="{% url 'dashboard' %}">
                         <span class="label label-danger">REDIFod - REDIMadrid</span>
-                        <a href="{% url 'restore' %}" class="btn btn-md btn-outline btn-dark"><i class="fa fa-dashboard fa-fw"></i> {% trans "Restore from database" %}</a>
                       </a>
                     </div> 
        
@@ -131,28 +130,27 @@
         <!-- /.navbar-static-top -->
         
 		{% block sidenav %}
+        <div class="container-fluid fixed">
         <nav class="navbar-nav navbar-static-side" role="navigation">
         	{% if user.is_authenticated %}
-                <ul class="nav" id="side-menu">
-
-
-                <div class="dropdown">
-                   <button class="btn btn-outline dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true"> Manage Storage <i class="fa fa-caret-down"></i> </button> 
-                    
-                    <ul class="dropdown-menu">
-                        <li><a href="{% url 'backup' %}" class="btn btn-md btn-outline btn-dark"><i class="fa fa-shield fa-fw"></i> {% trans "Back up DB" %}</a></li>
-                        <li><a href="{% url 'restore' %}" class="btn btn-md btn-outline btn-dark"><i class="fa fa-dashboard fa-fw"></i> {% trans "Restore from BackUp" %}</a></li>
-                        <li><a href="{% url 'rsync' %}" class="btn btn-md btn-outline btn-dark"><i class="fa fa-dashboard fa-fw"></i> {% trans "Restore from DB" %}</a></li>
-                        <li><a href="{% url 'router-sync' %}" class="btn btn-md btn-outline btn-dark"><i class="fa fa-shield fa-fw"></i> {% trans "Restore from Router" %}</a></li>
-                    </ul>
-                </div>
-                        <a href="#" class="btn btn-md btn-outline btn-dark"><i class="fa fa-plus-circle fa-fw"></i> {% trans "Geni" %}</a>
+                <ul class="nav fixed" id="side-menu">
+                    <div class="dropdown">
+                        <button class="btn btn-outline  dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true"> <i class="fa fa-cloud-download"></i>{% trans " Manage Storage" %}</button> 
+                        <ul class="dropdown-menu">
+                            <li><a href="{% url 'backup' %}" class="btn btn-sm btn-outline btn-dark"><i class="fa fa-shield fa-fw"></i> {% trans "Create back up file" %}</a></li>
+                            <li><a href="{% url 'rsync' %}" class="btn btn-sm btn-outline btn-dark"><i class="fa fa-shield fa-fw"></i> {% trans "Restore from DB" %}</a></li>
+                            <li><a href="{% url 'router-sync' %}" class="btn btn-sm btn-outline btn-dark"><i class="fa fa-shield fa-fw"></i> {% trans "Restore from Router" %}</a></li>
+                            <li><a href="{% url 'restore' %}" class="btn btn-sm btn-outline btn-dark"><i class="fa fa-shield fa-fw"></i> {% trans "Restore from back up file" %}</a></li>
+                        </ul>
+                    </div>
+                        <a href="#" class="btn btn-md btn-outline " style="margin-top: 5%"><i class="fa fa-plus-circle fa-fw"></i> {% trans " Geni" %}</a>
                     </li>
                 </ul>
                 <!-- /#side-menu -->
             {% endif %}
             <!-- /.sidebar-collapse -->
         </nav>
+    </div> 
         <!-- /.navbar-static-side -->
         
 		{% endblock %} 
