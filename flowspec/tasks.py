@@ -7,12 +7,16 @@ import logging
 from django.conf import settings
 import os
 from ipaddr import *
+import os
 from os import fork,_exit
 from sys import exit
 import time
+import slack
 
 LOG_FILENAME = os.path.join(settings.LOG_FILE_LOCATION, 'celery_jobs.log')
 
+#slack channel 
+client = slack.WebClient(token=settings.SLACK_TOKEN)
 
 # FORMAT = '%(asctime)s %(levelname)s: %(message)s'
 # logging.basicConfig(format=FORMAT)
@@ -32,7 +36,6 @@ def add(route, callback=None):
     try:
         applier = PR.Applier(route_object=route)
         commit, response = applier.apply()
-        print('this is commit ', commit, ' this is response ', response)
         if commit:            
             status = "ACTIVE"
         else:
@@ -40,28 +43,32 @@ def add(route, callback=None):
         route.status = status
         route.response = response
         route.save()
-        #logger.info("[%s] Rule add: %s - Result: %s" % (route.applier_username_nice, route.name, response), route.applier, route)
+        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {response}")
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        logger.info("[%s] Rule add: %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
+        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {response}")
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        #logger.info("[%s] Rule add: %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
+        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {response}")
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     except Exception as e:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
-        print('There has been an exception ',e)
-        logger.info("[%s] Rule add: %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
+        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {response}")
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     except TransactionManagementError: 
         route.status = "ERROR"
         route.response = "Transaction Management Error"
         route.save()
-        #logger.info("[%s] Rule add: %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
+        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {response}")
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
 
 @shared_task(ignore_result=True)
 def edit(route, callback=None):
@@ -72,31 +79,31 @@ def edit(route, callback=None):
         commit, response = applier.apply(operation="replace")
         if commit:
             status = "ACTIVE"
-            """ try:
-              snmp_add_initial_zero_value.delay(str(route.id), True)
-            except Exception as e:
-              logger.error("edit(): route="+str(route)+", ACTIVE, add_initial_zero_value failed: "+str(e)) """
         else:
             status = "ERROR"
         route.status = status
         route.response = response
         route.save()
-        #logger.info("[%s] Rule edit: %s - Result: %s" % (route.applier_username_nice, route.name, response), route.applier, route)
+        message = (f"[{route.applier_username_nice}] Rule edit:  {route.name} - Result: {response}")
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        #logger.info("[%s] Rule edit: %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
+        message = (f"[{route.applier_username_nice}] Rule edit:  {route.name} - Result: {response}")
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        #logger.info("[%s] Rule edit: %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
+        message = (f"[{route.applier_username_nice}] Rule edit:  {route.name} - Result: {response}")
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     except Exception:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
-        ##logger.info("[%s] Rule edit: %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
+        message = (f"[{route.applier_username_nice}] Rule edit:  {route.name} - Result: {response}")
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
 
 
 @shared_task(ignore_result=True)
@@ -112,32 +119,31 @@ def delete(route, **kwargs):
             if "reason" in kwargs and kwargs['reason'] == 'EXPIRED':
                 status = 'EXPIRED'
                 reason_text = " Reason: %s " % status
-            """ try:
-              snmp_add_initial_zero_value(str(route.id), False)
-            except Exception as e:
-              logger.error("edit(): route="+str(route)+", INACTIVE, add_null_value failed: "+str(e)) """
         else:
             status = "ERROR"
         route.status = status
         route.response = response
         route.save()
-        #logger.info("[%s] Suspending rule : %s%s- Result %s" % (route.applier_username_nice, route.name, reason_text, response), route.applier, route)
+        message = (f"[{route.applier_username_nice}] Suspending rule:  {route.name} - Result: {response}")
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        #logger.info("[%s] Suspending rule : %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
+        message = (f"[{route.applier_username_nice}] Suspending rule:  {route.name} - Result: {response}")
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        logger.info("[%s] Suspending rule : %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
+        message = (f"[{route.applier_username_nice}] Suspending rule:  {route.name} - Result: {response}")
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     except Exception as e:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
-        print('There has been an exception ',e)
-        #logger.info("[%s] Suspending rule : %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
+        message = (f"[{route.applier_username_nice}] Suspending rule:  {route.name} - Result: {response}")
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
 
 
 # May not work in the first place... proxy is not aware of Route models
@@ -168,31 +174,10 @@ def batch_delete(routes, **kwargs):
             route.response = response
             route.expires = datetime.date.today()
             route.save()
-           #logger.info("[%s] Rule removal: %s%s- Result %s" % (route.applier_username_nice, route.name, reason_text, response), route.applier, route)
+            message = (f"[{route.applier_username_nice}] Rule removal: %s%s- Result %s" % (route.name, reason_text, response), route.applier)
+            client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     else:
         return False
-
-
-#@task(ignore_result=True)
-""" def announce(messg, user, route):
-    import json
-    peers = user.profile.peers.all()
-    username = None
-    for peer in peers:
-        if username:
-            break
-        for network in peer.networks.all():
-            net = IPNetwork(network)
-            if IPNetwork(route.destination) in net:
-                username = peer.peer_tag
-                break
-    messg = str(messg)
-    b = beanstalkc.Connection()
-    b.use(settings.POLLS_TUBE)
-    tube_message = json.dumps({'message': messg, 'username': username})
-    b.put(tube_message)
-    b.close() """
-
 
 @shared_task
 def check_sync(route_name=None, selected_routes=[]):
@@ -206,18 +191,18 @@ def check_sync(route_name=None, selected_routes=[]):
     for route in routes:
         if route.has_expired() and (route.status != 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE'):
             if route.status != 'ERROR':
-                logger.info('Expiring %s route %s' %(route.status, route.name)) 
+                message = ('Expiring %s route %s' %(route.status, route.name)) 
+                client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
                 route.status='EXPIRED'
                 delete(route)
             if route.status == 'ERROR':
-                logger.info('Deleting %s route with error %s' %(route.status, route.name)) 
+                message = ('Deleting %s route with error %s' %(route.status, route.name)) 
+                client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
                 route.status='EXPIRED'
                 delete(route)
         else:
             if route.status != 'EXPIRED':
                 route.check_sync()
-
-
 @shared_task(ignore_result=True)
 def notify_expired():
     from flowspec.models import Route
@@ -226,7 +211,8 @@ def notify_expired():
     from django.core.mail import send_mail
     from django.template.loader import render_to_string
 
-    logger.info('Initializing expiration notification')
+    message = ('Initializing expiration notification')
+    client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     routes = Route.objects.all()
     today = datetime.date.today()
     for route in routes:
@@ -247,133 +233,20 @@ def notify_expired():
                             expiration_days_text = ''
                         if expiration_days == 1:
                             days_num = ' day'
-                        logger.info('Route %s expires %s%s. Notifying %s (%s)' %(route.name, expiration_days_text, days_num, route.applier.username, route.applier.email))
+                        message = ('Route %s expires %s%s. Notifying %s (%s)' %(route.name, expiration_days_text, days_num, route.applier.username, route.applier.email))
+                        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
                         send_mail(settings.EMAIL_SUBJECT_PREFIX + "Rule %s expires %s%s" %
                                 (route.name,expiration_days_text, days_num),
                                 mail_body, settings.SERVER_EMAIL,
                                 [route.applier.email])
                     except Exception as e:
-                        logger.info("Exception: %s"%e)
+                        message = ("Exception: %s"%e)
+                        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
         else:
-            logger.info("Route: %s, won't expire." %route.name)
-    logger.info('Expiration notification process finished')
-
-##############################################################################
-##############################################################################
-# snmp task handling (including helper functions)
-
-import os
-import signal
-
-def handleSIGCHLD(signal, frame):
-  logger.info("handleSIGCHLD(): reaping childs")
-  os.waitpid(-1, os.WNOHANG)
-
-def snmp_lock_create(wait=0):
-    first=1
-    success=0
-    while first or wait:
-      first=0
-      try:
-          os.mkdir(settings.SNMP_POLL_LOCK)
-          logger.error("snmp_lock_create(): creating lock dir succeeded")
-          success=1
-          return success
-      except OSError as e:
-          logger.error("snmp_lock_create(): creating lock dir failed: OSError: "+str(e))
-          success=0
-      except Exception as e:
-          logger.error("snmp_lock_create(): Lock already exists")
-          logger.error("snmp_lock_create(): creating lock dir failed: "+str(e))
-          success=0
-      if not success and wait:
-        time.sleep(1)
-    return success
-
-def snmp_lock_remove():
-    try:
-      os.rmdir(settings.SNMP_POLL_LOCK)
-    except Exception as e:
-      logger.info("snmp_lock_remove(): failed "+str(e))
-
-def exit_process():
-      logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+")")
-      exit()
-      logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after exit")
-      sys.exit()
-      logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after sys.exit")
-      os._exit()
-      logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after os._exit")
-""" 
-#@task(ignore_result=True, time_limit=580, soft_time_limit=550)
-@shared_task(ignore_result=True, max_retries=0)
-def poll_snmp_statistics():
-    from flowspec import snmpstats
-
-    if not snmp_lock_create(0):
-      return
-
-    signal.signal(signal.SIGCHLD, handleSIGCHLD)
-
-    pid = os.getpid()
-    logger.info("poll_snmp_statistics(): before fork (pid="+str(pid)+")")
-    npid = os.fork()
-    if npid == -1:
-      pass
-    elif npid > 0:
-      logger.info("poll_snmp_statistics(): returning in parent process (pid="+str(pid)+", npid="+str(npid)+")")
-    else:
-      logger.info("poll_snmp_statistics(): in child process (pid="+str(pid)+", npid="+str(npid)+")")
-      try:
-        snmpstats.poll_snmp_statistics()        
-      except e:
-        logger.error("poll_snmp_statistics(): exception occured in snmp poll (pid="+str(pid)+", npid="+str(npid)+"): "+str(e))
-      snmp_lock_remove()
-      #exit_process()
-      logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+")")
-      exit()
-      logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after exit")
-      sys.exit()
-      logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after sys.exit")
-      os._exit()
-      logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after os._exit")
-
-@shared_task(ignore_result=True, max_retries=0)
-def snmp_add_initial_zero_value(rule_id, zero_or_null=True):
-    from flowspec import snmpstats
-
-    signal.signal(signal.SIGCHLD, handleSIGCHLD)
-
-    pid = os.getpid()
-    logger.info("snmp_add_initial_zero_value(): before fork (pid="+str(pid)+")")
-    npid = os.fork()
-    if npid == -1:
-      pass
-    elif npid > 0:
-      logger.info("snmp_add_initial_zero_value(): returning in parent process (pid="+str(pid)+", npid="+str(npid)+")")
-    else:
-      logger.info("snmp_add_initial_zero_value(): in child process (pid="+str(pid)+", npid="+str(npid)+")")
-
-      try:
-        snmpstats.add_initial_zero_value(rule_id, zero_or_null)
-        logger.info("snmp_add_initial_zero_value(): rule_id="+str(rule_id)+" sucesss")
-      except Exception as e:
-        logger.error("snmp_add_initial_zero_value(): rule_id="+str(rule_id)+" failed: "+str(e))
-
-      #exit_process()
-      logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+")")
-      exit()
-      logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after exit")
-      sys.exit()
-      logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after sys.exit")
-      os._exit()
-      logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after os._exit") """
-
-
-""" @shared_task
-def test():
-    return('Hello, I am executing a task succesfully!')
- """
+            message = ("Route: %s, won't expire." %route.name)
+            client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+    messagae = ('Expiration notification process finished')
+    client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
 
 @shared_task
 def expired_val_codes():
@@ -416,11 +289,14 @@ def routes_sync():
             route = Route.objects.get(name=route)
             if (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):
                 route.commit_add()
-                logger.info('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
+                message = ('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
+                client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
             else:
                 if (route.has_expired()==True) or (route.status == 'EXPIRED' or route.status != 'ADMININACTIVE' or route.status != 'INACTIVE'):
-                    logger.info('Route: %s route status: %s'%(route.status, route.name))
+                    message = ('Route: %s route status: %s'%(route.status, route.name))
+                    client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
                     route.check_sync()             
     else:
-        logger.info('There are no routes out of sync')
+        message = ('There are no routes out of sync')
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
  

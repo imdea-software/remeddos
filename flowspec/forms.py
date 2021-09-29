@@ -309,15 +309,4 @@ class ValidationForm(forms.ModelForm):
         super(ValidationForm, self).clean()
         value=self.cleaned_data.get('value')
         return self.cleaned_data
-
-
-
-class BackupForm(forms.Form):   
-    backup_file = forms.CharField(label="Back up file")
-
-    def clean(self):
-        super(BackupForm, self).clean()
-        value=self.cleaned_data.get('backupfile')
-        if value in settings.CHOICES_FILES:
-            return self.cleaned_data
         

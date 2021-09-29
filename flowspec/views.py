@@ -70,6 +70,8 @@ from dotenv import load_dotenv
 from pybix import GraphImageAPI
 from pyzabbix import ZabbixAPI
 
+client = slack.WebClient(token=settings.SLACK_TOKEN)
+
 LOG_FILENAME = os.path.join(settings.LOG_FILE_LOCATION, 'celery_jobs.log')
 # FORMAT = '%(asctime)s %(levelname)s: %(message)s'
 # logging.basicConfig(format=FORMAT)
@@ -85,13 +87,6 @@ logger.addHandler(handler)
 def get_code():
    n = get_random_string(length=6)
    return n
-
-def confirm_email(request, num):
-    subject = "This is a test"
-    from_email = settings.EMAIL_HOST_USER
-    recipient_list = request.user.email
-    message = "Hello, this is your security number: %s" % str(num)
-    return send_mail(subject, message, from_email, [recipient_list])
 
 @login_required
 def user_routes(request):
@@ -112,8 +107,6 @@ def welcome(request):
         return render(request,'welcome.html')
         
         
-
-
 def service_desc(request):
     return render(request,'service_description.html')
 
@@ -165,7 +158,6 @@ def dashboard(request):
             'routes': all_group_routes.prefetch_related(
                 'applier',
                 'applier',
-                #'fragmenttype',
                 'protocol',
                 'dscp',
             ),
@@ -174,8 +166,6 @@ def dashboard(request):
             'route_slug':route_name
         },
     )
-
-
 @login_required
 @never_cache
 def group_routes(request):
@@ -308,7 +298,6 @@ def verify_add_user(request):
         msg = "The user {user} has requested a security number:  '{code}' for adding a new rule".format(user=user,code=num)
         code = Validation(value=num,user=request.user)
         code.save()
-        client = slack.WebClient(token=settings.SLACK_TOKEN)
         client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=msg)
         form = ValidationForm(request.GET)
         message = "Introduce the number that has been sent to your linked account"
@@ -378,7 +367,6 @@ def add_route(request):
         form = RouteForm(request_data)
         if form.is_valid():
             route = form.save(commit=False)
-            print('lets see ', route.status)
             if not request.user.is_superuser:
                 route.applier = request.user
             #route.status= "PENDING"
@@ -583,7 +571,6 @@ def verify_delete_user(request, route_slug):
 @login_required
 @never_cache
 def delete_route(request, route_slug):
-    print('trace 1')
     route = get_object_or_404(Route, name=route_slug)
     peers = route.applier.profile.peers.all()
     username = None
@@ -608,7 +595,6 @@ def delete_route(request, route_slug):
                 break
     requester_peer = username
     if applier_peer == requester_peer or request.user.is_superuser:
-        print('trace 2')
         route.status= "INACTIVE"
         route.status="INACTIVE"
         route.expires = datetime.date.today()
@@ -620,26 +606,10 @@ def delete_route(request, route_slug):
         except:
             # in case the header is not provided
             route.requesters_address = 'unknown'
+        route.save()
         route.commit_delete()
-        route.status= "INACTIVE"
-        route.status='INACTIVE'
-        try:
-            route.save()
-            print('trace 3 ', route.status, route.status)
-        except Exception as e:
-            print('plsx an error ,', e)
-
     return HttpResponseRedirect(reverse("group-routes"))
 
-def force_delete(route_slug):
-    route = Route.objects.get(name=route_slug)
-    route.status= "INACTIVE"
-    route.save()
-    if route.status== "INACTIVE":
-        print('yes')
-        print(route.status)
-    else:
-        print(route.status)
 @login_required
 @never_cache
 def user_profile(request):
@@ -650,32 +620,15 @@ def user_profile(request):
             peers = Peer.objects.all()
     except UserProfile.DoesNotExist:
         error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % user.username
-        return render(
-            request,
-            'error.html',
-            {'error': error}
-        )
-    return render(
-        request,
-        'profile.html',
-        {
-            'user': user,
-            'peers': peers
-        },
-    )
+        return render(request,'error.html',{'error': error})
+    return render(request,'profile.html',{'user': user,'peers': peers})
 
 @login_required
 @never_cache
 def add_rate_limit(request):
     if request.method == "GET":
         form = ThenPlainForm()
-        return render(
-            request,
-            'add_rate_limit.html',
-            {
-                'form': form,
-            },
-        )
+        return render( request,'add_rate_limit.html',{'form': form})
     else:
         form = ThenPlainForm(request.POST)
         if form.is_valid():
@@ -686,17 +639,9 @@ def add_rate_limit(request):
             response_data['pk'] = "%s" % then.pk
             response_data['value'] = "%s:%s" % (then.action, then.action_value)
             return HttpResponse(
-                json.dumps(response_data),
-                mimetype='application/json'
-            )
+                json.dumps(response_data),mimetype='application/json')
         else:
-            return render(
-                request,
-                'add_rate_limit.html',
-                {
-                    'form': form,
-                },
-            )
+            return render(request,'add_rate_limit.html',{'form': form})
 
 
 @login_required
@@ -704,13 +649,7 @@ def add_rate_limit(request):
 def add_port(request):
     if request.method == "GET":
         form = PortRangeForm()
-        return render(
-            request,
-            'add_port.html',
-            {
-                'form': form,
-            },
-        )
+        return render(request,'add_port.html',{'form': form})
     else:
         form = PortRangeForm(request.POST)
         if form.is_valid():
@@ -718,19 +657,9 @@ def add_port(request):
             response_data = {}
             response_data['value'] = "%s" % port.pk
             response_data['text'] = "%s" % port.port
-            return HttpResponse(
-                json.dumps(response_data),
-                mimetype='application/json'
-            )
+            return HttpResponse(json.dumps(response_data),mimetype='application/json')
         else:
-            return render(
-                request,
-                'add_port.html',
-                {
-                    'form': form,
-                },
-            )
-
+            return render(request,'add_port.html',{'form': form})
 
 @never_cache
 def selectinst(request):
@@ -740,14 +669,7 @@ def selectinst(request):
         try:
             UserProfile.objects.get(user=user)
             error = _("Violation warning: User account is already associated with an institution.The event has been logged and our administrators will be notified about it")
-            return render(
-                request,
-                'error.html',
-                {
-                    'error': error,
-                    'inactive': True
-                },
-            )
+            return render(request,'error.html',{'error': error,'inactive': True})
         except UserProfile.DoesNotExist:
             pass
 
@@ -756,22 +678,9 @@ def selectinst(request):
             userprofile = form.save()
             user_activation_notify(userprofile.user)
             error = _("User account <strong>%s</strong> is pending activation. Administrators have been notified and will activate this account within the next days. <br>If this account has remained inactive for a long time contact your technical coordinator or GEANT Helpdesk") %userprofile.user.username
-            return render(
-                request,
-                'error.html',
-                {
-                    'error': error,
-                    'inactive': True
-                },
-            )
+            return render(request,'error.html',{'error': error,'inactive': True})
         else:
-            return render(
-                request,
-                'registration/select_institution.html',
-                {
-                    'form': form
-                }
-            )
+            return render(request,'registration/select_institution.html',{'form': form})
 
 
 @never_cache
@@ -780,22 +689,10 @@ def overview(request):
     if user.is_authenticated:
         if user.has_perm('accounts.overview'):
             users = User.objects.all()
-            return render(
-                request,
-                'overview/index.html',
-                {
-                    'users': users
-                },
-            )
+            return render(request,'overview/index.html',{'users': users},)
         else:
             violation = True
-            return render(
-                request,
-                'overview/index.html',
-                {
-                    'violation': violation
-                },
-            )
+            return render(request,'overview/index.html',{'violation': violation})
     else:
         return HttpResponseRedirect(reverse("altlogin"))
 
@@ -818,13 +715,7 @@ def lookupShibAttr(attrmap, requestMeta):
 def routedetails(request, route_slug):
     route = get_object_or_404(Route, name=route_slug)
     now = datetime.datetime.now()
-    return render(request, 'flowspy/route_details.html', {
-      'route': route, 
-      'mytime': now, 
-      'tz' : settings.TIME_ZONE,
-      'is_superuser' : request.user.is_superuser,
-      'route_comments_len' : len(str(route.comments))
-      })
+    return render(request, 'flowspy/route_details.html', {'route': route,'mytime': now,'tz' : settings.TIME_ZONE,'is_superuser' : request.user.is_superuser,'route_comments_len' : len(str(route.comments))})
 
 @login_required
 def routestats(request, route_slug):
@@ -1028,8 +919,7 @@ def routes_sync(request):
         for child in children:
             if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
                 if child.text.endswith('_%s'%peer):
-                    names.append(child.text)
-                    
+                    names.append(child.text)                   
             else:
                 pass  
     routenames = [x.name for x in routes]
@@ -1041,18 +931,19 @@ def routes_sync(request):
             route = Route.objects.get(name=route)
             if (route.has_expired()==False) and (route.status== 'ACTIVE' or route.status== 'OUTOFSYNC'):
                 route.save()
-                print('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
+                message = ('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
+                client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
             else:
                 if (route.has_expired()==True) or (route.status== 'EXPIRED' and route.status!= 'ADMININACTIVE' and route.status!= 'INACTIVE'):
-                    print('route ', route.status, route.has_expired())
                     route.check_sync() 
-                    print('status: %s route  %s, checking route.' %(route.status, route.name))
+                    message = ('status: %s route  %s, checking route.' %(route.status, route.name))
+                    client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
         message = 'Routes syncronised.'
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     else:
         message = 'There are no routes out of sync.'
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     return render(request,'routes_synced.html',{'message':message})
-
-
 
 @login_required
 @never_cache
@@ -1062,10 +953,12 @@ def backup(request):
     current_date = now.strftime("%d-%B-%Y") 
     try:
         call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
-        message = 'The back up was succesfully created.'
+        message = 'Back up succesfully created.'
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
         return render(request,'routes_synced.html',{'message':message}) 
     except Exception as e:
         message = ('An error came up and the database was not created. %s'%e)
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
         return render(request,'routes_synced.html',{'message':message})
 
 @verified_email_required
@@ -1080,32 +973,26 @@ def restore_backup(request):
         filename = request.POST.get("value", "")
         try:
             call_command(f"dbrestore", interactive=False, input_filename=filename)
-            message = 'The back up was succesfully restore. We recommend you to also sync all your firewall routes from the router'
+            message = 'The back up was succesfully restore. We recommend you to also syncronised all your firewall routes from the router'
+            client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
             return render(request,'routes_synced.html',{'message':message}) 
         except Exception as e:
             message = ('An error came up and the database was not created. ',e)
+            client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
             return render(request,'routes_synced.html',{'message':message})
 
-""" def managing_files(string_items, dest):
-    files = [] if dest != settings.MEDIA_ROOT else string_items
-    src = './'
-    # locate the file dir & move files
-    if dest == settings.MEDIA_ROOT:
-        for f_name in os.listdir('./'):
-            if f_name.endswith('.png'):
-                files.append(f_name)
-        for f in files:
-            src = './' + f
-            shutil.move(src,dest)    
-    # rename files with the id for each file  
-    for f in files:
-        if dest == settings.MEDIA_ROOT:
-            src = settings.MEDIA_ROOT + f
-            os.rename(src,settings.MEDIA_ROOT+string_items+'.png')
-        elif dest == settings.BACK_UP_DIR:
-            src = dest
-            os.rename(src,settings.BACK_UP_DIR+string_items+'.psql')
-        else:
-            print('There was an error when trying to rename the files') """
+
+def restore_last_backup():
+    CHOICES_FILES = []
+    for f in os.listdir(settings.BACK_UP_DIR):
+        CHOICES_FILES.append(f)
+    try:
+        call_command(f"dbrestore", interactive=False, input_filename=CHOICES_FILES[-1])
+        message = 'The back up was succesfully restore. We recommend you to also syncronised all your firewall routes from the router'
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message) 
+    except Exception as e:
+        message = ('An error came up and the database was not created. ',e)
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+
 
 

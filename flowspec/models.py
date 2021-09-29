@@ -208,10 +208,8 @@ class Route(models.Model):
             super(Route, self).save(*args, **kwargs)
         elif not self.pk:
             name = self.name
-            self.name = "%s_%s" % (self.name, peer_suff)
-            super(Route, self).save(*args, **kwargs) 
-        else:
-            super(Route, self).save(*args, **kwargs)                
+            self.name = "%s_%s" % (self.name, peer_suff) 
+        super(Route, self).save(*args, **kwargs)                
 
     def clean(self, *args, **kwargs):
         from django.core.exceptions import ValidationError
@@ -227,7 +225,7 @@ class Route(models.Model):
                 self.source = address.exploded
             except Exception:
                 raise ValidationError(_('Invalid network address format at Source Field'))
-       
+    
     def commit_add(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
@@ -243,14 +241,9 @@ class Route(models.Model):
             peer = username.peer_tag
         else:
             peer = None
-        #ad try and except for repeated names
-        try:
-            route = Route.objects.get(name=self.name)
-            routename = route
-            response = add(routename)
-            self.status= "ACTIVE"
-        except Exception as e:
-            logger.info('There was error while trying to save the route: ', e)
+        route =  Route.objects.get(name = self.name)
+        routename = route
+        response = add(routename)
         logger.info('Got add job id: %s' % response)
         if not settings.DISABLE_EMAIL_NOTIFICATION:
             fqdn = Site.objects.get_current().domain
@@ -279,7 +272,6 @@ class Route(models.Model):
         else:
             peer = None
         response = edit(self)
-        self.refresh_from_db()
         if not settings.DISABLE_EMAIL_NOTIFICATION:
             fqdn=Site.objects.get_current().domain
             admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
@@ -296,7 +288,6 @@ class Route(models.Model):
             
     def commit_delete(self, *args, **kwargs):
         username = None
-        name = self.name
         reason_text = ''
         reason = ''
         if "reason" in kwargs:
@@ -315,16 +306,13 @@ class Route(models.Model):
             peer = username.peer_tag
         else:
             peer = None
-        try:
-            response = delete(self, reason=reason)
-            logger.info('Got delete job id: %s' % name)
-        except Exception as e:
-            logger.info('Error while trying to delete route: %s'%self.name)
+        response = delete(self, reason=reason)
+        logger.info('Got delete job id: %s' % response)
         if not settings.DISABLE_EMAIL_NOTIFICATION:
             fqdn = Site.objects.get_current().domain
             admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
             )
-            mail_body = render_to_string('rule_action.txt',{'route': name,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
+            mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
             user_mail = '%s' % self.applier.email
             user_mail = user_mail.split(';')
             send_new_mail(
