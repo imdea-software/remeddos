@@ -37,7 +37,8 @@ from django.db.models import Q
 from django.contrib.auth import authenticate, login
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.management import call_command
-
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 from django.forms.models import model_to_dict
 
@@ -54,7 +55,7 @@ from django.views.decorators.cache import never_cache
 from django.conf import settings
 from django.template.defaultfilters import slugify
 from django.core.exceptions import PermissionDenied
-from flowspec.helpers import send_new_mail, get_peer_techc_mails
+from flowspec.helpers import *
 from django.utils.crypto import get_random_string
 import datetime
 import os
@@ -69,6 +70,7 @@ from dotenv import load_dotenv
 
 from pybix import GraphImageAPI
 from pyzabbix import ZabbixAPI
+from test import *
 
 client = slack.WebClient(token=settings.SLACK_TOKEN)
 
@@ -779,8 +781,10 @@ def setup(request):
     else:
         raise PermissionDenied
 
-def managing_files(string_items):
+def managing_files(string_items,routename):
+    i = 0
     files = []
+    graph = ''
     src = './'
     dest = settings.MEDIA_ROOT
     # locate the file dir & move files
@@ -793,7 +797,10 @@ def managing_files(string_items):
     # rename files with the id for each graph   
     for f in files:
         src = settings.MEDIA_ROOT + f
-        os.rename(src,settings.MEDIA_ROOT+string_items+'.png')
+        os.rename(src,settings.MEDIA_ROOT+routename+'.png')
+        i+=1
+    graph = (routename+'.png')
+    return graph
 
 
 def fetch_graphs(source, destination, item_id,routename):
@@ -814,8 +821,8 @@ def fetch_graphs(source, destination, item_id,routename):
         fwg = Graph(graph_img=graph.get_by_item_ids(item_id),route=route)
         fwg.graph_img=graphs
         fwg.save()
-    managing_files(string_items, dest)
-    return graphs
+    graph = managing_files(string_items,routename)
+    return graph
 
 @verified_email_required
 @login_required
@@ -829,17 +836,15 @@ def display_graphs(request,route_slug):
     # VALIDATE FIRST WHETER IS AN IPV4 IT COULD BE 0/0 
     # OR AN IPV6(::/0)
     route = get_object_or_404(Route, name=route_slug)
-    name = route.name
-    src = route.source
-    dest = route.destination
-    source = '0/0' if src == '0.0.0.0/0' else src.strip('/32')
-    destination = '0/0' if dest == '0.0.0.0/0' else dest.strip('/32')
+    prot = route.protocol
     zapi = ZabbixAPI(settings.ZABBIX_SOURCE)
     zapi.login(settings.ZABBIX_USER, settings.ZABBIX_PWD)
-    item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_": f'jnxFWCounterByteCount["{destination},{source}'}})
+    query = get_query(route.name, route.destination, route.source)
+    item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
     item_id = [i['itemid'] for i in item['result']]
-    graphs = fetch_graphs(source, destination, item_id,name)
-    return render(request,'graphs.html',{'routename':name,'graphs':graphs})
+    source = '0/0' if route.source == '0.0.0.0/0' else route.source[:-3]; destination = '0/0' if route.destination == '0.0.0.0/0' else route.destination[:-3]
+    graphs = fetch_graphs(source, destination, item_id,route.name)
+    return render(request,'graphs.html',{'routename':route.name,'graphs':graphs})
 
 def get_routes_router():
     retriever = Retriever()
@@ -995,4 +1000,14 @@ def restore_last_backup():
         client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
 
 
+@csrf_exempt
+@require_POST
+def webhook_endpoint(request):
+    jsondata = request.body
+    data = json.loads(jsondata)
+    for answer in data['form_response']['answers']:
+        type = answer['type']
+        print(f'answer: {answer[type]}')
+    #return HttpResponse(status=200)
+    pass
 

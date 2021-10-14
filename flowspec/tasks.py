@@ -84,25 +84,25 @@ def edit(route, callback=None):
         route.status = status
         route.response = response
         route.save()
-        message = (f"[{route.applier_username_nice}] Rule edit:  {route.name} - Result: {response}")
+        message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {response}")
         client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        message = (f"[{route.applier_username_nice}] Rule edit:  {route.name} - Result: {response}")
+        message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {response}")
         client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        message = (f"[{route.applier_username_nice}] Rule edit:  {route.name} - Result: {response}")
+        message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {response}")
         client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     except Exception:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
-        message = (f"[{route.applier_username_nice}] Rule edit:  {route.name} - Result: {response}")
+        message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {response}")
         client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
 
 
@@ -124,25 +124,25 @@ def delete(route, **kwargs):
         route.status = status
         route.response = response
         route.save()
-        message = (f"[{route.applier_username_nice}] Suspending rule:  {route.name} - Result: {response}")
+        message = (f"Suspending rule:  {route.name}")
         client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        message = (f"[{route.applier_username_nice}] Suspending rule:  {route.name} - Result: {response}")
+        message = (f"[{route.applier}] Suspending rule:  {route.name} - Result: {response}")
         client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        message = (f"[{route.applier_username_nice}] Suspending rule:  {route.name} - Result: {response}")
+        message = (f"[{route.applier}] Suspending rule:  {route.name} - Result: {response}")
         client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     except Exception as e:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
-        message = (f"[{route.applier_username_nice}] Suspending rule:  {route.name} - Result: {response}")
+        message = (f"[{route.applier}] Suspending rule:  {route.name} - Result: {response}")
         client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
 
 
@@ -194,12 +194,14 @@ def check_sync(route_name=None, selected_routes=[]):
                 message = ('Expiring %s route %s' %(route.status, route.name)) 
                 client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
                 route.status='EXPIRED'
+                route.save()
                 delete(route)
-            if route.status == 'ERROR':
+            if route.status == 'ERROR' and route.has_expired():
                 message = ('Deleting %s route with error %s' %(route.status, route.name)) 
                 client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
                 route.status='EXPIRED'
-                delete(route)
+                print(' this is route, ',route.status)
+                route.save()
         else:
             if route.status != 'EXPIRED':
                 route.check_sync()
@@ -233,7 +235,7 @@ def notify_expired():
                             expiration_days_text = ''
                         if expiration_days == 1:
                             days_num = ' day'
-                        message = ('Route %s expires %s%s. Notifying %s (%s)' %(route.name, expiration_days_text, days_num, route.applier.username, route.applier.email))
+                        message = ('Route %s expires %s%s. Notifying %s (%s)' %(route.name, expiration_days_text, days_num, route.applier, route.applier.email))
                         client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
                         send_mail(settings.EMAIL_SUBJECT_PREFIX + "Rule %s expires %s%s" %
                                 (route.name,expiration_days_text, days_num),
@@ -243,7 +245,7 @@ def notify_expired():
                         message = ("Exception: %s"%e)
                         client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
         else:
-            message = ("Route: %s, won't expire." %route.name)
+            message = ("Route: %s, won't expire." % route.name)
             client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     messagae = ('Expiration notification process finished')
     client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)

@@ -23,7 +23,7 @@ app.conf.beat_schedule = {
     },
     "every-day-sync": {
         "task": "flowspec.tasks.check_sync",
-        "schedule": crontab(minute=1, hour=1),
+        "schedule": crontab(hour='*/1'),
         "args": (),
     },
     "notify-expired": {
