@@ -34,23 +34,36 @@ body {
     flex: 1 0 auto;
   }
   </style>
-  <nav class="white black-text col l12 m12 s12" role="navigation">
+  {% if user.is_authenticated %}
+  <div class="navbar-fixed">
+  <nav class="grey darken-4  col l12 m12 s12" role="navigation">
     <div class="nav-wrapper">
-      <a href="{% url 'dashboard' %}" class="brand-logo black-text ">FoD</a>
+      <a href="{% url 'dashboard' %}" class="brand-logo"><img src="{% static 'redimadrid_horizontal.png' %}" alt="redimadrid logo" width="130px" height="50px" style="margin-left:20px;margin-top:5px;"></a>
       <ul class="right">
-        <li><a class="dropdown-trigger" href="#!" data-target="dropdown1"><i class="material-icons right">arrow_drop_down</i><i class="material-icons right">person</i></a>
-          <ul id="dropdown1" class="dropdown-content">
-        {% if user.is_authenticated %}
-        <li><a class="black-text" href="{% url 'account_logout' %}"><p>Logout</p></a></li>
-        {% else %}
-        <li><a class="black-text" href="{% url 'account_login' %}" data-position="left" data-tooltip="Login"><i class="material-icons">person</i><p>Login</p></a></li>
-        {% endif %}
+        <li><a class="red-text" href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li><a class="red-text" href="{% url 'group-routes' %}">My routes</a></li>       
+        <li><a class="red-text" href="{% url 'account_logout' %}"><p>Sign out</p></a></li>       
       </ul>
     </li>
       </ul>
     </div>
 </nav>
-  {% if user.is_authenticated %}
+</div>
+{% else %}
+<!-- <nav class="white black-text col l12 m12 s12" role="navigation">
+  <div class="nav-wrapper">
+    <a href="{% url 'dashboard' %}" class="brand-logo"><img src="{% static 'redimadrid_horizontal.png' %}" alt="redimadrid logo" width="130px" height="50px" style="margin-left:20px;margin-top:5px;"></a>
+    <ul class="right">
+      <li><a class=" red-text text-lighten-1" href="{% url 'account_login' %}" data-position="left" data-tooltip="Login"><p>Sign in</p></a></li>     
+    </ul>
+  </li>
+    </ul>
+  </div>
+</nav> -->
+
+{% endif %}
+
+{% if user.is_authenticated %}
         <ul id="slide-out" class="sidenav">          
           <li><div class="user-view">
             <div class="background">
@@ -89,7 +102,8 @@ body {
     {% block contentplaceholder %}
         	{% endblock %}
             
-        </main>            
+        </main>
+{% if user.is_authenticated %}            
 <div class="fixed-action-btn">
     <a class="btn-floating btn-large red lighten-2 sidenav-trigger" data-target="slide-out">
         <i class="large material-icons">mode_edit</i>
@@ -100,7 +114,7 @@ body {
             <li><a class="btn-floating green tooltipped" href="{% url 'user-profile' %}" data-position="left" data-tooltip="My Profile"><i class="material-icons">person</i></a></li>
         </ul>
 </div>
-            
+  {% endif %}
 
   {% block footerblock %}
 				{% include "footer1.html" %}
