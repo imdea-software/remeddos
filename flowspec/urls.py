@@ -1,6 +1,7 @@
 from django.urls import re_path, path
 from flowspec import views
 from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [ 
     path('',views.group_routes, name="group-routes"),
@@ -16,20 +17,17 @@ urlpatterns = [
     path('deleteroute/<slug:route_slug>/',views.verify_delete_user,name="delete-route"),
     path('delete/<slug:route_slug>/',views.delete_route,name="delete"),
     path('display_graphs/<slug:route_slug>/',views.display_graphs,name="display-graphs"),
-    #re_path(r'^login/?', views.user_login, name="login"),
     re_path(r'^welcome/?', views.welcome, name="welcome"),
-    #re_path(r'^logout/?', views.user_logout, name="logout"),
     re_path(r'^selectinst/?$', views.selectinst, name="selectinst"),
     path('load_js/<str:file>', views.load_jscript, name="load-js"),
     re_path(r'^overview/?$', views.overview, name="overview"),
     path('routes_sync/', views.routes_sync, name="rsync"),
     path('sync_router/', views.sync_router, name="router-sync"),
-    #path('backup/',views.backup,name="backup"),
     path('backup/',views.backup,name="backup"),
     path('restore/',views.restore_backup,name="restore"),
     path('edit/<slug:route_slug>/',views.routedetails,name="route-details"),
     re_path(r'^routestats/(?P<route_slug>[\w-]+)/$', views.routestats, name="routestats"),
     re_path(r'^setup/', views.setup, name='setup'),
-    
+    path('endpoint/',views.webhook,name="endpoint"), 
 ]
 

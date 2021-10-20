@@ -1,11 +1,12 @@
-{% extends "base.html" %}
+{% extends "base1.html" %}
+{% load widget_tweaks %}
 {% load static %}
 {% load i18n %}
 
 
 {% block extrahead %}
-	<link href="{% static 'b3theme/css/plugins/morris/morris-0.4.3.min.css' %}" rel="stylesheet">
-    <link href="{% static 'b3theme/css/plugins/timeline/timeline.css' %}" rel="stylesheet">
+	<!-- <link href="{% static 'b3theme/css/plugins/morris/morris-0.4.3.min.css' %}" rel="stylesheet">
+    <link href="{% static 'b3theme/css/plugins/timeline/timeline.css' %}" rel="stylesheet"> -->
     <style type="text/css">
 
 
@@ -23,30 +24,35 @@
 {% block contentplaceholder %}
 <div class="container">
     <div class="row">
-        <div class="col-lg-12 col-md-12 col-sm-12 center">
-        <h2> Choose a back up file to restore the database.</h2>
+        <div class="col l12 m12 s12 right-align">
+        <h4> Choose a back up file to restore the database.</h4>
     </div>
     </div>
-    <div class="container info">
+    <div class="divider"></div><br>
+
+    <div class="section">
         <form action="{% url 'restore' %}" method='POST'>
         {% csrf_token %}
         {% load unescape %}
             {% for file in files %}
-            <div class="form-group {% if form.applier.errors %} has-error {% endif %}"></div>
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" value="{{file}}" name="value">
-                <label class="form-check-label" for="value">
-                  {{file}}
+            <div class="row">
+                <div class="col l12 m12 s12 left-align">
+            <div class=" {% if form.applier.errors %} has-error {% endif %}"></div>
+            <label>
+                <input type="checkbox" id="indeterminate-checkbox" value="{{file}}" name="value">
+                    <span>{{file}}</span>
                 </label>
-              </div>              
+              </div>
+            </div>              
             {% endfor %}
-            <div class="form-group">
-                <div class="col-md-2"></div>
-                 <div class="col-md-8">
-           <button type="submit" id="applybutton" value="{% trans 'Apply' %}" class="btn btn-md btn-primary">Apply</button>
-               </div>
-           </div>
+        </div>
+        <div class="divider"></div><br>
+                <div class="row">
+                 <div class="col l12 m12 s12">
+                    <button type="submit" id="applybutton" value="{% trans 'Apply' %}" class="btn waves-effect right">Apply</button>
+                </div>
+            </div>
     </form>
-    </div>
+
 </div>
 {% endblock %}

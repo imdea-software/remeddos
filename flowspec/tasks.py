@@ -302,3 +302,15 @@ def routes_sync():
         message = ('There are no routes out of sync')
         client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
  
+def back_up_nigth():
+    now = datetime.datetime.now()
+    current_time = now.strftime("%H:%M")
+    current_date = now.strftime("%d-%B-%Y") 
+    try:
+        call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
+        message = 'Back up succesfully created.'
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message) 
+    except Exception as e:
+        message = ('An error came up and the database was not created. %s'%e)
+        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+    pass

@@ -1,0 +1,149 @@
+{% load static %}
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{{ BRANDING.name }} FoD :: {% block title %}{% endblock %}</title>
+  <!-- CSS  -->
+   
+  <link href="{% static 'css/materialize.css' %}" type="text/css" rel="stylesheet">
+  <link href="{% static 'css/materialize.min.css' %}" type="text/css" rel="stylesheet">
+  <link href="{% static 'css/style.css' %}" type="text/css" rel="stylesheet" media="screen,projection"> 
+  <!-- ICONS -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"> -->
+  {% block extrahead %}{% endblock %}
+
+    <!-- SB Admin CSS - Include with every page -->
+  <link href="{% static 'b3theme/css/sb-admin.css' %}" rel="stylesheet">
+  {% block extraheadbottom %}{% endblock %} 
+  
+
+</head>
+<body>
+  <style>
+body {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+  }
+
+  main {
+    flex: 1 0 auto;
+  }
+.footer{
+  /* flex-shrink: 0; */
+  
+}
+  </style>
+  <nav class="white black-text col l12 m12 s12" role="navigation">
+    <div class="nav-wrapper">
+      <a href="{% url 'dashboard' %}" class="brand-logo black-text ">FoD</a>
+      <ul class="right">
+        <li><a class="dropdown-trigger" href="#!" data-target="dropdown1"><i class="material-icons right">arrow_drop_down</i><i class="material-icons right">person</i></a>
+          <ul id="dropdown1" class="dropdown-content">
+        {% if user.is_authenticated %}
+        <li><a class="black-text" href="{% url 'account_logout' %}"><p>Logout</p></a></li>
+        {% else %}
+        <li><a class="black-text" href="{% url 'account_login' %}" data-position="left" data-tooltip="Login"><i class="material-icons">person</i><p>Login</p></a></li>
+        {% endif %}
+      </ul>
+    </li>
+      </ul>
+    </div>
+</nav>
+  {% if user.is_authenticated %}
+        <ul id="slide-out" class="sidenav">          
+          <li><div class="user-view">
+            <div class="background">
+              <img src="{% static 'redimadrid_horizontal.png' %}" alt="redimadrid_logo" style="width:100%;height:100%;">
+            </div>
+            <!-- <a href="#user"><img class="circle" src="{% static 'user.png' %}"></a> --><br><br>
+            <a href="#name"><span class="black-text name right-align">{{user.username}}</span></a>
+          </div></li> 
+          <li><a href="{% url 'dashboard' %}" class="black-text"><i class="material-icons">storage</i> {% trans "Dashboard" %}</a>
+          <li><a href="{% url 'group-routes' %}" class="black-text"><i class="material-icons">tab</i> {% trans "Rules" %}</a></li>
+          <li><a href="{% url 'add-route' %}" class="black-text"><i class="material-icons">add</i> {% trans "Add Rule" %}</a></li>
+          <li><div class="divider"></div></li>
+          <li><a class="subheader">Storage</a></li>
+          <li><a href="{% url 'backup' %}" class="black-text"><i class="material-icons">cloud</i> {% trans "Create back up file" %}</a></li>
+          <li><a href="{% url 'rsync' %}" class="black-text"><i class="material-icons">cloud</i> {% trans "Restore from DB" %}</a></li>
+          <li><a href="{% url 'router-sync' %}" class="black-text"><i class="material-icons">store</i> {% trans "Restore from Router" %}</a></li>
+          <li><a href="{% url 'restore' %}" class="black-text"><i class="material-icons">storage</i> {% trans "Restore from back up file" %}</a></li>
+          <li><div class="divider"></div></li>
+          {% if user.profile.peers.all %}
+          <li><a class="subheader">User Options</a></li>
+          <li><a class="black-text" href="{% url 'user-profile' %}" data-position="left" data-tooltip="My Profile"><i class="material-icons">person</i>{% trans "My profile" %}</a></li>
+          {% endif %}
+          {% if user.is_authenticated %}
+          <li><a class="black-text" href="{% url 'account_logout' %}" data-position="left" data-tooltip="Log out"><i class="material-icons">person</i>{% trans "Log out" %}</a></li>
+           {% if user.is_superuser %}
+           <li><a class="black-text" href="{% url 'admin:index' %}" data-position="left" data-tooltip="Admin"><i class="material-icons">person</i>{% trans "Admin" %}</a></li>
+           {% endif %}
+          {% else %}
+          <li><a class="black-text" href="{% url 'account_login' %}" data-position="left" data-tooltip="Login"><i class="material-icons">person</i>{% trans "Login" %}</a></li>
+          {% endif %}
+        </ul>
+        
+        {% endif %}
+
+<main>
+    {% block contentplaceholder %}
+        	{% endblock %}
+            
+        </main>            
+<div class="fixed-action-btn">
+    <a class="btn-floating btn-large red lighten-2 sidenav-trigger" data-target="slide-out">
+        <i class="large material-icons">mode_edit</i>
+        </a>
+        <ul>
+            <li><a class="btn-floating light-blue tooltipped" href="{% url 'add-route' %}" data-position="left" data-tooltip="Add Rule"><i class="material-icons">add</i></a></li>
+            <li><a class="btn-floating yellow darken-1 tooltipped" href="{% url 'group-routes' %}" data-position="left" data-tooltip="My Rules"><i class="material-icons">folder</i></a></li>
+            <li><a class="btn-floating green tooltipped" href="{% url 'user-profile' %}" data-position="left" data-tooltip="My Profile"><i class="material-icons">person</i></a></li>
+        </ul>
+</div>
+            
+
+  {% block footerblock %}
+				{% include "footer1.html" %}
+			{% endblock %}
+  
+  <!--  Scripts-->  
+  <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+  <script src="https://releases.jquery.com/git/ui/jquery-ui-git.js"></script>
+  <!-- <script src="{% static 'b3theme/js/jquery-1.10.2.js' %}"></script> -->
+  <script src="{% static 'js/jquery_csrf_protect.js' %}" type="text/javascript"></script>
+  <script src="{% static 'b3theme/js/plugins/metisMenu/jquery.metisMenu.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/jquery.cookie.js' %}"></script>  
+ 
+ <script src="{% static 'js/init.js' %}"></script> 
+  <script src="{% static 'js/materialize.js' %}"></script> 
+  
+   <!-- SB Admin Scripts - Include with every page -->
+   <script src="{% static 'b3theme/js/sb-admin.js' %}"></script>
+   {% block pagejs %}{% endblock %}
+   <!-- Page-Level Scripts  - Use for reference -->
+   {% block pagejsbottom %}{% endblock %}
+  <script>
+    function setlang(lang){
+		$("#langsel").val(lang);
+		$("#langform").submit();
+	}
+
+  $(document).ready(function(){
+    $.ajaxSetup({ cache: false });
+    $("#routes_table_next").addClass("btn btn-default");
+    $("#routes_table_previous").addClass("btn btn-default");
+
+    $('.fixed-action-btn').floatingActionButton();
+    $('.tooltipped').tooltip();
+    $('.sidenav').sidenav();
+    $('select').formSelect();
+    $('.datepicker').datepicker();
+    $('.materialboxed').materialbox();
+  }); 
+</script>
+  </body>
+</html>

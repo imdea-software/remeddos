@@ -1,21 +1,85 @@
-{% extends "base.html" %}
-
+{% extends "../base1.html" %}
+{% load widget_tweaks %}
 {% load i18n %}
 
 {% block title %}{% trans "Signup" %}{% endblock %}
 
 {% block contentplaceholder %}
-<h1>{% trans "Sign Up" %}</h1>
+<style>
+  label{
+    font-size: 15px;
+  }
+</style>
+<div class="container">
+  <div class="row">
+    <div class="col l12 m12 s12 center">
+<h5>{% trans "Sign Up" %}</h5>
+</div>
+</div>
 
+<div class="row">
+  <div class="col l12 m12 s12 center">
 <p>{% blocktrans %}Already have an account? Then please <a href="{{ login_url }}">sign in</a>.{% endblocktrans %}</p>
+</div>
+</div>
+
 
 <form class="signup" id="signup_form" method="post" action="{% url 'account_signup' %}" class="form-horizontal">
   {% csrf_token %}
-  {{ form.as_p }}
+  <div class="row">
+    <div class="col l6 m6 s6 left">
+      <label for="id_email" class="col l4 m4 s4 black-text"><b>{% trans "Email" %}</b></label>
+    </div>
+    <div class="col l6 m6 s6 right">	
+      {% render_field form.email class+="validate" placeholder="Please introduce your email" %}
+    </div>
+    </div>
+
+    <div class="row">
+      <div class="col l6 m6 s6 left">
+        <label for="id_username" class="col l4 m4 s4 black-text"><b>{% trans "Name" %}</b></label>
+      </div>
+      <div class="col l6 m6 s6 right">	
+        {% render_field form.username class+="validate" placeholder="Introduce your username" %}
+      </div>
+      </div>
+
+      <div class="row">
+        <div class="col l6 m6 s6 left">
+          <label for="id_name" class="col l4 m4 s4 black-text"><b>{% trans "Name" %}</b></label>
+        </div>
+        <div class="col l6 m6 s6 right">	
+          {% render_field form.login class+="validate" placeholder="Please introduce your user name" %}
+        </div>
+        </div>
+
+        <div class="row">
+          <div class="col l6 m6 s6 left">
+            <label for="id_password1" class="col l4 m4 s4 black-text"><b>{% trans "Password" %}</b></label>
+          </div>
+          <div class="col l6 m6 s6 right">	
+            {% render_field form.password1 class+="validate" placeholder="Please introduce your password" %}
+          </div>
+          </div>
+
+          <div class="row">
+            <div class="col l6 m6 s6 left">
+              <label for="id_password2" class="col l4 m4 s4 black-text"><b>{% trans "Password confirmation" %}</b></label>
+            </div>
+            <div class="col l6 m6 s6 right">	
+              {% render_field form.password2 class+="validate" placeholder="Please introduce your password again" %}
+            </div>
+            </div>
   {% if redirect_field_value %}
   <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
   {% endif %}
-  <button type="submit" class="btn btn-md btn-primary">{% trans "Sign Up" %} &raquo;</button>
+
+  <div class="row">
+    <div class="col l12 m12 s12 center">
+  <button type="submit" class="btn waves-effect waves-light">{% trans "Sign Up" %} &raquo;</button>
+      </div>
+      </div>
 </form>
+</div>
 
 {% endblock %}

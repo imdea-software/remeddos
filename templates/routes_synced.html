@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base1.html" %}
 {% load static %}
 {% load i18n %}
 
@@ -23,12 +23,18 @@
 {% block contentplaceholder %}
 <div class="container">
     <div class="row">
-        <div class="col-lg-12 col-md-12 col-sm-12 center">
-        <h2> Synced Routes</h2>
+        <div class="col l12 m12 s12 center">
+        <h4> Syncronising Routes</h4> 
     </div>
     </div>
-    <div class="jumbotron info">
-     {{message}}
+    <div class="divider"></div>
+    <div class="section">
+    <div class="row">
+    <div class="col l12 m12 s12 center teal-text" style="font-size: 20px;">
+     <div>
+        <p>{{message}}</p>
     </div>
+    </div>
+</div>
 </div>
 {% endblock %}

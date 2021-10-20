@@ -70,7 +70,6 @@ from dotenv import load_dotenv
 
 from pybix import GraphImageAPI
 from pyzabbix import ZabbixAPI
-from test import *
 
 client = slack.WebClient(token=settings.SLACK_TOKEN)
 
@@ -106,7 +105,7 @@ def welcome(request):
     if request.user.is_authenticated:
         return HttpResponseRedirect(reverse('dashboard'))
     else:
-        return render(request,'welcome.html')
+        return render(request,'index.html')
         
         
 def service_desc(request):
@@ -146,28 +145,11 @@ def dashboard(request):
             message = 'You have not added any rules yet'
     else:
         message = 'You are not associated with a peer.'
-        return render(
-            request,
-            'dashboard.html',
-            {
-                'messages': message
-            }
-        )
-    return render(
-        request,
-        'dashboard.html',
-        {
-            'routes': all_group_routes.prefetch_related(
-                'applier',
-                'applier',
-                'protocol',
-                'dscp',
-            ),
-            'messages': message,
-            'file' : '',
-            'route_slug':route_name
-        },
-    )
+        return render(request,'dashboard.html',{'messages': message})
+
+    return render(request,'dashboard.html',{'routes': all_group_routes.prefetch_related('applier', 'applier','protocol','dscp',),'messages': message,'file' : '','route_slug':route_name},)
+
+
 @login_required
 @never_cache
 def group_routes(request):
@@ -999,15 +981,16 @@ def restore_last_backup():
         message = ('An error came up and the database was not created. ',e)
         client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
 
-
 @csrf_exempt
 @require_POST
-def webhook_endpoint(request):
+def webhook(request):
+    print('weebhook yaasss')
     jsondata = request.body
+    print('this is endpoint and this is data ', jsondata)
     data = json.loads(jsondata)
+    meta = copy.copy(request.META)
     for answer in data['form_response']['answers']:
-        type = answer['type']
-        print(f'answer: {answer[type]}')
-    #return HttpResponse(status=200)
-    pass
-
+        t = answer['type']
+    print(f'WEBHOOK ON ACTION: answer: {t} y meta: {meta}')
+        #make method to save config in a separate file
+    return HttpResponse(status=200)

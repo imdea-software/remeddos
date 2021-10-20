@@ -46,10 +46,11 @@ urlpatterns = [
     re_path(r'^altlogin/?',auth_views.LoginView.as_view(template_name= 'overview/login.html'), name="altlogin"),
     re_path(r'^api/', include(router.urls)),
     re_path(r'^i18n/', include('django.conf.urls.i18n')),    
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-if 'graphs' in settings.INSTALLED_APPS:
+""" if 'graphs' in settings.INSTALLED_APPS:
     from graphs import urls as graphs_urls
     urlpatterns += [
         re_path(r'^graphs/', include(graphs_urls))]
@@ -62,7 +63,7 @@ try:
         urlpatterns += staticfiles_urlpatterns()
 except:
     pass
-
+ """
  
 
 

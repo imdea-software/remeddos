@@ -1,13 +1,24 @@
-{% extends "../base.html" %}
+{% extends "../base1.html" %}
 
 {% load i18n %}
 
 {% block title %}{% trans "E-mail Addresses" %}{% endblock %}
 
 {% block contentplaceholder %}
-    <h1>{% trans "E-mail Addresses" %}</h1>
+<div class="container">
+  <div class="row">
+    <div class="col l12 m12 s12 center">
+    <h5>{% trans "E-mail Addresses" %}</h5>
+    </div>
+    </div>
 {% if user.emailaddress_set.all %}
-<p>{% trans 'The following e-mail addresses are associated with your account:' %}</p>
+<div class="row">
+  <div class="col l12 m12 s12 center">
+      <p>{% trans 'The following e-mail addresses are associated with your account:' %}</p>
+  </div>
+</div>
+
+
 
 <form action="{% url 'account_email' %}" class="email_list" method="post">
 {% csrf_token %}
@@ -31,9 +42,9 @@
   {% endfor %}
 
 <div class="buttonHolder">
-      <button class="secondaryAction" type="submit" name="action_primary" >{% trans 'Make Primary' %}</button>
-      <button class="secondaryAction" type="submit" name="action_send" >{% trans 'Re-send Verification' %}</button>
-      <button class="primaryAction" type="submit" name="action_remove" >{% trans 'Remove' %}</button>
+      <button class="secondaryAction btn center" type="submit" name="action_primary" >{% trans 'Make Primary' %}</button>
+      <button class="secondaryAction btn center" type="submit" name="action_send" >{% trans 'Re-send Verification' %}</button>
+      <button class="primaryAction btn center" type="submit" name="action_remove" >{% trans 'Remove' %}</button>
 </div>
 
 </fieldset>
@@ -45,12 +56,16 @@
 {% endif %}
 
   {% if can_add_email %}
-    <h2>{% trans "Add E-mail Address" %}</h2>
+  <div class="row">
+    <div class="col l12 m12 s12 center">
+    <h5>{% trans "Add E-mail Address" %}</h5>
+    </div>
+    </div>
 
     <form method="post" action="{% url 'account_email' %}" class="add_email">
         {% csrf_token %}
         {{ form.as_p }}
-        <button name="action_add" type="submit">{% trans "Add E-mail" %}</button>
+        <button name="action_add btn waves-effect" type="submit">{% trans "Add E-mail" %}</button>
     </form>
   {% endif %}
 
@@ -71,4 +86,5 @@
   }
 })();
 </script>
+</div>
 {% endblock %}
