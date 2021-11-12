@@ -16,7 +16,8 @@
 </style>
 <div class="container">
     <div></div>
-    <div class="col l12 m12 s12 center">
+    <div class="row">
+    <div class="col l12 m12 s12 center section">
         {% if status == "add" %}
         <h4 class="page-header">{% trans "Add a new rule" %}</h4>
         {% endif %}
@@ -26,23 +27,27 @@
         {% if status == "delete" %}
         <h4 class="page-header">{% trans "Delete a rule" %}</h4>
         {% endif %}
-    </div> 
-    <div class="col-md-12">
+    </div>
+</div>
+    <div class="divider"></div>
+    <div class="row">
+    <div class="col l12 m12 s12 right section">
         {% if status == "add" %}
-        <div class="alert alert-info" role="alert">A message to your Slack private channel has been sent. {{ message }}.</div>
+        <span class="blue-text">A message to your Slack private channel has been sent. {{ message }}.</span>
         {% endif %}
         {% if status == "edit" %}
-        <div class="alert alert-warning" role="alert">A message to your Slack private channel has been sent. {{ message }}.</div>
+        <span class="amber-text text-darken-4">A message to your Slack private channel has been sent. {{ message }}.</span>
         {% endif %}
         {% if status == "delete" %}
-        <div class="alert alert-danger" role="alert">A message to your Slack private channel has been sent. {{ message }}.</div>
+        <span class="red-text text-darken-4">A message to your Slack private channel has been sent. {{ message }}.</span>
         {% endif %}
     </div>
+</div>
     <div class="form-group">
         <form method="POST">
             {% csrf_token %}
             {{ form.as_p }}
-            <input type="submit" class="btn btn-primary right" value="Submit">
+            <input type="submit" class="btn btn-primary right white black-text" value="Submit">
         </form>
     </div>
 </div>

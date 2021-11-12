@@ -44,14 +44,14 @@
 </div>
 
   
-      <form class="login" method="POST" action="{% url 'account_login' %}">
+      <form method="POST" action="{% url 'account_login' %}">
         {% csrf_token %}
         <div class="row">
         <div class="col l6 m6 s6 left">
           <label for="id_name" class="col l4 m4 s4 black-text"><b>{% trans "Name" %}</b></label>
         </div>
         <div class="col l6 m6 s6 right">	
-          {% render_field form.login class+="validate" placeholder="Introduce your user name" %}
+          {% render_field form.login placeholder="Introduce your user name" %}
         </div>
         </div>
         <div class="row">
@@ -59,7 +59,7 @@
           <label for="id_password" class="col l4 m4 s4 black-text"><b>{% trans "Password" %}</b></label>
         </div>
         <div class="col l6 m6 s6 right">	
-          {% render_field form.password class+="validate" placeholder="Introduce your password" %}
+          {% render_field form.password placeholder="Introduce your password" %}
         </div>
         </div>    
             {% if redirect_field_value %}

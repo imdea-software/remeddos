@@ -2,22 +2,20 @@
 {% load i18n %}
 {% load static %}
 {% block extrahead %}
-<link href="{% static 'b3theme/css/plugins/dataTables/dataTables.bootstrap.css' %}" rel="stylesheet">
+<link href="{% static 'theme/css/plugins/dataTables/dataTables.bootstrap.css' %}" rel="stylesheet">
 {% endblock %}
 {% block pagejsbodttom %}
 
 <script type="text/javascript" src="{% static 'js/jquery.dataTables.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/datatables_bootstrap.js' %}"></script>
+ <script src="{% static 'js/moment.js' %}"></script>
 
 {% endblock %}
 {% block title %}{% trans "My rules" %}{% endblock %}
 {% block contentplaceholder %}
 {% csrf_token %}
-    <div class="row">
-        <div class="col l12 m12 s12 center">
-            <h4>{% trans "My rules" %} </h4>
-        </div>
-    </div>
+
+   
 <style>
     th{	font-size: 15px !important;
 }
@@ -28,15 +26,23 @@ a:link{
     text-decoration: none !important;
 }
 </style>
+
 <div class="container">
+    <div class="row">
+        <div class="col l12 m12 s12">
+            <h5 class="flow-text right">{% trans "Routes  " %} </h5>
+        </div>
+    </div>
         <div class="row">
         <div class="col l10 m10 s10">
-        	<p class="align-left"><i class="material-icons">security</i> Firewall Rules</p></div>
+        	<p class="align-left"><i class="material-icons">security</i> Firewall Rules
+            (Use the pencil for editting an existing rule or the clock to deactivate an existing rule)
+            </p></div>
         </div>
 
     <div class="row">
                <div class="col l12 m12 s12">
-                    	<table class="table responsive-table highlight centered" id="routes_table" >
+                    	<table class="display" id="routes_table" >
                         <thead>
                             <tr>
                                 <th style="border: 1px solid lightgrey !important">Id</th>
@@ -65,6 +71,7 @@ a:link{
 {% block pagejsbottom %}
     <script src="{% static 'js/dataTableslatest/jquery.dataTables.min.js' %}"></script>
     <script src="{% static 'js/dataTableslatest/dataTables.bootstrap.js' %}"></script>
+   
     
     {% if user.is_authenticated %}
     <!-- introduce view function that load js from flowspec app -->    
@@ -153,10 +160,8 @@ var end;
 var oldhtml;
 var last_element = false;
 var refreshUrl = "{% url 'group-routes-ajax' %}";
+
 $(document).ready( function(){
-
-
-
     oTable = $('#routes_table').dataTable( {
         "bPaginate": true,
         "bFilter": true,
@@ -244,12 +249,17 @@ $(document).ready( function(){
                      },
                      {"mData":"expires", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
-                     	return data;
+                        var parsedate = new Date(data).toLocaleDateString('en-GB',{
+                            year:'numeric',
+                            month:'long',
+                            day:'numeric',
+                        });
+                     	return parsedate;
                      }},
                      {"mData":"response", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
                      	status = full.status;
-                     	toolt = '<a class="btn tooltipped" data-position="top"';
+                     	toolt = '<a class="btn white black-text tooltipped" data-position="top"';
    	                     	if (status == "EXPIRED" ||status == "ADMININACTIVE" || status == "INACTIVE" || status == "OUTOFSYNC"){
 	                     		if (status == "INACTIVE" ){
 	                     			title = "{% trans 'Deactivated by user' %}";
@@ -279,11 +289,11 @@ $(document).ready( function(){
                      editurl = "{% url 'edit-route' route_slug='routename'  %}".replace('routename', full.name.toString());
                      deleteurl = "{% url 'delete-route' route_slug='routename'  %}".replace('routename', full.name.toString());
                      if (status == "ACTIVE" ){
-                     	btn = '<a href="'+editurl+'" class="btn waves-effect amber lighten-4 black-text btn-small">{% trans "Edit" %}</a> ';
-                        btn = btn +'<a href="'+deleteurl+'" class="btn waves-effect red lighten-4 black-text btn-small">{% trans "Deactivate" %}</a>';
+                     	btn = '<a  class="btn-floating tooltipped amber" href="'+editurl+'" data-position="top" data-tooltip="Edit"><i class="material-icons">edit</i></a>';
+                        btn = btn +'<a href="'+deleteurl+'" class="btn-floating tooltipped grey" data-position="top" data-tooltip="Deactivate"><i class="material-icons">alarm_off</i></a>';
                     }
-                     if (status == 'EXPIRED' || status == 'ADMININACTIVE' || status == 'INACTIVE' ){
-                     	btn = '<a href="'+editurl+'" class="btn waves-effect amber lighten-4 black-text btn-small" id="edit_button_{{route.pk}}">{% trans "Reactivate" %}</a>';
+                     if (status == 'EXPIRED' || status == 'ADMININACTIVE' || status == 'INACTIVE'){
+                     	btn = '<a href="'+editurl+'" class="btn white black-text btn-small" id="edit_button_{{route.pk}}">{% trans "Reactivate" %}</a>';
                      }
                      if (status == "OUTOFSYNC" ){
                      	btn = '<a href="'+editurl+'" class="btn waves-effect amber lighten-4 black-text btn-small" id="edit_button_{{route.pk}}">{% trans "Resync" %}</a>';
@@ -297,9 +307,6 @@ $(document).ready( function(){
 
          ]
 } );
-$(document).ready(function(){
-    $('.tooltipped').tooltip();
-})
 $('#filterplaceholder').html(filterbtns);
     $('body').on('click', 'button[name="status_filter"]', function(){
     	var reg_exp = '';

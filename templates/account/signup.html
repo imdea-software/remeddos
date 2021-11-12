@@ -23,44 +23,37 @@
 </div>
 </div>
 
-
-<form class="signup" id="signup_form" method="post" action="{% url 'account_signup' %}" class="form-horizontal">
+<div class="row">
+<form id="signup_form" method="POST" action="{{ account_signup }}">
+  
   {% csrf_token %}
-  <div class="row">
-    <div class="col l6 m6 s6 left">
-      <label for="id_email" class="col l4 m4 s4 black-text"><b>{% trans "Email" %}</b></label>
-    </div>
-    <div class="col l6 m6 s6 right">	
-      {% render_field form.email class+="validate" placeholder="Please introduce your email" %}
-    </div>
-    </div>
-
-    <div class="row">
-      <div class="col l6 m6 s6 left">
-        <label for="id_username" class="col l4 m4 s4 black-text"><b>{% trans "Name" %}</b></label>
-      </div>
-      <div class="col l6 m6 s6 right">	
-        {% render_field form.username class+="validate" placeholder="Introduce your username" %}
-      </div>
-      </div>
 
       <div class="row">
         <div class="col l6 m6 s6 left">
-          <label for="id_name" class="col l4 m4 s4 black-text"><b>{% trans "Name" %}</b></label>
+          <label for="id_email" class="col l4 m4 s4 black-text"><b>{% trans "Email" %}</b></label>
         </div>
         <div class="col l6 m6 s6 right">	
-          {% render_field form.login class+="validate" placeholder="Please introduce your user name" %}
+          {% render_field form.email class+="validate" placeholder="Please introduce your email" %}
         </div>
         </div>
 
         <div class="row">
           <div class="col l6 m6 s6 left">
-            <label for="id_password1" class="col l4 m4 s4 black-text"><b>{% trans "Password" %}</b></label>
+            <label for="id_username" class="col l4 m4 s4 black-text"><b>{% trans "Name" %}</b></label>
           </div>
           <div class="col l6 m6 s6 right">	
-            {% render_field form.password1 class+="validate" placeholder="Please introduce your password" %}
+            {% render_field form.username class+="validate" placeholder="Introduce your username" %}
           </div>
           </div>
+
+          <div class="row">
+            <div class="col l6 m6 s6 left">
+              <label for="id_password1" class="col l4 m4 s4 black-text"><b>{% trans "Password" %}</b></label>
+            </div>
+            <div class="col l6 m6 s6 right">	
+              {% render_field form.password1 class+="validate" placeholder="Please introduce your password" %}
+            </div>
+            </div>
 
           <div class="row">
             <div class="col l6 m6 s6 left">
@@ -70,16 +63,17 @@
               {% render_field form.password2 class+="validate" placeholder="Please introduce your password again" %}
             </div>
             </div>
-  {% if redirect_field_value %}
-  <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
-  {% endif %}
+            {% if redirect_field_value %}
+            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+            {% endif %}
 
-  <div class="row">
-    <div class="col l12 m12 s12 center">
-  <button type="submit" class="btn waves-effect waves-light">{% trans "Sign Up" %} &raquo;</button>
-      </div>
-      </div>
+          <div class="row">
+            <div class="col l12 m12 s12 center">
+                  <button type="submit" class="btn waves-effect">{% trans "Sign Up" %}</button>
+            </div>
+          </div>
 </form>
+
 </div>
 
 {% endblock %}

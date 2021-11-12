@@ -22,8 +22,8 @@
 {% endblock %}
 {% block extrahead %}
     <link href="{% static 'css/plugins/morris/morris-0.4.3.min.css' %}" rel="stylesheet">
-    <link href="{% static 'css/plugins/timeline/timeline.css' %}" rel="stylesheet">
-    <link href="{% static 'datepicker/css/datepicker.css' %}" rel="stylesheet">
+    <link href="{% static 'css/plugins/timeline/timeline.css' %}" rel="stylesheet"><!-- 
+    <link href="{% static 'datepicker/css/datepicker.css' %}" rel="stylesheet"> -->
 
 {% endblock %}
 
@@ -31,66 +31,22 @@
 <style type="text/css">
 label{
 	font-size: 15px !important;
-	text-colo
 }
-/* #rule_form_container input:not([type="submit"]), #rule_form_container select {
-    background: none repeat scroll 0 0 #FFFFFF;
-    border: 1px solid #DDDDDD;
-	-moz-border-radius: 3px; border-radius:3px; -webkit-border-radius: 3px;
-    float: left;
-    font-family: "Century Gothic",Helvetica,sans-serif;
-    font-size: 13px;
-    outline: medium none;
-    padding: 5px;
-    width: 180px;
-}
-
-
-#rule_form_container{
-	-moz-border-radius: 10px 10px 10px 10px; border-radius:10px; -webkit-border-radius: 10px;
-	-moz-box-shadow: 0 0 3px #AAAAAA; box-shadow: 0 0 3px #AAAAAA; -webkit-box-shadow: 0 0 3px #AAAAAA;
-	background-color: #F9F9F9;
-	border: 2px solid #FFFFFF;
-	overflow: hidden;
-    width: 800px;
-	}
-#rule_form_container div label {
-    color: #666666;
-    float: left;
-    font-family: "Century Gothic",Helvetica,sans-serif;
-    font-size: 15px;
-    font-weight: bold;
-    line-height: 26px;
-    margin-right: 15px;
-    text-align: right;
-    text-shadow: 1px 1px 1px #FFFFFF;
-    width: 180px;
-}
-#rule_form_container p.submit {
-    background: none repeat scroll 0 0 transparent;
-    border: medium none;
-    box-shadow: none;
-}
-
-.errorlist{
-	list-style: none outside none;
-}
- */
 </style>
  <link href="{% static 'js/select2/select2.css' %}" rel="stylesheet">
  <link href="{% static 'js/select2/select2-bootstrap.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block pagejsbottom %}
-<script type="text/javascript" src="{% static 'datepicker/js/bootstrap-datepicker.js' %}"></script>
+<!-- <script type="text/javascript" src="{% static 'datepicker/js/bootstrap-datepicker.js' %}"></script> -->
 <script type="text/javascript" src="{% static 'js/select2/select2.js' %}"></script>
 <script>
 	$(document).ready( function(){
 		$('#id_then').removeAttr("multiple");
 		/* {% if user.is_superuser %}
 			$("#id_applier").select2();
-		{% endif %} */
-		/* $("#id_protocol").select2();
+		{% endif %} 
+		 $("#id_protocol").select2();
 		$("#id_then").select2(); */
 
 		$('#id_expires').datepicker({
@@ -101,13 +57,13 @@ label{
 		$('#setFromAll').click(function(){
 			$("#id_source").val('0.0.0.0/0');
 		});
+		$( "#id_expires" ).datepicker({ format: 'yyyy,mm,dd'});
+});
 
-
-		/*$('#id_then').attr("multiple", "");*/
-		/*
-		$( "#id_expires" ).datepicker({ dateFormat: 'yy-mm-dd' , maxDate: '+10d', minDate: '+1d', changeMonth: false, changeYear: false }).datepicker( $.datepicker.regional[ "el" ] );
-		*/
+</script>		
 		{% comment %}
+		<script>
+	$(document).ready( function(){
 		$('#then_diag').dialog({
 			height: 220,
             width: 340,
@@ -138,9 +94,13 @@ label{
 		}
 	}
 		});
+	},
+	</script>
 		{% endcomment %}
 
 		{% comment %}
+		<script>
+	$(document).ready( function(){
 		$("#new_then_actions").button({
             icons: {
                 primary: "ui-icon-plusthick"
@@ -157,15 +117,16 @@ label{
 				$('#then_diag').dialog('open');
 				return false;
 			});
-
+		},
+		</script>
 			{% endcomment %}
-
 			function reArrangeSelect(elementId) {
  			   $("#"+elementId).html($("#"+elementId+" option").sort(function(a, b) {
         			return parseInt(a.text) == parseInt(b.text) ? 0 : parseInt(a.text) < parseInt(b.text) ? -1 : 1
     			}));
 			}
 	});
+
 
 </script>
 {% endblock %}
@@ -184,7 +145,7 @@ label{
                 	<i class="material-icons">security</i> Firewall Rule </div></div>
                         <!-- /.panel-heading -->
 	<div class="row">
-    	<form method="POST" role="form">
+    	<form method="POST" name="form" role="form">
 
             {% csrf_token %}
             {% load unescape %}
@@ -230,19 +191,16 @@ label{
 				<div class="section">
 					<div class="row">
 					<div class="col l12 m12 s12 {% if form.source.errors %} has-error {% endif %}">
-					<label for="id_source" class="col l4 m4 s4 black-text">Source Address</label>
-					<div class="col l4 m4 s4">
+						<label for="id_source" class="col l4 m4 s4 black-text"><b>{% trans "Source Address" %}</b></label>
+						<div class="col l4 m4 s4">
 						{% render_field form.source class+="validate" placeholder=form.source.help_text %}
 						{% if form.source.errors %} <span class="help-block"> {{ form.source.errors|join:", " }} </span>
 						{% endif %}
 					</div>
 					<div class="col l2 m2 s2">
-						<img src="{% static 'threat_source.png' %}" style="height: 30px;"/> 
-					</div>
-					</div></div></div>
-					
+						<img src="{% static 'secure_destination.png' %}" style="height: 30px;"/></div>
+
 					<div class="row">
-					<div class="section">
 					<div class="col l12 m12 s12 {% if form.destination.errors %} has-error {% endif %}">
 					<label for="id_destination" class="col l4 m4 s4 black-text"><b>{% trans "Destination Address" %}</b></label>
 					<div class="col l4 m4 s4">
@@ -250,10 +208,8 @@ label{
 						{% if form.destination.errors %} <span class="help-block"> {{ form.destination.errors|join:", " }} </span>
 						{% endif %}
 					</div>
-					<div class="col l2 m2 s2">
-						<img src="{% static 'secure_destination.png' %}" style="height: 30px;"/>
 					</div>
-					</div></div>
+					</div>
 					
 					<div class="row">
 					<div class="col l12 m12 s12{% if form.protocol.errors %} has-error {% endif %}">
@@ -264,10 +220,6 @@ label{
 						{% endif %}
 					</div>
 					</div></div>	</div>
-					<!-- -->
-					
-						
-					<!-- -->
 						<div class="divider"></div>
 						<div class="section">
 						<div class="row">
@@ -344,11 +296,10 @@ label{
 			</div></div>
 
 		        <!--  END OF PORTS -->
-
 				
-				<div class="divider"></div>
-				<div class="section">
-				<div class="row">
+	<div class="divider"></div>
+		<div class="section">
+			<div class="row">
 				<div class="col l12 m12 s12 {% if form.then.errors %} has-error {% endif %}">
         		<label for="id_then" class="col l4 m4 s4 black-text">{% trans "Then Actions" %}</label>
 		        <div class="col l6 m6 s6">
@@ -356,8 +307,9 @@ label{
 		            {% if form.then.errors %} <span class="help-block"> {{ form.then.errors|join:", " }} </span>
 		            {% endif %}
 		        </div>
-		        </div></div></div>
-
+		    </div>
+		</div>
+	</div>
 				
 				<div class="divider"></div>
 				<div class="section">
@@ -368,11 +320,12 @@ label{
                 <div class="col l12 m12 s12 {% if form.expires.errors %} has-error {% endif %}">
                   <label for="id_expires" class="col l4 m4 s4 black-text">{% trans "Expires" %}</label>
 		        <div class="col l8 m8 s8">
-		            {% render_field form.expires class+="datepicker" data-date-format="yyyy-mm-dd" %}
+		            {% render_field form.expires class+="datepicker" %}
 		            {% if form.expires.errors %} <span class="help-block"> {{ form.expires.errors|join:", " }} </span>
 		            {% endif %}
 		        </div>
-		        </div></div>
+		        </div>
+			</div>
             </div>
 
 
@@ -397,10 +350,8 @@ label{
 
 
     </form>
-</div></div></div></div>
-<div id="then_diag" title="Add new rate-limit value">
-</div>
-</div>
+</div></div>
+<!-- <div id="then_diag" title="Add new rate-limit value"></div> -->
 <!-- <div id="port_diag" title="{% trans "Add new port" %}">
 </div> -->
 
