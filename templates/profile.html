@@ -1,4 +1,4 @@
-{% extends "base1.html" %}
+{% extends "base.html" %}
 {% load i18n %}
 {% load static %}
 
@@ -6,23 +6,19 @@
 {% block contentplaceholder %}
 
 
-<div class="container">
-    <div style="margin-bottom: 100px;"></div>
+<div class="container p-5">
     <div class="row">
-        <div class="col l12 m12 s12 text-flow right">
-            <h5 class="center">{% trans "My profile" %}</h5>
+        <div class="col">
+            <h5 class="text-end">{% trans "My profile" %}</h5>
         </div>
-        <!-- /.col-lg-12 -->
     </div>
 
     <div class="row">
-        <div class="col l8 m8 s8">
-                <div class="center teal-text">
-                    <h6> {% trans "My Networks" %}</h6>
-                    
-                </div>
+        <div class="col">
+                    <h6 class="text-center"> {% trans "My Networks" %}</h6>
+            </div>
                 <div class="section">
-                <table class="table striped highlight">
+                <table class="table table-borderless align-middle p-2">
                         <thead>
                             <tr>
                             <th>{% trans "Organization" %}</th><th>{% trans "Networks" %}</th>
@@ -45,38 +41,32 @@
         	
         
         </div>
-        <div class="col l4 m4 s4">
-                <span class="center-align">Shortcuts</span> </div>
-                <div class="divider"></div>
-                <a class="btn deep-purple lighten-3 align-center black-text" id="routebutton" href="{% url 'account_change_password' %}">{% trans "Change Password" %}</a>
-                    <!-- <a class="btn teal lighten-2 center black-text"  href="{% url 'group-routes' %}"> {% trans "My Rules" %}</a>
-                    <a class="btn blue lighten-2 black-text"  href="{% url 'dashboard' %}"> {% trans "Dashboard" %}</a> -->
-                </div>      
-        
+        <hr>        
             <div class="row">
-                <div class="col l12 m12 s12">
-                    <div class="section">
-                        <table class="table striped highlight centered">
+                <div class="col col-6">
+                        <table class="table table-borderless align-middle p-2">
                                 <thead>
                                     <tr>
                                     <th class="center">{% trans " My Profile" %}</th>
                                     </tr>
                                 </thead>
                                 <tr>
-                                    <td><span style="font-weight: bold;">{% trans "Username" %} </span>: {{user.username}} </td>
+                                    <td><span><b>{% trans "Username" %}</b></span>: {{user.username}} </td>
                                     {% if user.first_name %}
-                                        <td><span style="font-weight: bold;">{% trans "First name" %} </span> : {{user.first_name}}</td>
+                                        <td><span><b>{% trans "First name" %}</b></span> : {{user.first_name}}</td>
                                     {% endif %}
                                     {% if user.last_name %}
-                                    <td> <span style="font-weight: bold;">{% trans "Last name" %}</span> : {{user.last_name}} </td>
+                                    <td><span><b>{% trans "Last name" %}</b></span> : {{user.last_name}} </td>
                                     {% endif %}
                                     {% if user.email %}
-                                        <td><span style="font-weight: bold;">{% trans "Email" %}</span> : {{user.email}} </td>
+                                        <td><span><b>{% trans "Email" %}</b></span> : {{user.email}} </td>
                                     {% endif %}
                                 </tr>
-                            </table>
-                        </div>    
+                            </table>  
                 </div>
+                <div class="col col-3">
+                    <a class="btn btn-outline-info align-middle float-end" id="routebutton" href="{% url 'account_change_password' %}">{% trans "Change Password" %}</a>
+                    </div> 
             </div>
     
 

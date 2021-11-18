@@ -1,4 +1,4 @@
-{% extends "../base1.html" %}
+{% extends "../base.html" %}
 {% load widget_tweaks %}
 {% load i18n %}
 {% load account socialaccount %}
@@ -6,16 +6,16 @@
 {% block title %}{% trans "Sign In" %}{% endblock %}
 
 {% block contentplaceholder %}
-<div class="container">
-<div class="row">
-  <div class="col l12 m12 s12 center">
-    <h5>{% trans "Sign In" %}</h5>
+<div class="container-fluid p-5">
+<div class="row m-2">
+  <div class="col">
+    <h5 class="float-end">{% trans "Sign In" %}</h5>
     </div>
     </div>
 
 {% get_providers as socialaccount_providers %}
 <div class="row">
-  <div class="col l12 m12 s12 center">
+  <div class="col align-middle">
       {% if socialaccount_providers %}
           <p>{% blocktrans with site.name as site_name %}Please sign in with one
           of your existing third party accounts. Or, <a href="{{ signup_url }}">sign up</a>
@@ -36,29 +36,30 @@
 </div>
 {% else %}
 <div class="row">
-    <div class="col l12 m12 s12 center">
+    <div class="col">
       <p>{% blocktrans %}If you have not created an account yet, then please
       <a href="{{ signup_url }}">sign up</a> first.{% endblocktrans %}</p>
       {% endif %}
     </div>
 </div>
 
-  
+<div class="row">
+  <div class="col">
       <form method="POST" action="{% url 'account_login' %}">
         {% csrf_token %}
         <div class="row">
-        <div class="col l6 m6 s6 left">
-          <label for="id_name" class="col l4 m4 s4 black-text"><b>{% trans "Name" %}</b></label>
+        <div class="col col-6 float-start">
+          <label for="id_name" class="col col-4 form-label"><b>{% trans "Name" %}</b></label>
         </div>
-        <div class="col l6 m6 s6 right">	
+        <div class="col col-6 float-end">	
           {% render_field form.login placeholder="Introduce your user name" %}
         </div>
         </div>
         <div class="row">
-        <div class="col l6 m6 s6 left">
-          <label for="id_password" class="col l4 m4 s4 black-text"><b>{% trans "Password" %}</b></label>
+        <div class="col col-6 float-start">
+          <label for="id_password" class="col col-4 form-label"><b>{% trans "Password" %}</b></label>
         </div>
-        <div class="col l6 m6 s6 right">	
+        <div class="col col-6 float-end">	
           {% render_field form.password placeholder="Introduce your password" %}
         </div>
         </div>    
@@ -66,14 +67,16 @@
         <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
         {% endif %}
         <div class="row">
-        <div class="col l10 m10 s10 left">
+        <div class="col col-6 float-start m-2">
         <a class="secondaryAction" href="{% url 'account_reset_password' %}">{% trans "Forgot Password?" %}</a>
         </div>
-        <div class="col l2 m2 s2 right">
-            <button class="primaryAction btn waves-effect waves-light" type="submit">{% trans "Sign In" %}</button>
+        <div class="col col-2 float-end m-2">
+            <button class="primaryAction btn btn-outline-info float-end" type="submit">{% trans "Sign In" %}</button>
       </div>
     </div>
       </form>
+    </div>
+  </div>
   
 </div>
 

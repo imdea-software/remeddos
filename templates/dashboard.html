@@ -1,137 +1,131 @@
-{% extends "base1.html" %}
+{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 
 
 {% block extrahead %}
-	<link href="{% static 'theme/css/plugins/morris/morris-0.4.3.min.css' %}" rel="stylesheet"> 
-    <link href="{% static 'theme/css/plugins/timeline/timeline.css' %}" rel="stylesheet">
-	
-    <style type="text/css">
-/* 	.dl-horizontal dt {
-    width: 60px;
-} */
- .dl-horizontal dd {
-    margin-left: 150px;
-	padding : 0;
-	line-height: 0%;
-	
-}
-.timeline-panel{
-	/* width: 50% !important; */
-	height: 30% !important; 
-}
-.timeline-badge > i{
-	margin-top:25%;
-}
-
+<link href="{% static 'theme/css/plugins/morris/morris-0.4.3.min.css' %}" rel="stylesheet"> 
+<link href="{% static 'theme/css/plugins/timeline/timeline.css' %}" rel="stylesheet">
+<style type="text/css">
+	.dl-horizontal dt {
+		font-size: 15px;
+	}
+	.dl-horizontal dd {
+		font-size: 15px;
+	}
 </style>
 {% endblock %}
-
 {% block title %}{% trans "Dashboard" %}{% endblock %}
 {% block contentplaceholder %}
 {% csrf_token %}
-<div class="container">
+<div class="container-fluid p-5">
             <div class="row">
-                <div class="col  l12 m12 s12 grey-text text-lighten-1">
-                    <h1 class="flow-text right">{% trans "Dashboard" %}</h1>
+                <div class="col">
+                    <h1 class="text-end">{% trans "Dashboard" %}</h1>
                 </div>
-                <!-- /.col-lg-12 -->
             </div>
 	<div class="row">
-                <div class="col l12 m12 s8 left text-grey-darken-3">
-                            <i class="material-icons">access_time</i> {% trans "Timeline" %} - {% trans "Latest 10" %}
-							<div class="divider"></div>
+                <div class="col">
+                	<div class="panel panel-default">
+						<div class="panel-body">
+                        <div class="panel-heading">
+                            <i class="bi-clock"></i> {% trans "Timeline" %} - {% trans "Latest 10" %}
                         </div>
-						
+					</div>
+				</div>
+
                         <!-- /.panel-heading -->
-                        <div class="col l12 m12 s12">
+                <div class="row">
+					<div class="col">        
+                            <div class="panel">{{messages}}</div>
                             <ul class="timeline">
                             	{% for route in routes %}
                                 <li class="{% cycle '' 'timeline-inverted' %}">
                                     	{% if route.status == 'EXPIRED' or route.status == 'ADMININACTIVE' or route.status == 'INACTIVE' or route.status == 'OUTOFSYNC'%}
+											<div class="timeline-badge"><i class="bi-shield"></i></div>
 											{% if route.status == 'EXPIRED' or route.status == 'ADMININACTIVE' or route.status == 'INACTIVE' %}
-												<span class="timeline-badge grey"><i class="material-icons">donut_large</i></span>
+												<div class="timeline-badge"><i class="bi-chart-line"></i></div>
 											{% else %}
 												{% if route.status == 'OUTOFSYNC' %}
-                                                <div class="timeline-badge red"><i class="material-icons">bug_report</i></div>
+													<div class="timeline-badge danger"><i class="bi-bug"></i></div>
 												{% else %}
-                                                <div class="timeline-badge amber"><i class="material-icons">warning</i></div>
+													<div class="timeline-badge danger"><i class="bi-exclamation"></i></div>
 												{% endif %}
 											{% endif %}
 										{% else %}
 											{% if route.status == 'ACTIVE' %}
-                                            <span class="timeline-badge light-green "><i class="material-icons">check</i></span>
+												<div class="timeline-badge success"><i class="bi-shield"></i></div>
 											{% else %}
 												{% if route.status == 'PENDING' %}
-                                                <div class="timeline-badge blue"><i class="material-icons">cached</i></div>
+												<div class="timeline-badge info"><i class="bi-spinner"></i></div>
 												{% else %}
-                                                <div class="timeline-badge"><i class="material-icons">icon</i></div>
-												{% endif %}
+												<div class="timeline-badge warning"><i class="bi-exclamation"></i></div>
+											{% endif %}
 											{% endif %}
 										{% endif %}
-
-                                    <div class="timeline-panel card small">                                        
-                                        <div class="timeline-heading ">
-                                            <h5 class="timeline-title">{{route.name}}</h5>
-                                            
-                                                <p class="text-grey-lighten-4"><i class="material-icons">edit</i> 
-													{% trans "Last update" %}: {{route.last_updated}} {% trans "by" %} {{route.applier_username_nice}}</p>
-                                            
-                                            	{% if route.expires %}
-                                                <p class="text-grey-lighten-4"><i class="material-icons">access_time</i> {% trans "Expires" %}: {{ route.expires|date:"d M y" }}</p>
+                                    <div class="timeline-panel card">
+                                        <div class="timeline-heading card-title">
+                                            <h4 class="timeline-title" style="color: darkolivegreen;">{{route.name}}</h4>
+                                            <p>
+                                                <small class="text-muted"><i class="bi-pencil"></i> {% trans "Last update" %}: {{route.last_updated}} {% trans "by" %} {{route.applier_username_nice}}</small>
+                                            </p>
+                                            <p>	{% if route.expires %}
+                                                <small class="text-muted"><i class="bi-clock"></i> {% trans "Expires" %}: {{ route.expires|date:"d M y" }}</small>
 												{% else %}
-												<p class="text-grey-lighten-4"><i class="material-icons">access_time</i> {% trans "Expires" %}: Never</p>
+												<small class="text-muted"><i class="bi-clock"></i> {% trans "Expires" %}: Never</small>
 												{% endif %}
-                                            
+                                            </p>
                                         </div>
                                         <div class="timeline-body">
-                                        		<p>
+                                        		<p class="fs-6">
                                         			{% if route.status == 'EXPIRED' or route.status == 'ADMININACTIVE' or route.status == 'INACTIVE' or route.status == 'OUTOFSYNC'%}
 														{% if route.status == 'EXPIRED' or route.status == 'ADMININACTIVE' or route.status == 'INACTIVE' %}
-														<span class="badge grey-text text-darken-4">DEACTIVATED</span>
+														<span class="badge pill bg-dark">DEACTIVATED</span>
 														{% else %}
 															{% if route.status == 'OUTOFSYNC' %}
-																<span class="badge red-text text-lighten-4">ERROR</span>
+																<span class="badge pill bg-danger">ERROR</span>
 															{% else %}
-																<span class="badge text-blue-lighten-4">{{route.status}}</span>
+																<span class="badge pill bg-info">{{route.status}}</span>
 															{% endif %}
 														{% endif %}
 													{% else %}
 														{% if route.status == 'ACTIVE' %}
-															<span class="badge light-green-text text-darken-3">{{route.status}}</span>
+															<span class="badge pill bg-success">{{route.status}}</span>
 														{% else %}
 															{% if route.status == 'PENDING' %}
-																<span class="badge cyan-text">{{route.status}}</span>
+																<span class="badge pill bg-info">{{route.status}}</span>
 															{% else %}
-																<span class="badge amber-text">{{route.status}}</span>
+																<span class="badge pill bg-warning">{{route.status}}</span>
 															{% endif %}
 														{% endif %}
 													{% endif %}
                                         		</p>
-											<div class="divider"></div>
-											<div class="section">
-												<p>{{ route.get_match|safe }}</p>
-											
+												<div class="container-fluid card-text">
+												<p class="fs-6">
+												{{ route.get_match|safe|escape }}
+												</p>
+												<p class="fs-6">												
                                         	<dl class="dl-horizontal">
                                         		<dt>Then</dt><dd>{{ route.get_then }}</dd>
-											</dl>
+                                        	</dl>
+											</p>
 										</div>
-										<div class="divider"></div>
-										<br>
-										<div col="row">
+
+										<div class="row">
+										<div class="btn-group d-block gap-2 flex-row-reverse">
 										{% ifequal route.status 'ACTIVE' %}
-											<a href="{% url 'edit-route' route.name %}" class="waves-effect waves-light btn-small amber right-align" id="edit_button_{{route.pk}}">{% trans "Edit" %}</a>
-											<a href="{% url 'display-graphs' route.name %}" class="waves-effect waves-light btn-small right-align" id="display_button_{{route.pk}}">{% trans "Show Graph!" %}</a>
+											<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-warning" id="edit_button_{{route.pk}}">{% trans "Edit" %}</a>
+											<a href="{% url 'display-graphs' route.name %}" class="btn-outline btn btn-xs btn-info" id="display_button_{{route.pk}}">{% trans "Show Graph!" %}</a>
+											<!-- <button class="del_buttonpre btn-outline btn btn-xs btn-warning" id="{{route.name}}" data-routename="{{route.name}}">{% trans "Deactivate" %}</button> -->
 										{% else %}
 											{% if route.status == 'EXPIRED' or route.status == 'ADMININACTIVE' or route.status == 'INACTIVE' %}
-												<a href="{% url 'edit-route' route.name %}" class="waves-effect waves-light btn-small right" id="edit_button_{{route.pk}}" type="button">{% trans "Reactivate" %}</a>
+												<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-outline" id="edit_button_{{route.pk}}" type="button">{% trans "Reactivate" %}</a>
 											{% else %}
 												{% ifequal route.status 'OUTOFSYNC' %}
-													<a href="{% url 'edit-route' route.name %}" class="waves-effect waves-light btn-small amber right" id="edit_button_{{route.pk}}">{% trans "ReSync" %}</a>
+													<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-outline" id="edit_button_{{route.pk}}">{% trans "ReSync" %}</a>
 												{% else %}
 													{% ifequal route.status 'ERROR' %}
-														<a href="{% url 'edit-route' route.name %}" class="waves-effect waves-light btn-small red right" id="edit_button_{{route.pk}}">{% trans "Fix it!" %}</a>
+														<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-outline" id="edit_button_{{route.pk}}">{% trans "Fix it!" %}</a>
 													{% else %}
 													-
 													{% endifequal %}
@@ -141,16 +135,49 @@
 										</div>
                                         </div>
                                     </div>
+									</div>
                                 </li>
 
                                 {% endfor %}
                             </ul>
                         </div>
-                        <!-- /.panel-body -->
-				</div>	
-                    <!-- /.panel -->
+                    </div>
             </div>
-			
+</div>
+</div>              
 {% endblock %}
 {% block pagejsbottom %}
+<script type="text/javascript" src="{{STATIC_URL}}js/jquery.dataTables.js"></script>
+<script type="text/javascript" src="{{STATIC_URL}}js/datatables_bootstrap.js"></script>
+
+<script>
+		var oldhtml;
+		var last_element = false;
+		var refreshUrl = "{% url 'group-routes-ajax' %}";
+		$(document).ready( function(){
+		$('body').on('click', ".del_buttonpre", function(){
+            	var my = $(this);
+            	if (last_element != false){
+            		last_element.html(oldhtml);
+            	}
+            	oldhtml = my.parent().html();
+            	last_element = my.parent();
+            	var routename = $(this).data("routename");
+				var btn = '<a href="#" data-toggle="tooltip" title="This will deactivate your rule"  data-routename="'+routename+'" class="del_button btn btn-xs btn-warning"> {% trans "Deactivate" %}</a>'
+				var back = '<a href="#" class="revertbutton btn btn-xs btn-info"><i class="fa fa-undo"></i></a>';
+            	my.parent().html(back+" "+btn);
+            	return false;
+            });
+			$('body').on('click', '.revertbutton', function () {
+            	var my = $(this);
+            	my.parent().html(oldhtml);
+            	last_element = false;
+            	return false;
+            });
+			$("body").tooltip({ selector: '[data-toggle="tooltip"]' });
+
+			}); 
+</script>
+
+
 {% endblock %}

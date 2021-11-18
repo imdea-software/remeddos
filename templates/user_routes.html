@@ -1,89 +1,64 @@
-{% extends "base1.html" %}
+{% extends "base.html" %}
 {% load i18n %}
 {% load static %}
 {% block extrahead %}
-<link href="{% static 'theme/css/plugins/dataTables/dataTables.bootstrap.css' %}" rel="stylesheet">
-{% endblock %}
-{% block pagejsbodttom %}
-
-<script type="text/javascript" src="{% static 'js/jquery.dataTables.js' %}"></script>
-<script type="text/javascript" src="{% static 'js/datatables_bootstrap.js' %}"></script>
- <script src="{% static 'js/moment.js' %}"></script>
-
+   <!--  <link href="{% static 'theme/css/plugins/dataTables/dataTables.bootstrap.css' %}" rel="stylesheet"> -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.3/datatables.min.css"/>
+    <style>
+        body{
+            line-height: 0.8rem !important;
+        }
+    </style>
 {% endblock %}
 {% block title %}{% trans "My rules" %}{% endblock %}
 {% block contentplaceholder %}
 {% csrf_token %}
-
-   
-<style>
-    th{	font-size: 15px !important;
-}
-label{
-    font-size:12px !important;
-}
-a:link{
-    text-decoration: none !important;
-}
-</style>
-
-<div class="container">
-    <div class="row">
-        <div class="col l12 m12 s12">
-            <h5 class="flow-text right">{% trans "Routes  " %} </h5>
+<div class="container ">
+    <div class="row rows-cols-4 p-5">
+        <div class="col-3">
+            <h3 class="page-heading text-start">{% trans "My rules" %} </h3>
+        </div>
+        <div class="col-1">
+            <div class="panel-heading position-absolute start-80 text-end"> <i class="fa fa-shield"></i><span>Firewall Rules</span>
+        </div>
         </div>
     </div>
-        <div class="row">
-        <div class="col l10 m10 s10">
-        	<p class="align-left"><i class="material-icons">security</i> Firewall Rules
-            (Use the pencil for editting an existing rule or the clock to deactivate an existing rule)
-            </p></div>
-        </div>
-
-    <div class="row">
-               <div class="col l12 m12 s12">
-                    	<table class="display" id="routes_table" >
-                        <thead>
-                            <tr>
-                                <th style="border: 1px solid lightgrey !important">Id</th>
-                                <th style="text-align: center; font-size: 15px;">{% trans "Name" %}</th>
-                                <th style="text-align: center; font-size: 15px;">{% trans "Match" %}</th>
-                                <th style="text-align: center; font-size: 15px;">{% trans "Then" %}</th>
-                                <th style="text-align: center;font-size: 15px; ">{% trans "Status" %}</th>
-                                <th style="text-align: center;font-size: 15px;">{% trans "Applier" %}</th>
-                                <th style="text-align: center;font-size: 15px;">{% trans "Expires" %}</th>
-                                <th style="text-align: center;font-size: 15px;">{% trans "Response" %}</th>
-                                <th style="text-align: center;font-size: 15px;">{% trans "Actions" %}</th>
-                            </tr>
-                        </thead>
+        <div class="panel-body table-responsive">
+                    	<table class="table table-hover table-bordered align-middle p-2" id="routes_table">
+                        <thead class="bg-dark text-white">
+                    <tr>
+                        <th>Id</th>
+                        <th>{% trans "Name" %}</th>
+                        <th>{% trans "Match" %}</th>
+                        <th>{% trans "Then" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Applier" %}</th>
+                        <th>{% trans "Expires" %}</th>
+                        <th>{% trans "Response" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
 
                     <tbody>
                 </tbody>
             </table>
-                </div>
             </div>
          </div>
     </div>
-</div>
+
+
 
 {% endblock %}
 
-{% block pagejsbottom %}
-    <script src="{% static 'js/dataTableslatest/jquery.dataTables.min.js' %}"></script>
-    <script src="{% static 'js/dataTableslatest/dataTables.bootstrap.js' %}"></script>
-   
-    
-    {% if user.is_authenticated %}
-    <!-- introduce view function that load js from flowspec app -->    
-    <!-- <script type="text/javascript" src="{% url 'load-js' file='poller'  %}"></script> -->
-    {% endif %}
+{% block pagejsbottom %} 
+    <script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.3/datatables.min.js"></script>
 
 <script type="text/javascript">
-var filterbtns = '<div class="btn-group col l8 m8 s8 center">\
+var filterbtns = '<div class="btn-group d-block gap-2">\
     <button type="button" class="btn btn-outline btn-sm btn-success" name="status_filter" value="ACTIVE" id="show_active">ACTIVE</button>\
     <button type="button" class="btn btn-outline btn-sm btn-info" name="status_filter" value="PENDING" id="show_pending">PENDING</button>\
     <button type="button" class="btn btn-outline btn-sm btn-warning" name="status_filter" value="ERROR" id="show_error">ERROR</button>\
-    <button type="button" class="btn btn-outline btn-sm btn-default" name="status_filter" value="DEACTIVATED" id="show_deactivated">DEACTIVATED</button>\
+    <button type="button" class="btn btn-outline btn-sm btn-dark" name="status_filter" value="DEACTIVATED" id="show_deactivated">DEACTIVATED</button>\
     </div>';
 
 
@@ -160,8 +135,10 @@ var end;
 var oldhtml;
 var last_element = false;
 var refreshUrl = "{% url 'group-routes-ajax' %}";
-
 $(document).ready( function(){
+
+
+
     oTable = $('#routes_table').dataTable( {
         "bPaginate": true,
         "bFilter": true,
@@ -170,7 +147,7 @@ $(document).ready( function(){
             [5, 15, 20, -1],
             [5, 15, 20, "All"]
         ],
-        "sDom": "<'row'<'col-xs-4'l><'col-xs-4'<'#filterplaceholder'>><'col-xs-4'f>><'row'<'col-xs-6'i><'col-xs-6'p>>tr<'row'<'col-xs-6'i><'col-xs-6'p>>",
+        "sDom": "<'row'<'col col-4'l><'col col-4'<'#filterplaceholder'>><'col col-4'f>><'row'<'col col-6'i><'col col-6'p>>tr<'row'<'col col-6'i><'col col-6'p>>",
         "iDisplayLength": 20,
         "bProcessing": true,
         "sAjaxSource": refreshUrl,
@@ -192,9 +169,9 @@ $(document).ready( function(){
                      "mRender": function (data, type, full) {
                         if (full.comments !== null) {
                             if (!full.comments.trim()) {
-                               return   data ;
+                               return '<small>' + data + '</small>';
                             }
-                            return '<a href=#  data-position="bottom" data-tooltip='+full.comments+data
+                            return '<a rel="tooltip" href="#" data-bs-toggle="tooltip" data-bs-placement="top" title='+full.comments+'><small>'+data+'</small>'
                         } else {
                             return 'No comments'
                         }
@@ -202,12 +179,12 @@ $(document).ready( function(){
                      },
                      {"mData":"match", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
-                     	return data;
+                     	return '<small>'+data+'</small>';
                      }
                      },
                      {"mData":"then", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
-                     	return data;
+                     	return '<small>'+data+'</small>';
                      }
                      },
                      {"mData":"status", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
@@ -215,12 +192,12 @@ $(document).ready( function(){
                      	var status = data;
                      	if (status == "EXPIRED" ||status == "ADMININACTIVE" || status == "INACTIVE" || status == "OUTOFSYNC"){
                      		if (status == "EXPIRED" ||status == "ADMININACTIVE" || status == "INACTIVE" ){
-                     			return '<span class="label grey-text">DEACTIVATED</span>';
+                     			return '<span class="badge pill bg-dark">DEACTIVATED</span>';
                      		}
                      		else
                      		{
                      			if (status == "OUTOFSYNC"){
-                     				return '<span class="label red-text">ERROR</span>';
+                     				return '<span class="badge pill bg-danger">ERROR</span>';
                      			}
                      			else{
                      				return status;
@@ -229,14 +206,14 @@ $(document).ready( function(){
                      	}
                      	else{
                      		if (status == 'ACTIVE'){
-                     			return '<span class="label green-text">'+status+'</span>';
+                     			return '<span class="badge pill bg-success">'+status+'</span>';
                      		}
                      		else{
                      			if (status == 'PENDING'){
-                     				return '<span class="label blue-text">'+status+'</span>';
+                     				return '<span class="badge pill bg-info">'+status+'</span>';
                      			}
                      			else{
-                     				return '<span class="label red-text">'+status+'</span>';
+                     				return '<span class="badge pill bg-danger">'+status+'</span>';
                      			}
                      		}
                      	}
@@ -244,7 +221,7 @@ $(document).ready( function(){
                      },
                      {"mData":"applier", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
-                     	return data+' ('+full.peer+')';
+                     	return '<small>'+data+' ('+full.peer+')</small>';
                      }
                      },
                      {"mData":"expires", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
@@ -254,12 +231,12 @@ $(document).ready( function(){
                             month:'long',
                             day:'numeric',
                         });
-                     	return parsedate;
+                     	return '<small>'+parsedate+'</small>';
                      }},
                      {"mData":"response", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
                      	status = full.status;
-                     	toolt = '<a class="btn white black-text tooltipped" data-position="top"';
+                     	toolt = '<a rel="tooltip" href="#" data-bs-toggle="tooltip" data-bs-placement="top"';
    	                     	if (status == "EXPIRED" ||status == "ADMININACTIVE" || status == "INACTIVE" || status == "OUTOFSYNC"){
 	                     		if (status == "INACTIVE" ){
 	                     			title = "{% trans 'Deactivated by user' %}";
@@ -273,33 +250,35 @@ $(document).ready( function(){
 	                     		if (status == "OUTOFSYNC" ){
 	                     			title = "{% trans 'Syncronization error. Configuration in device differs from rule' %}";
 	                     		}
-	                     		return toolt+" data-tooltip=\""+title+"\">"+"{% trans 'Rule expired' %}"+"</a>";
+	                     		return toolt+" title=\""+title+"\">"+"<small>{% trans 'Rule expired' %}</small>"+"</a>";
 	                     	}
                      		if (status == "PENDING"){
                      				return "<img src={% static 'dots.gif' %}>";
                      			}
-                     		return full.response;
+                     		return "<small>"+full.response+"</small>";
 
                      }
                      },
-                     {"mData":"comments", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
+                     {"mData":"comments", "bSearchable": true,"bSortable": true,
                       "mRender": function (data, type, full) {
                      status = full.status;
                      btn = '';
                      editurl = "{% url 'edit-route' route_slug='routename'  %}".replace('routename', full.name.toString());
                      deleteurl = "{% url 'delete-route' route_slug='routename'  %}".replace('routename', full.name.toString());
+                     graphsurl = "{% url 'display-graphs' route_slug='routename'  %}".replace('routename', full.name.toString());
                      if (status == "ACTIVE" ){
-                     	btn = '<a  class="btn-floating tooltipped amber" href="'+editurl+'" data-position="top" data-tooltip="Edit"><i class="material-icons">edit</i></a>';
-                        btn = btn +'<a href="'+deleteurl+'" class="btn-floating tooltipped grey" data-position="top" data-tooltip="Deactivate"><i class="material-icons">alarm_off</i></a>';
+                     	btn = '<div class="row"><div class="col col-2 btn-group d-inline"><a href="'+editurl+'" class="btn btn-outline-dark m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Edit" %}"><i class="bi-pencil"></i></a>';
+                        btn = btn +'<a href="'+deleteurl+'" class="btn btn-outline-dark m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Deactivate " %}"><i class="bi-shield-fill-x"></i></a>';
+                        btn = btn +'<a href="'+graphsurl+'" class="btn btn-outline-dark m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Show graphs!" %}"><i class="bi-graph-up"></i></a></div></div>';
                     }
-                     if (status == 'EXPIRED' || status == 'ADMININACTIVE' || status == 'INACTIVE'){
-                     	btn = '<a href="'+editurl+'" class="btn white black-text btn-small" id="edit_button_{{route.pk}}">{% trans "Reactivate" %}</a>';
+                     if (status == 'EXPIRED' || status == 'ADMININACTIVE' || status == 'INACTIVE' ){
+                     	btn = '<a href="'+editurl+'" class="btn btn-outline-dark m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Reactivate" %}" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up"></i></a>';
                      }
                      if (status == "OUTOFSYNC" ){
-                     	btn = '<a href="'+editurl+'" class="btn waves-effect amber lighten-4 black-text btn-small" id="edit_button_{{route.pk}}">{% trans "Resync" %}</a>';
+                     	btn = '<a href="'+editurl+'" class="btn btn btn-sm btn-outline-danger" id="edit_button_{{route.pk}}">{% trans "Resync" %}</a>';
                      }
                      if (status == "ERROR" ){
-                     	btn = '<a href="'+editurl+'" class="btn waves-effect red lighten-4 black-text btn-small" id="edit_button_{{route.pk}}">{% trans "Fix it!" %}</a>';
+                     	btn = '<a href="'+editurl+'" class="btn btn btn-sm btn-outline-warning" id="edit_button_{{route.pk}}">{% trans "Fix it!" %}</a>';
                      }
                      return btn;
                      },
@@ -308,6 +287,9 @@ $(document).ready( function(){
          ]
 } );
 $('#filterplaceholder').html(filterbtns);
+
+
+
     $('body').on('click', 'button[name="status_filter"]', function(){
     	var reg_exp = '';
         var checkboxs = document.getElementsByName('status_filter');
@@ -345,8 +327,6 @@ var update_size = function() {
     }
     oTable.fnAdjustColumnSizing();
   }
-
-/* $("body").tooltip({ selector: '[data-toggle="tooltip"]' }); */
 });
 </script>
 <style type="text/css">
@@ -357,19 +337,11 @@ var update_size = function() {
 }
 .dl-horizontal dd {
     margin-left: 90px;
-    padding : 0;
-	line-height: 0%;
 }
 
-
-/* table, th, td {
-  border: 1px solid lightgrey !important;
-} */
-.btn-small{
-    margin-left: 5px;
+th{
+	font-size: 12px;
 }
-
-
 </style>
 
 {% endblock %}

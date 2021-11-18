@@ -1,11 +1,9 @@
-{% extends "base1.html" %}
+{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 
 
 {% block extrahead %}
-	<link href="{% static 'b3theme/css/plugins/morris/morris-0.4.3.min.css' %}" rel="stylesheet">
-    <link href="{% static 'b3theme/css/plugins/timeline/timeline.css' %}" rel="stylesheet">
     <style type="text/css">
 
 
@@ -21,20 +19,16 @@
 
 {% block title %}{% trans "Synced Routes" %}{% endblock %}
 {% block contentplaceholder %}
-<div class="container">
+<div class="container p-5">
+
     <div class="row">
-        <div class="col l12 m12 s12 center">
-        <h4> Syncronising Routes</h4> 
+        <div class="col">
+        <h4 class="align-middle"> Storage </h4> 
     </div>
     </div>
-    <div class="divider"></div>
-    <div class="section">
     <div class="row">
-    <div class="col l12 m12 s12 center teal-text" style="font-size: 20px;">
-     <div>
+    <div class="col">
         <p>{{message}}</p>
     </div>
-    </div>
-</div>
 </div>
 {% endblock %}

@@ -1,14 +1,11 @@
-{% extends "base1.html" %}
+{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 
-
-{% block title %}{% trans "Graphs" %}{% endblock %}
+{% block title %}{% trans "Dashboard" %}{% endblock %}
 
 
 {% block contentplaceholder %}
-<div class="container">
-
 <style>
 
 .fade-carousel {
@@ -31,22 +28,31 @@
 }
 </style>
 
-<div class="row">
-  <div class="col l12 m12 s12 center">
-    <h5>{% trans "Graphs" %}</h5>
+
+<div class="container-fluid p-5">
+    <div class="row p-1">
+        <div class="col">
+            <h4 class="text-center">
+                Graphs
+            </h4>
+        </div>
     </div>
+<div class="carousel fade-carousel slide" data-ride="carousel" id="bs-carousel">
+    <div class="overlay"></div>    
+    <div class="carousel-inner">
+      <div class="item slides active">
+        <div class="slide-1"></div>
+        <div class="hero">
+          <hgroup>
+              <img src="{{ MEDIA_URL }}{{ graphs }}" alt="Image not available at the moment, sorry for any inconvenience">
+          </hgroup>
+        </div>
+      </div>
+    </div> 
   </div>
 </div>
-  <div class="divider"></div>
-
-    
-    <div class="row">
-      <div class="col l12 m12 s12 ">
-        <img class="materialboxed" src="{{ MEDIA_URL }}{{ graphs }}" alt="Image not available at the moment, sorry for any inconvenience">
-      </div>
-    </div>
-
 {% endblock %}
+
 
 
 {% block pagejsbottom %}
