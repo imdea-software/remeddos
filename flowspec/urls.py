@@ -28,6 +28,5 @@ urlpatterns = [
     path('edit/<slug:route_slug>/',views.routedetails,name="route-details"),
     re_path(r'^routestats/(?P<route_slug>[\w-]+)/$', views.routestats, name="routestats"),
     re_path(r'^setup/', views.setup, name='setup'),
-    path('endpoint/',views.webhook,name="endpoint"), 
 ]
 

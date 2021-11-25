@@ -1,4 +1,4 @@
-{% extends "base1.html" %}
+{% extends "base.html" %}
 {% load widget_tweaks %}
 {% load static %}
 {% load i18n %}
@@ -22,25 +22,26 @@
 
 {% block title %}{% trans "Synced Routes" %}{% endblock %}
 {% block contentplaceholder %}
-<div class="container">
+<div class="container-fluid p-5">
     <div class="row">
-        <div class="col l12 m12 s12 right-align">
+        <div class="col float-end">
         <h4> Choose a back up file to restore the database.</h4>
     </div>
     </div>
-    <div class="divider"></div><br>
-
     <div class="section">
         <form action="{% url 'restore' %}" method='POST'>
         {% csrf_token %}
         {% load unescape %}
             {% for file in files %}
             <div class="row">
-                <div class="col l12 m12 s12 left-align">
-            <div class=" {% if form.applier.errors %} has-error {% endif %}"></div>
-            <label>
-                <input type="checkbox" id="indeterminate-checkbox" value="{{file}}" name="value">
-                    <span>{{file}}</span>
+                <div class="col float-start">
+                <div class=" {% if form.applier.errors %} has-error {% endif %}"></div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="value" value="{{file}}" name="value">
+                    <label for="value" class="form-check-label">
+                        {{file}}
+                    </label>
+                </div>
                 </label>
               </div>
             </div>              
@@ -48,8 +49,8 @@
         </div>
         <div class="divider"></div><br>
                 <div class="row">
-                 <div class="col l12 m12 s12">
-                    <button type="submit" id="applybutton" value="{% trans 'Apply' %}" class="btn waves-effect right">Apply</button>
+                 <div class="col">
+                    <button type="submit" id="applybutton" value="{% trans 'Apply' %}" class="btn btn-outline btn-dark float-end">Apply</button>
                 </div>
             </div>
     </form>

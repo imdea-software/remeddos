@@ -33,7 +33,7 @@ router.register(r'matchdscp', MatchDscpViewSet)
 
 
 urlpatterns = [
-    path('',flowspec.views.welcome,name="index"),
+    path('',flowspec.views.group_routes,name="index"),
     path('service-desc',flowspec.views.service_desc,name="service-description"),
     re_path(r'^poll/', include('poller.urls')),
     re_path(r'^flowspec/', include('flowspec.urls')),
@@ -45,7 +45,8 @@ urlpatterns = [
     re_path(r'^tinymce/', include('tinymce.urls')),
     re_path(r'^altlogin/?',auth_views.LoginView.as_view(template_name= 'overview/login.html'), name="altlogin"),
     re_path(r'^api/', include(router.urls)),
-    re_path(r'^i18n/', include('django.conf.urls.i18n')),    
+    re_path(r'^i18n/', include('django.conf.urls.i18n')),
+    path('endpoint',flowspec.views.ProcessWebHookView.as_view(),name="endpoint"),     
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

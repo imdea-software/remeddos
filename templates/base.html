@@ -30,7 +30,7 @@
     <header class="header bg-dark" id="header">
         {% if user.is_authenticated %}
         <div class="header_toggle"> <button type="button" class="btn btn-dark white-text" data-bs-toggle="offcanvas" data-bs-target="#nav-bar" aria-controls="nav-bar"><i class='bi-list' id="header-toggle"></i></button> </div>
-        <div class="header_img"> <img src="{% static 'redimadrid_negativo.png'%}" alt="RediMadrid logo" class="img"> </div>
+        <div class=""> <img src="{% static 'redimadrid_negativo.png'%}" alt="RediMadrid logo" class="float-end" style="width: 75px; height: 50px;"> </div>
         {% else %}
         <div class="col m-2 p-3"> <a href="{% url 'account_login' %}" class="text-end text-white text-decoration-none fw-light"> <i class='bi-person nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Sign In"></i> <span class="nav_name">Sign In</span> </a>  </div>
         {% endif %}
@@ -41,18 +41,18 @@
         <nav class="nav">
             <div> 
                 {% if user.is_authenticated %}
-                <a href="{% url 'group-routes' %}" class="nav_logo text-decoration-none"> <i class='bi-shield nav_logo-icon text-danger'></i> <span class="nav_logo-name text-danger">F O D</span> </a>
+                <a href="{% url 'group-routes' %}" class="nav_logo text-decoration-none text-wrap"> <i class='bi-shield nav_logo-icon text-danger'></i> <span class="nav_logo-name text-danger">F O D</span> </a>
                 <div class="nav_list">
-                    <a href="{% url 'group-routes' %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-table nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Routes"></i> <span class="nav_name">User Routes</span></a>  
-                    <a href="{% url 'dashboard' %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-clipboard nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Dashboard"></i> <span class="nav_name">Dashboard</span></a>
-                    <a href="{% url 'add-route' %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-shield-plus nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Add Route"></i> <span class="nav_name">Add Route</span></a>  
-                    <a href="#submenu1" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="subMenu1"> <i class='bi-cloud nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Storage Options"></i> <span class="nav_name">Storage Options</span> </a>
+                    <a href="{% url 'group-routes' %}" class="nav_link text-white text-decoration-none fw-light text-wrap"> <i class='bi-table nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Routes"></i> <span class="nav_name">User Routes</span></a>  
+                    <a href="{% url 'dashboard' %}" class="nav_link text-white text-decoration-none fw-light text-wrap"> <i class='bi-clipboard nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Dashboard"></i> <span class="nav_name">Dashboard</span></a>
+                    <a href="#submenu1" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="subMenu1"> <i class='bi-cloud nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Storage Options"></i> <span class="nav_name">Storage Options</span> </a>
                         <div class="collapse" id="submenu1">
-                            <a href="{% url 'backup' %}" class="nav_link text-white text-decoration-none fw-light"><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Create back up file"></i><span class="nav_name">Create back up file</span></a>
-                            <a href="{% url 'router-sync' %}" class="nav_link text-white text-decoration-none fw-light"><i class="bi-router" data-bs-toggle="tooltip" data-bs-placement="top" title="Sync routes from router"></i><span class="nav_name" >Sync from router</span></a>
-                            <a href="{% url 'rsync' %}" class="nav_link text-white text-decoration-none fw-light"><i class="bi-arrow-repeat" data-bs-toggle="tooltip" data-bs-placement="top" title="Restore from DB"></i><span class="nav_name">Restore from DB</span></a>
-                            <a href="{% url 'restore' %}" class="nav_link text-white text-decoration-none fw-light"><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Restore from back up file"></i><span class="nav_name">Restore from back up file</span></a>
+                            <a href="#" class="nav_link text-white text-decoration-none fw-light text-wrap" data-bs-toggle="modal" data-bs-target="#confbModal" ><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Create back up file"></i><span class="nav_name text-wrap">Create back up file</span></a>
+                            <a href="#" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="modal" data-bs-target="#confsrModal"><i class="bi-router" data-bs-toggle="tooltip" data-bs-placement="top" title="Sync routes from router"></i><span class="nav_name text-wrap" >Sync from router</span></a>
+                            <a href="#" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="modal" data-bs-target="#confresdbModal"><i class="bi-arrow-repeat" data-bs-toggle="tooltip" data-bs-placement="top" title="Restore from DB"></i><span class="nav_name text-wrap">Restore from DB</span></a>
+                            <a href="#" class="nav_link text-white text-decoration-none fw-light"data-bs-toggle="modal" data-bs-target="#confresfModal"><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Restore from back up file"></i><span class="nav_name">Restore from back up file</span></a>
                         </div>
+                        <a href="#" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="modal" data-bs-target="#addRouteM"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Add Route"></i> <span class="nav_name">Add Route</span></a>  
                     <a href="{% url 'user-profile' %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-person nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="My profile"></i> <span class="nav_name">My profile</span></a>
                     {% if user.is_superuser %} 
                     <a href="{% url 'admin:index'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-gear nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Admin Dashboard"></i> <span class="nav_name">Admin</span></a> 
@@ -66,11 +66,169 @@
         </nav>
     </div>
     <!-- ENDOFNAVBAR-->
-    <div class="container p-5 height-100 bg-light">
+    <div class="container-fluid p-5 height-100 bg-light">
                     {% block contentplaceholder %}
                 	{% endblock %}
-                </div>     
-    
+  </div>      
+  
+   <!-- ADD ROUTE - Modal -->
+   <div class="modal" id="addRouteM" tabindex="-1" role="dialog" aria-labelledby="addRouteMLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+              <h5 class="modal-title" id="addRouteMLabel">Add a new route</h5>
+                  <button type="button" class="btn btn-outline btn-info close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <div class="modal-body">
+                  <div class="row">
+                      <div class="col text-wrap">
+                      <p class="lh-base">Would you like to configure a new rule?</p>
+                      <p>Introduce the code that has been sent to your linked account.</p>  
+                      </div>
+                  </div>
+                </div>
+                <div class="modal-footer m-2">
+                  {% if user.is_authenticated %}
+                  <form action="{% url 'add-route' %}" class="row gx-3 gy-2 align-items-center">
+                    {% csrf_token %}
+                    <div class="row">
+                      <form action="{url 'add-route'}" method="POST" id="verify_user_add">
+                      <label for="id_value" class="col form-label float-start m-2">Value: </label>
+                      <input type="text" id="id_value" name="value" class="col form-control m-2 " aria-describedby="valueHelpBlock">
+                      <button type="submit" class="btn btn-outline-primary btn-sm col float-end m-2">Yes</button>
+                    </form>
+                    </div>
+                  </form>
+                    {% else %}
+                    <p>You first need to login before creating any back up file.</p>
+                    {% endif %}
+        </div>
+      </div>
+  </div>
+</div>
+        <!-- Back up File Modal -->
+  <div class="modal fade" id="confbModal" tabindex="-1" role="dialog" aria-labelledby="confbModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+              <h5 class="modal-title" id="confbModalLabel">Back up confirmation</h5>
+                  <button type="button" class="btn btn-sm close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <div class="modal-body">
+                  <div class="row">
+                      <div class="col text-wrap">
+                      <p class="font-monospace lh-base">Would you like to create a back up file from the current database?</p>  
+                      </div>
+                  </div>
+                </div>
+                <div class="modal-footer m-2">
+                  {% if user.is_authenticated %}
+                  <button type="button" class="btn btn-outline secondary" data-bs-dismiss="modal">Close</button>
+                  <form action="{% url 'backup' %}">
+                    <button type="submit" class="btn btn-outline-primary">Yes</button>
+                  </form>
+                    {% else %}
+                    <p>You first need to login before creating any back up file.</p>
+                    {% endif %}
+        </div>
+      </div>
+  </div>
+</div>
+      <!-- Router routes restore Modal -->
+      <div class="modal fade" id="confsrModal" tabindex="-1" role="dialog" aria-labelledby="confsrModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+                  <h5 class="modal-title" id="confsrModalLabel">Back up confirmation</h5>
+                      <button type="button" class="btn btn-sm close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+                    <div class="modal-body">
+                      <div class="row">
+                          <div class="col text-wrap">
+                          <p class="font-monospace lh-base">Would you like to syncronise the database with the routes from the router?</p>  
+                          </div>
+                      </div>
+                    </div>
+                    <div class="modal-footer m-2">
+                      {% if user.is_authenticated %}
+                      <button type="button" class="btn btn-outline secondary" data-bs-dismiss="modal">Close</button>
+                      <form action="{% url 'router-sync' %}">
+                        <button type="submit" class="btn btn-outline-primary">Yes</button>
+                      </form>
+                        {% else %}
+                        <p>You first need to login before being able to perform any action.</p>
+                        {% endif %}
+            </div>
+          </div>
+      </div>
+    </div>
+          <!-- DB routes restore Modal -->
+  <div class="modal fade" id="confresdbModal" tabindex="-1" role="dialog" aria-labelledby="confresdbModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+              <h5 class="modal-title" id="confresdbModalLabel">Restore confirmation</h5>
+                  <button type="button" class="btn btn-sm close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <div class="modal-body">
+                  <div class="row">
+                      <div class="col text-wrap">
+                      <p class="font-monospace lh-base">Would you restore your router with the routes from the database?</p>  
+                      </div>
+                  </div>
+                </div>
+                <div class="modal-footer m-2">
+                  {% if user.is_authenticated %}
+                  <button type="button" class="btn btn-outline secondary" data-bs-dismiss="modal">Close</button>
+                  <form action="{% url 'rsync' %}">
+                    <button type="submit" class="btn btn-outline-primary">Yes</button>
+                  </form>
+                    {% else %}
+                    <p>You first need to login before being able to perform any action.</p>
+                    {% endif %}
+        </div>
+      </div>
+  </div>
+</div>
+          <!-- Back up File Restore Modal -->
+          <div class="modal fade" id="confresfModal" tabindex="-1" role="dialog" aria-labelledby="confresfModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                      <h5 class="modal-title" id="confresfModalLabel">Restore confirmation</h5>
+                          <button type="button" class="btn btn-sm close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                          </button>
+                        </div>
+                        <div class="modal-body">
+                          <div class="row">
+                              <div class="col text-wrap">
+                              <p class="font-monospace lh-base">Would you restore your database routes from a back up file?</p>  
+                              </div>
+                          </div>
+                        </div>
+                        <div class="modal-footer m-2">
+                          {% if user.is_authenticated %}
+                          <button type="button" class="btn btn-outline secondary" data-bs-dismiss="modal">Close</button>
+                          <form action="{% url 'restore' %}">
+                            <button type="submit" class="btn btn-outline-primary">Yes</button>
+                          </form>
+                            {% else %}
+                            <p>You first need to login before being able to perform any action.</p>
+                            {% endif %}
+                </div>
+              </div>
+          </div>
+        </div>
+
     <!-- Core Scripts - Include with every page -->
     <script src="{% static 'theme/js/jquery-1.10.2.js' %}"></script>
     <script src="{% static 'js/jquery_csrf_protect.js' %}" type="text/javascript"></script>
@@ -79,7 +237,8 @@
     <script src="{% static 'js/b5js.js' %}"></script>
 
 
-    <script src="{% static 'theme/js/plugins/metisMenu/jquery.metisMenu.js' %}"></script>
+    <!-- <script src="{% static 'theme/js/plugins/metisMenu/jquery.metisMenu.js' %}"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/metisMenu/3.0.7/metisMenu.min.js" integrity="sha512-o36qZrjup13zLM13tqxvZTaXMXs+5i4TL5UWaDCsmbp5qUcijtdCFuW9a/3qnHGfWzFHBAln8ODjf7AnUNebVg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="{% static 'js/jquery.cookie.js' %}"></script>  
     {% block pagejs %}{% endblock %}
 

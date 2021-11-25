@@ -8,6 +8,11 @@
         body{
             line-height: 0.8rem !important;
         }
+        small > a{
+            pointer-events: none !important;
+            text-decoration: none !important;
+            /* color: black !important; */
+        }
     </style>
 {% endblock %}
 {% block title %}{% trans "My rules" %}{% endblock %}
@@ -15,11 +20,11 @@
 {% csrf_token %}
 <div class="container ">
     <div class="row rows-cols-4 p-5">
-        <div class="col-3">
+        <div class="col">
             <h3 class="page-heading text-start">{% trans "My rules" %} </h3>
         </div>
-        <div class="col-1">
-            <div class="panel-heading position-absolute start-80 text-end"> <i class="fa fa-shield"></i><span>Firewall Rules</span>
+        <div class="col">
+            <div class="panel-heading float-end"> <i class="fa fa-shield"></i><span class="text-end">Firewall Rules</span>
         </div>
         </div>
     </div>
@@ -142,6 +147,19 @@ $(document).ready( function(){
     oTable = $('#routes_table').dataTable( {
         "bPaginate": true,
         "bFilter": true,
+        "bResposive": {
+                breakpoints: [
+                {name: 'bigdesktop', width: Infinity},
+                {name: 'meddesktop', width: 1480},
+                {name: 'smalldesktop', width: 1280},
+                {name: 'medium', width: 1188},
+                {name: 'tabletl', width: 1024},
+                {name: 'btwtabllandp', width: 848},
+                {name: 'tabletp', width: 768},
+                {name: 'mobilel', width: 480},
+                {name: 'mobilep', width: 320}
+                ]
+            },
         "bAutoWidth": true,
         "aLengthMenu" : [
             [5, 15, 20, -1],

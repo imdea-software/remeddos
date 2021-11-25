@@ -20,6 +20,7 @@
 
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.utils.translation import ugettext_lazy as _
@@ -47,6 +48,8 @@ from flowspec.tasks import *
 import json
 import jsonpickle
 from json import JSONEncoder
+
+from django.contrib.postgres.fields import HStoreField
 
 
 FORMAT = '%(asctime)s %(levelname)s: %(message)s'
@@ -193,7 +196,7 @@ class Route(models.Model):
             return None
 
     def __str__(self):
-        return "%s, %s, %s, %s, %s, %s, %s"%(self.name,self.expires, self.applier, self.status,self.source,self.destination, self.expires)
+        return "%s, %s, %s, %s, %s, %s"%(self.name,self.expires, self.applier, self.status,self.source,self.destination)
 
     class Meta:
         db_table = u'route'
@@ -449,17 +452,6 @@ class Route(models.Model):
                         logger.info('Source port type fields do not match')
                 except:
                     pass
-#                try:
-#                    assert(self.fragmenttype)
-#                    assert(devicematch['fragment'][0])
-#                    if self.fragmenttype == devicematch['fragment'][0]:
-#                        found = found and True
-#                        logger.info('Found a matching fragment type')
-#                    else:
-#                        found = False
-#                        logger.info('Fragment type fields do not match')
-#                except:
-#                    pass
                 try:
                     assert(self.icmpcode)
                     assert(devicematch['icmp-code'][0])
@@ -548,6 +540,44 @@ class Route(models.Model):
     get_match.short_description = 'Match statement'
     get_match.allow_tags = True
 
+
+    def get_table(self):
+        then = self.get_then()
+        ret = '<tr>'
+        ret1 = '<tr>'
+        ret2 = '<tr>'
+        if self.destination:
+            ret = '%s <td><small><b>Dst Addr:</b> %s</small></td>' %(ret, self.destination)
+        if self.icmpcode:
+            ret = "%s <td><small><b>ICMP code: </b>%s</small></td>" %(ret, self.icmpcode)
+        if self.icmptype:
+            ret = "%s <td><small><b>ICMP Type: </b>%s</small></td>" %(ret, self.icmptype)
+        if self.packetlength:
+            ret = "%s <td><small><b>Packet Length: </b>%s</small></td>" %(ret, self.packetlength)
+        if self.source:
+            ret1 = "%s <td><small><b>Src Addr: </b>%s</small></td>" %(ret1, self.source)
+        if self.tcpflag:
+            ret1 = "%s <td><small><b>TCP flags: </b>%s</small></td>" %(ret1, self.tcpflag)
+        if self.port:
+            ret1 = ret1 + "<td><small><b>Ports: </b>%s</small></td>" %(self.port)
+        if self.protocol.all():
+            ret1 = ret1 + "<td><small><b>Protocols: </b>%s</small></td>" %(', '.join(["%s"%i for i in self.protocol.all()]))
+        if self.destinationport:
+            ret2 = ret2 + "<td><small><b>DstPorts:  </b>%s</small></td>" %(self.destinationport)
+        if self.sourceport:
+            ret2 = ret2 + "<td><small><b>SrcPorts: </b>%s</small></td>" %(self.sourceport)
+        if self.then:
+            ret2 = ret2 + "<td><small><b>Then: </b>%s</small></td>" %(then)
+        if self.dscp:
+            for dscp in self.dscp.all():
+                    ret2 = ret + "%s <td><small><b>Port: </b>%s</small></td>" %(ret2, dscp)
+        ret = ret + "</tr>"
+        ret1 = ret1 + "</tr>"
+        ret2 = ret2 + "</tr>"
+        data = ret + ret1 + ret2
+        return data
+
+        
     @property
     def applier_peers(self):
         try:
@@ -597,3 +627,22 @@ class Graph(models.Model):
 
     def __str__(self):
         return self.route.name
+
+
+# ========== WEBHOOK RECIEVER ============ #
+
+class WebhookMessage(models.Model):
+    received_at = models.DateTimeField(auto_now_add=True)
+    message = models.JSONField(null=True)
+
+    def __str__(self):
+        return str(self.message)
+
+class GeniEvents(models.Model):
+    received_at = models.DateTimeField(auto_now_add=True)
+    event = models.JSONField(null=True)
+    traffic_characteristics = models.JSONField(null=True)
+    network_characteristics = models.JSONField(null=True)
+
+    def __str__(self):
+        return str(self.event)

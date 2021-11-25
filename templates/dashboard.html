@@ -18,7 +18,7 @@
 {% block title %}{% trans "Dashboard" %}{% endblock %}
 {% block contentplaceholder %}
 {% csrf_token %}
-<div class="container-fluid p-5">
+<div class="container p-5">
             <div class="row">
                 <div class="col">
                     <h1 class="text-end">{% trans "Dashboard" %}</h1>
@@ -47,9 +47,9 @@
 												<div class="timeline-badge"><i class="bi-chart-line"></i></div>
 											{% else %}
 												{% if route.status == 'OUTOFSYNC' %}
-													<div class="timeline-badge danger"><i class="bi-bug"></i></div>
+													<div class="timeline-badge danger"><i class="bi bi-bug-fill"></i></div>
 												{% else %}
-													<div class="timeline-badge danger"><i class="bi-exclamation"></i></div>
+													<div class="timeline-badge danger"><i class="bi bi-exclamation"></i></div>
 												{% endif %}
 											{% endif %}
 										{% else %}
@@ -101,14 +101,9 @@
 													{% endif %}
                                         		</p>
 												<div class="container-fluid card-text">
-												<p class="fs-6">
-												{{ route.get_match|safe|escape }}
-												</p>
-												<p class="fs-6">												
-                                        	<dl class="dl-horizontal">
-                                        		<dt>Then</dt><dd>{{ route.get_then }}</dd>
-                                        	</dl>
-											</p>
+												<table class="table table-hover">
+												{{ route.get_table|safe|escape }}
+											</table>
 										</div>
 
 										<div class="row">

@@ -38,7 +38,10 @@ from django.contrib.auth import authenticate, login
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.management import call_command
 from django.views.decorators.csrf import csrf_exempt
+
 from django.views.decorators.http import require_POST
+from django.views.generic import View 
+from braces.views import CsrfExemptMixin
 
 from django.forms.models import model_to_dict
 
@@ -64,14 +67,12 @@ from utils import proxy as PR
 from utils.proxy import Retriever
 from xml.etree import ElementTree as ET
 
-import slack
 from pathlib import Path
 from dotenv import load_dotenv
 
 from pybix import GraphImageAPI
 from pyzabbix import ZabbixAPI
 
-client = slack.WebClient(token=settings.SLACK_TOKEN)
 
 LOG_FILENAME = os.path.join(settings.LOG_FILE_LOCATION, 'celery_jobs.log')
 # FORMAT = '%(asctime)s %(levelname)s: %(message)s'
@@ -276,13 +277,21 @@ def build_routes_json(groutes, is_superuser):
 @verified_email_required
 @login_required
 def verify_add_user(request):
-    if request.method =='GET':
+    num = get_code()
+    user = request.user
+    msg = "The user {user} has requested a security number:  '{code}' for adding a new rule".format(user=user,code=num)
+    code = Validation(value=num,user=request.user)
+    code.save()
+    #send_message(msg)
+    message = "Introduce the number that has been sent to your linked account"
+    return HttpResponse({'value': num, 'message':message, 'status':'add'},content_type='application/json')
+    """ if request.method =='GET':
         num = get_code()
         user = request.user
         msg = "The user {user} has requested a security number:  '{code}' for adding a new rule".format(user=user,code=num)
         code = Validation(value=num,user=request.user)
         code.save()
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=msg)
+        send_message(msg)
         form = ValidationForm(request.GET)
         message = "Introduce the number that has been sent to your linked account"
         return render(request,'values/add_value.html', {'form': form, 'message':message, 'status':'add'})
@@ -305,7 +314,7 @@ def verify_add_user(request):
                 form = ValidationForm(request.GET)
                 message = "The code used is not valid. Please introduce it again."
                 return render(request,'values/add_value.html', {'form': form, 'message':message})
-            
+             """
 
 
 @verified_email_required
@@ -383,8 +392,7 @@ def verify_edit_user(request,route_slug):
         msg = "The user {user} has requested a security number:  '{code}' for editing an existing rule".format(user=user,code=num)
         code = Validation(value=num,user=request.user)
         code.save()
-        client = slack.WebClient(token=settings.SLACK_TOKEN)
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=msg)
+        send_message(msg)
         form = ValidationForm(request.GET)
         message = ""
         return render(request,'values/add_value.html', {'form': form, 'message':message,'status':'edit'})
@@ -526,8 +534,7 @@ def verify_delete_user(request, route_slug):
         msg = "The user {user} has requested a security number:  '{code}' for deleting an existing rule".format(user=user,code=num)
         code = Validation(value=num,user=request.user)
         code.save()
-        client = slack.WebClient(token=settings.SLACK_TOKEN)
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=msg)
+        send_message(msg)
         form = ValidationForm(request.GET)
         message = "CAREFUL. You are about to delete an existing rule, are you sure?"
         return render(request,'values/add_value.html', {'form': form, 'message':message,'status':'delete'})
@@ -815,19 +822,24 @@ def display_graphs(request,route_slug):
     # find the items id related to the fw rule
     # fetch the graphs
     # return the graphs url to be display in a certain template
-    # VALIDATE FIRST WHETER IS AN IPV4 IT COULD BE 0/0 
-    # OR AN IPV6(::/0)
+    # VALIDATE FIRST WHETER IS AN IPV4 IT COULD BE 0/0 OR AN IPV6(::/0)
+    #from pybix import GraphImageAPI
+    #from flowspy.settings import *; from flowspec.views import *; from pybix import GraphImageAPI; from pyzabbix import ZabbixAPI; from flowspec.models import *
+    
     route = get_object_or_404(Route, name=route_slug)
-    prot = route.protocol
+    #prot = route.protocol
     zapi = ZabbixAPI(settings.ZABBIX_SOURCE)
     zapi.login(settings.ZABBIX_USER, settings.ZABBIX_PWD)
     query = get_query(route.name, route.destination, route.source)
     item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
+    #item = zapi.do_request(method='item.get', params={"output":"extends","search":{"key_":f'jnxFWCounterByteCount[""'}})
+    print('this is the item: ',item)
     item_id = [i['itemid'] for i in item['result']]
+    print('query que recibimos ', item_id)
     source = '0/0' if route.source == '0.0.0.0/0' else route.source[:-3]; destination = '0/0' if route.destination == '0.0.0.0/0' else route.destination[:-3]
-    graphs = fetch_graphs(source, destination, item_id,route.name)
+    graphs = fetch_graphs(source, destination, item_id,route.name)   
     return render(request,'graphs.html',{'routename':route.name,'graphs':graphs})
-
+    
 def get_routes_router():
     retriever = Retriever()
     router_config = retriever.fetch_config_str()    
@@ -919,17 +931,17 @@ def routes_sync(request):
             if (route.has_expired()==False) and (route.status== 'ACTIVE' or route.status== 'OUTOFSYNC'):
                 route.save()
                 message = ('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
-                client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+                send_message(message)
             else:
                 if (route.has_expired()==True) or (route.status== 'EXPIRED' and route.status!= 'ADMININACTIVE' and route.status!= 'INACTIVE'):
                     route.check_sync() 
                     message = ('status: %s route  %s, checking route.' %(route.status, route.name))
-                    client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+                    send_message(message)
         message = 'Routes syncronised.'
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        send_message(message)
     else:
         message = 'There are no routes out of sync.'
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        send_message(message)
     return render(request,'routes_synced.html',{'message':message})
 
 @login_required
@@ -941,11 +953,11 @@ def backup(request):
     try:
         call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
         message = 'Back up succesfully created.'
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        send_message(message)
         return render(request,'routes_synced.html',{'message':message}) 
     except Exception as e:
         message = ('An error came up and the database was not created. %s'%e)
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        send_message(message)
         return render(request,'routes_synced.html',{'message':message})
 
 @verified_email_required
@@ -961,11 +973,11 @@ def restore_backup(request):
         try:
             call_command(f"dbrestore", interactive=False, input_filename=filename)
             message = 'The back up was succesfully restore. We recommend you to also syncronised all your firewall routes from the router'
-            client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+            send_message(message)
             return render(request,'routes_synced.html',{'message':message}) 
         except Exception as e:
             message = ('An error came up and the database was not created. ',e)
-            client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+            send_message(message)
             return render(request,'routes_synced.html',{'message':message})
 
 
@@ -974,23 +986,65 @@ def restore_last_backup():
     for f in os.listdir(settings.BACK_UP_DIR):
         CHOICES_FILES.append(f)
     try:
-        call_command(f"dbrestore", interactive=False, input_filename=CHOICES_FILES[-1])
+        call_command(f"dbrestore", interactive=False, input_filename=CHOICES_FILES[0])
         message = 'The back up was succesfully restore. We recommend you to also syncronised all your firewall routes from the router'
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message) 
+        send_message(message)
     except Exception as e:
         message = ('An error came up and the database was not created. ',e)
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        send_message(message)
 
-@csrf_exempt
-@require_POST
-def webhook(request):
-    print('weebhook yaasss')
-    jsondata = request.body
-    print('this is endpoint and this is data ', jsondata)
-    data = json.loads(jsondata)
-    meta = copy.copy(request.META)
-    for answer in data['form_response']['answers']:
-        t = answer['type']
-    print(f'WEBHOOK ON ACTION: answer: {t} y meta: {meta}')
-        #make method to save config in a separate file
-    return HttpResponse(status=200)
+
+##================= Webhook GENI
+
+class ProcessWebHookView(CsrfExemptMixin, View):
+    def post(self, request, *args, **kwargs):
+        import time
+        #WebhookMessage.objects.filter(received_at__lte=timezone.now() - dt.timedelta(days=7)).delete()
+        message = json.loads(request.body)
+        #WebhookMessage.objects.create(received_at=timezone.now(),message=message)
+        id_event = message['event']['id']
+        anomaly_ticket = api_geni(id_event)
+        status_event = anomaly_ticket['response']['result']['data'][0]['event']['status']
+        severity = anomaly_ticket['response']['result']['data'][0]['event']['severity']['type']
+        print('New webhook message, event status: ', status_event)
+        if status_event == 'Open' or status_event == 'Ongoing':
+            print('something happened , id: ', id_event)
+            time.sleep(90)
+            event_ticket = api_geni(id_event)
+            severity_type=event_ticket['response']['result']['data'][0]['event']['severity']['type']
+            max_value = event_ticket['response']['result']['data'][0]['event']['severity']['threshold_value']
+            threshold_value = event_ticket['response']['result']['data'][0]['event']['severity']['max_value']
+            event_data = event_ticket['response']['result']['data']
+            event_info = event_ticket['response']['result']['data'][0]['event']
+            traffic_event = event_ticket['response']['result']['data'][0]['traffic_characteristics']
+            net_event = event_ticket['response']['result']['data'][0]['network_elements'] if event_ticket['response']['result']['data'][0]['network_elements'] else ''
+            if max_value > (threshold_value*200):
+                print('proposición de regla fw')
+                print('INFO: ', event_info)
+                print('###############################')
+                print('TRAFFIC: ', traffic_event)
+                print('###############################')
+                print('NETWORK: ', net_event)
+                message = f'There has been a new registered attack: {id_event}, status: {status_event}, severity: {severity_type}, max_value: {max_value}, threshold value: {threshold_value}'
+                send_message(message)
+                GeniEvents.objects.create(event=event_info,traffic_characteristics=traffic_event,network_characteristics=net_event)
+        else: 
+            pass
+        return HttpResponse()
+
+def api_geni(id_event):
+    import requests
+    from urllib3.exceptions import InsecureRequestWarning
+
+    requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+    session = requests.Session()
+    session.verify = False
+    data = {'request': '{"display_data":"yes"}'}
+    response = ''
+    try:
+        # this is the petition that needs to go through:  curl --user Alicia:ali54* --insecure --data 'request={"display_data":"yes"}' https://193.145.15.26/api/anomalyevent/application/A376135
+        response = requests.get(f'https://193.145.15.26/api/anomalyevent/application/{id_event}', data=data, verify=False, auth=('Alicia', 'ali54*'))
+    except requests.exceptions.ConnectionError:
+        print(response.status_code)
+    return response.json()
+

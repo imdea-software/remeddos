@@ -7,12 +7,18 @@ from flowspy import settings
 from django.shortcuts import get_object_or_404
 import os
 import logging
+import slack
+import telegram_send
 
 FORMAT = '%(asctime)s %(levelname)s: %(message)s'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
  
+#====TG Settings:
+""" API_KEY = settings.API_KEY_T
+bot = telebot.TeleBot(API_KEY)  """
+
 def send_new_mail(subject, message, from_email, recipient_list, bcc_list):
   try:
     logger.info("helpers::send_new_mail(): send mail: from_email="+str(from_email)+", recipient_list="+str(recipient_list)+", bcc_list="+str(bcc_list)) 
@@ -21,6 +27,29 @@ def send_new_mail(subject, message, from_email, recipient_list, bcc_list):
   except Exception as e:
     #os.write(3, "send_new_mail() failed: exc="+str(e)+"\n") 
     logger.error("helpers::send_new_mail() failed: exc="+str(e)) 
+
+
+def send_message(message):
+  client = slack.WebClient(token=settings.SLACK_TOKEN)
+  client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+
+""" @bot.message_handler(commands=['Greet'])
+def greet(message):
+  bot.reply_to(message,'Hello there! How is it going?')
+  bot.polling() """
+
+def send_message_tg(message):
+  print(message)
+  telegram_send.send(messages=[message])
+""" def send_message_tg(message):
+  import requests
+  id_chat ='@redimadrid_bot'
+  token = settings.API_KEY_T
+  url = (f'https://api.telegram.org/bot{token}/sendMessage')
+
+  params = {'chat_id':id,'text':message}
+  requests.post(url,params=params)
+  #bot.send_message(message.chat_id, msg) """
 
 def get_peer_techc_mails(user, peer):
   logger.info("helpers::get_peer_techc_mails(): user="+str(user)+", peer="+str(peer))
@@ -82,7 +111,22 @@ def get_query(routename, dest, src):
   sourceport = f',srcport={route.sourceport}' if route.sourceport else ''
   icmpcode = f',icmp-code={route.icmpcode}' if route.icmpcode else ''
   icmptype = f',icmp-type={route.icmptype}' if route.icmptype else ''
-  tcp_flags = f',tcp-flag:0{route.tcpflag}' if route.tcpflag else ''          
+  tcp_flags = ''
+  if route.tcpflag:
+    if int(route.tcpflag) < 10:
+      tcp_flags = f',tcp-flag:0{route.tcpflag}' if route.tcpflag else ''
+    else:
+      tcp_flags = f',tcp-flag:{route.tcpflag}' if route.tcpflag else ''
+  print(tcp_flags)          
   p_length =  f',len={route.packetlength}' if route.packetlength else ''
   query = (f'jnxFWCounterByteCount["{destination},{source}{protocol}{destport}{sourceport}{icmpcode}{icmptype}{tcp_flags}{p_length}"]')
+  print(query)
   return query
+
+  ## ntpattack_IMDEA 2.2.2.2/32 1.1.1.1/32
+"""  
+from flowspy.settings import *; from pybix import GraphImageAPI; from pyzabbix import ZabbixAPI; from flowspec.models import *;from flowspec.helpers import *; route = Route.objects.get(name='ntpattack_IMDEA')
+
+zapi = ZabbixAPI(settings.ZABBIX_SOURCE); zapi.login(settings.ZABBIX_USER, settings.ZABBIX_PWD);
+query = get_query(route.name, route.destination, route.source)
+ """

@@ -62,7 +62,7 @@ class RouteAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
-    list_display = ('name', 'status', 'applier_username', 'applier_peers', 'get_match', 'get_then', 'response', "expires", "comments")
+    list_display = ('name', 'status', 'applier_username', 'applier_peers', 'get_match', 'get_then', 'response', "expires", "comments",'filed')
 
     fieldsets = [
         (None, {'fields': ['name', 'applier']}),
@@ -110,19 +110,25 @@ class UserProfileAdmin(UserAdmin):
     #        kwargs['widget'] = PasswordInput
     #    return db_field.formfield(**kwargs)
 
-""" class GraphAdmin(admin.ModelAdmin):
+class GeniEventsAdmin(admin.ModelAdmin):
     actions = ['deactivate','delete']
-    search_fields = ['graph_img', 'route'] """
+    search_fields = ['event', 'recieved_at']
+
+
+class WebhookMessageAdmin(admin.ModelAdmin):
+    actions = ['deactivate','delete']
+    search_fields = ['message', 'recieved_at']
     
+
 admin.site.unregister(User)
 admin.site.register(MatchPort)
 admin.site.register(MatchProtocol)
 admin.site.register(MatchDscp)
 admin.site.register(ThenAction)
-#admin.site.register(FragmentType)
 admin.site.register(Route, RouteAdmin)
+admin.site.register(WebhookMessage)
 admin.site.register(User, UserProfileAdmin)
 admin.site.disable_action('delete_selected')
-admin.site.register(Graph)
+admin.site.register(GeniEvents, GeniEventsAdmin)
 
 

@@ -65,7 +65,7 @@ here = lambda x: os.path.join(os.path.abspath(os.path.dirname(__file__)), x)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
-ALLOWED_HOSTS = ['redifod.redimadrid.es','127.0.0.1','localhost','193.145.15.172','10.10.4.90','db']
+ALLOWED_HOSTS = ['redifod.redimadrid.es','127.0.0.1','localhost','193.145.15.172','10.10.4.90','db','redidock.redimadrid.es:8000']
 SITE_ID = 1
 
 # Place a sequence of random chars here
@@ -178,6 +178,7 @@ INSTALLED_APPS = (
     'django.contrib.flatpages',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.postgres',
     'rest_framework',
     'rest_framework.authtoken',
     'flowspec',
@@ -196,7 +197,7 @@ INSTALLED_APPS = (
 DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
 BACK_UP_DIR = os.path.join(BASE_DIR,'_backup/')
 DBBACKUP_STORAGE_OPTIONS = {'location': BACK_UP_DIR}
-DBBACKUP_FILE_NAME_TEMPLATE='redifod-{databasename}-{datetime}.sql'
+DBBACKUP_FILE_NAME_TEMPLATE='{datetime}-redifod.sql'
 
 #---STATIC 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
@@ -333,6 +334,9 @@ POLL_SESSION_UPDATE = 60.0
 #==Slack Notifications
 SLACK_TOKEN=os.environ.get('SLACK_TOKEN')
 SLACK_CHANNEL=os.environ.get('CHANNEL')
+
+#==Telegram Not
+API_KEY_T=os.getenv('API_KEY_TG')
 
 # BCC mail addresses
 NOTIFY_ADMIN_MAILS = ["admin@example.com"]

@@ -37,20 +37,15 @@
             </h4>
         </div>
     </div>
-<div class="carousel fade-carousel slide" data-ride="carousel" id="bs-carousel">
-    <div class="overlay"></div>    
-    <div class="carousel-inner">
-      <div class="item slides active">
-        <div class="slide-1"></div>
-        <div class="hero">
-          <hgroup>
-              <img src="{{ MEDIA_URL }}{{ graphs }}" alt="Image not available at the moment, sorry for any inconvenience">
-          </hgroup>
+
+    <div id="carouselExampleSlidesOnly" class="carousel slide" data-bs-ride="carousel">
+      <div class="carousel-inner">
+        <div class="carousel-item active">
+          <img src="{{ MEDIA_URL }}{{ graphs }}" class="d-block w-100" alt="Image not available at the moment, sorry for any inconvenience">
         </div>
       </div>
-    </div> 
-  </div>
-</div>
+    </div>
+
 {% endblock %}
 
 

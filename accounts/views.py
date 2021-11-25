@@ -62,26 +62,11 @@ def activate(request, activation_key):
         try:
             userProfile = rp.user.profile()
         except UserProfile.DoesNotExist:
-            return render(
-                request,
-                'registration/activate.html',
-                {
-                    'account': account,
-                    'expiration_days': settings.ACCOUNT_ACTIVATION_DAYS
-                }
-            )
+            return render(request,'registration/activate.html',{'account': account,'expiration_days': settings.ACCOUNT_ACTIVATION_DAYS})
 
         form = UserProfileForm(instance=userProfile)
 
-        return render(
-            request,
-            'registration/activate_edit.html',
-            {
-                'account': account,
-                'expiration_days': settings.ACCOUNT_ACTIVATION_DAYS,
-                'form': form
-            },
-        )
+        return render(request,'registration/activate_edit.html',{'account': account,'expiration_days': settings.ACCOUNT_ACTIVATION_DAYS,'form': form},)
 
     if request.method == "POST":
         request_data = request.POST.copy()
@@ -127,11 +112,4 @@ def activate(request, activation_key):
                 settings.SERVER_EMAIL,
                 [account.email]
             )
-        return render(
-            request,
-            'registration/activate.html',
-            {
-                'account': account,
-                'expiration_days': settings.ACCOUNT_ACTIVATION_DAYS
-            },
-        )
+        return render(request,'registration/activate.html',{'account': account,'expiration_days': settings.ACCOUNT_ACTIVATION_DAYS},)
