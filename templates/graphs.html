@@ -6,46 +6,34 @@
 
 
 {% block contentplaceholder %}
-<style>
 
-.fade-carousel {
-    position: relative;
-    height: 100vh;
-}
-.fade-carousel .carousel-inner .item {
-    height: 100vh;
-}
-.fade-carousel .carousel-indicators > li {
-    margin: 0 2px;
-    background-color: #f39c12;
-    border-color: #f39c12;
-    opacity: .7;
-}
-.fade-carousel .carousel-indicators > li.active {
-  width: 10px;
-  height: 10px;
-  opacity: 1;
-}
-</style>
-
-
-<div class="container-fluid p-5">
-    <div class="row p-1">
-        <div class="col">
-            <h4 class="text-center">
-                Graphs
-            </h4>
-        </div>
+<div class="container-fluid p-5 m-2">
+  <div class="row p-1 p-3">
+      <div class="col">
+          <h5 class="text-center fw-light">
+           Firewall rule: {{route.name}} , source: 
+          </h5>
+      </div>
     </div>
-
-    <div id="carouselExampleSlidesOnly" class="carousel slide" data-bs-ride="carousel">
+      <div class="row">
+      <div class="col">
+        <ul class="list-group list-group-flush fw-light float-start">
+          <li class="list-group-item">Source: {{route.source}}</li>
+          <li class="list-group-item">Destination: {{route.destination}}</li>
+        </ul>
+      </div>
+    </div>
+</div> 
+  <div class="container-fluid">
+   <div id="carouselExampleSlidesOnly" class="carousel carousel-dark slide" data-bs-ride="carousel">
       <div class="carousel-inner">
         <div class="carousel-item active">
-          <img src="{{ MEDIA_URL }}{{ graphs }}" class="d-block w-100" alt="Image not available at the moment, sorry for any inconvenience">
+          <img src="{{ MEDIA_URL }}{{ graphs }}" class="w-100" alt="Image not available at the moment, sorry for any inconvenience">
         </div>
       </div>
     </div>
-
+</div>
+   
 {% endblock %}
 
 

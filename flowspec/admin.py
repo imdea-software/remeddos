@@ -130,5 +130,6 @@ admin.site.register(WebhookMessage)
 admin.site.register(User, UserProfileAdmin)
 admin.site.disable_action('delete_selected')
 admin.site.register(GeniEvents, GeniEventsAdmin)
+admin.site.register(AttackEvent)
 
 

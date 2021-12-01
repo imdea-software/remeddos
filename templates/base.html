@@ -52,7 +52,8 @@
                             <a href="#" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="modal" data-bs-target="#confresdbModal"><i class="bi-arrow-repeat" data-bs-toggle="tooltip" data-bs-placement="top" title="Restore from DB"></i><span class="nav_name text-wrap">Restore from DB</span></a>
                             <a href="#" class="nav_link text-white text-decoration-none fw-light"data-bs-toggle="modal" data-bs-target="#confresfModal"><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Restore from back up file"></i><span class="nav_name">Restore from back up file</span></a>
                         </div>
-                        <a href="#" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="modal" data-bs-target="#addRouteM"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Add Route"></i> <span class="nav_name">Add Route</span></a>  
+                        <!-- <a href="#" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="modal" data-bs-target="#addRouteM"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Add Route"></i> <span class="nav_name">Add Route</span></a> -->
+                        <a href="{% url 'add' %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Add Route"></i> <span class="nav_name">Add Route</span></a>  
                     <a href="{% url 'user-profile' %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-person nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="My profile"></i> <span class="nav_name">My profile</span></a>
                     {% if user.is_superuser %} 
                     <a href="{% url 'admin:index'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-gear nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Admin Dashboard"></i> <span class="nav_name">Admin</span></a> 
@@ -66,10 +67,12 @@
         </nav>
     </div>
     <!-- ENDOFNAVBAR-->
+    
     <div class="container-fluid p-5 height-100 bg-light">
-                    {% block contentplaceholder %}
-                	{% endblock %}
-  </div>      
+      {% block contentplaceholder %}
+    {% endblock %}
+</div> 
+
   
    <!-- ADD ROUTE - Modal -->
    <div class="modal" id="addRouteM" tabindex="-1" role="dialog" aria-labelledby="addRouteMLabel" aria-hidden="true">

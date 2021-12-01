@@ -277,14 +277,14 @@ def build_routes_json(groutes, is_superuser):
 @verified_email_required
 @login_required
 def verify_add_user(request):
-    num = get_code()
+    """ num = get_code()
     user = request.user
     msg = "The user {user} has requested a security number:  '{code}' for adding a new rule".format(user=user,code=num)
     code = Validation(value=num,user=request.user)
     code.save()
-    #send_message(msg)
+    send_message(msg)
     message = "Introduce the number that has been sent to your linked account"
-    return HttpResponse({'value': num, 'message':message, 'status':'add'},content_type='application/json')
+    return HttpResponse({'value': num, 'message':message, 'status':'add'},content_type='application/json') """
     """ if request.method =='GET':
         num = get_code()
         user = request.user
@@ -295,7 +295,7 @@ def verify_add_user(request):
         form = ValidationForm(request.GET)
         message = "Introduce the number that has been sent to your linked account"
         return render(request,'values/add_value.html', {'form': form, 'message':message, 'status':'add'})
-        
+         """
     if request.method=='POST':
         form = ValidationForm(request.POST)
         if form.is_valid():
@@ -314,7 +314,7 @@ def verify_add_user(request):
                 form = ValidationForm(request.GET)
                 message = "The code used is not valid. Please introduce it again."
                 return render(request,'values/add_value.html', {'form': form, 'message':message})
-             """
+            
 
 
 @verified_email_required
@@ -838,7 +838,7 @@ def display_graphs(request,route_slug):
     print('query que recibimos ', item_id)
     source = '0/0' if route.source == '0.0.0.0/0' else route.source[:-3]; destination = '0/0' if route.destination == '0.0.0.0/0' else route.destination[:-3]
     graphs = fetch_graphs(source, destination, item_id,route.name)   
-    return render(request,'graphs.html',{'routename':route.name,'graphs':graphs})
+    return render(request,'graphs.html',{'route':route,'graphs':graphs})
     
 def get_routes_router():
     retriever = Retriever()
@@ -981,6 +981,7 @@ def restore_backup(request):
             return render(request,'routes_synced.html',{'message':message})
 
 
+
 def restore_last_backup():
     CHOICES_FILES = []
     for f in os.listdir(settings.BACK_UP_DIR):
@@ -998,53 +999,11 @@ def restore_last_backup():
 
 class ProcessWebHookView(CsrfExemptMixin, View):
     def post(self, request, *args, **kwargs):
-        import time
-        #WebhookMessage.objects.filter(received_at__lte=timezone.now() - dt.timedelta(days=7)).delete()
         message = json.loads(request.body)
-        #WebhookMessage.objects.create(received_at=timezone.now(),message=message)
         id_event = message['event']['id']
-        anomaly_ticket = api_geni(id_event)
-        status_event = anomaly_ticket['response']['result']['data'][0]['event']['status']
-        severity = anomaly_ticket['response']['result']['data'][0]['event']['severity']['type']
-        print('New webhook message, event status: ', status_event)
-        if status_event == 'Open' or status_event == 'Ongoing':
-            print('something happened , id: ', id_event)
-            time.sleep(90)
-            event_ticket = api_geni(id_event)
-            severity_type=event_ticket['response']['result']['data'][0]['event']['severity']['type']
-            max_value = event_ticket['response']['result']['data'][0]['event']['severity']['threshold_value']
-            threshold_value = event_ticket['response']['result']['data'][0]['event']['severity']['max_value']
-            event_data = event_ticket['response']['result']['data']
-            event_info = event_ticket['response']['result']['data'][0]['event']
-            traffic_event = event_ticket['response']['result']['data'][0]['traffic_characteristics']
-            net_event = event_ticket['response']['result']['data'][0]['network_elements'] if event_ticket['response']['result']['data'][0]['network_elements'] else ''
-            if max_value > (threshold_value*200):
-                print('proposición de regla fw')
-                print('INFO: ', event_info)
-                print('###############################')
-                print('TRAFFIC: ', traffic_event)
-                print('###############################')
-                print('NETWORK: ', net_event)
-                message = f'There has been a new registered attack: {id_event}, status: {status_event}, severity: {severity_type}, max_value: {max_value}, threshold value: {threshold_value}'
-                send_message(message)
-                GeniEvents.objects.create(event=event_info,traffic_characteristics=traffic_event,network_characteristics=net_event)
-        else: 
-            pass
+        anomaly_ticket, anomaly_info = petition_geni(id_event)
+        post.apply_async(args=[anomaly_ticket, anomaly_info, id_event], kwargs={'kwarg1':'anomaly_ticket','kwarg2':'anomaly_info','kwarg3':'id_event'})
         return HttpResponse()
+        
 
-def api_geni(id_event):
-    import requests
-    from urllib3.exceptions import InsecureRequestWarning
-
-    requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
-    session = requests.Session()
-    session.verify = False
-    data = {'request': '{"display_data":"yes"}'}
-    response = ''
-    try:
-        # this is the petition that needs to go through:  curl --user Alicia:ali54* --insecure --data 'request={"display_data":"yes"}' https://193.145.15.26/api/anomalyevent/application/A376135
-        response = requests.get(f'https://193.145.15.26/api/anomalyevent/application/{id_event}', data=data, verify=False, auth=('Alicia', 'ali54*'))
-    except requests.exceptions.ConnectionError:
-        print(response.status_code)
-    return response.json()
 

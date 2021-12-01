@@ -18,17 +18,17 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.conf.beat_schedule = {
     "every-day-route-sync": {
         "task": "flowspec.tasks.routes_sync",
-        "schedule": crontab(minute=1, hour=1),
+        "schedule": crontab(minute=1, hour='6, 18'),
         "args": (),
     },
     "every-day-sync": {
         "task": "flowspec.tasks.check_sync",
-        "schedule": crontab(minute=0, hour='*/1'),
+        "schedule": crontab(minute=0, hour='6, 18'),
         "args": (),
     },
     "notify-expired": {
         "task": "flowspec.tasks.notify_expired",
-        "schedule": crontab(minute=1, hour=2),
+        "schedule": crontab(minute=0, hour=0),
         "args": (),
     },
     "every-day-sync-codes": {

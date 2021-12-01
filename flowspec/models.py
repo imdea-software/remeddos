@@ -35,7 +35,8 @@ from utils import proxy as PR
 from ipaddr import *
 import datetime
 import logging
-
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 
 from flowspec.junos import create_junos_name
 
@@ -212,7 +213,9 @@ class Route(models.Model):
         elif not self.pk:
             name = self.name
             self.name = "%s_%s" % (self.name, peer_suff) 
-        super(Route, self).save(*args, **kwargs)                
+        super(Route, self).save(*args, **kwargs) 
+
+                  
 
     def clean(self, *args, **kwargs):
         from django.core.exceptions import ValidationError
@@ -646,3 +649,28 @@ class GeniEvents(models.Model):
 
     def __str__(self):
         return str(self.event)
+
+class AttackEvent(models.Model):
+    id_attack = models.CharField(primary_key=True, max_length=10)
+    name_attack = models.CharField(max_length=35,blank=False, null=False)
+    institution_name = models.CharField(max_length=50,blank=True, null=True)
+    status =  models.CharField(max_length=35,blank=False, null=False)
+    max_value = models.CharField(max_length=50,blank=False, null=False)
+    threshold_value = models.CharField(max_length=50,blank=False, null=False)
+    ip_attacked = models.CharField(max_length=50,blank=True, null=True)
+    severity = models.CharField(max_length=35,blank=True, null=True)
+    traffic_characteristics = models.JSONField(null=True)
+    network_characteristics = models.JSONField(null=True)
+    traffic_characteristics = models.JSONField(null=True)
+    network_characteristics = models.JSONField(null=True)
+    received_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return '%s, %s, %s'%(self.id_attack, self.name_attack, self.status)
+
+##### SIGNALS 
+
+@receiver(post_save, sender=Route) 
+def backup_changes(sender, instance, created, **kwargs):
+    if created: 
+       return print('its working')

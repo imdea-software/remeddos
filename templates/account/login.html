@@ -8,8 +8,8 @@
 {% block contentplaceholder %}
 <div class="container-fluid p-5">
 <div class="row m-2">
-  <div class="col">
-    <h5 class="float-end">{% trans "Sign In" %}</h5>
+  <div class="col text-center m-2 p-2">
+    <h4 class="fw-light">{% trans "Sign In" %}</h4>
     </div>
     </div>
 
@@ -36,8 +36,8 @@
 </div>
 {% else %}
 <div class="row">
-    <div class="col">
-      <p>{% blocktrans %}If you have not created an account yet, then please
+    <div class="col float-end">
+      <p class="text-end">{% blocktrans %}If you have not created an account yet, then please
       <a href="{{ signup_url }}">sign up</a> first.{% endblocktrans %}</p>
       {% endif %}
     </div>
@@ -49,17 +49,17 @@
         {% csrf_token %}
         <div class="row">
         <div class="col col-6 float-start">
-          <label for="id_name" class="col col-4 form-label"><b>{% trans "Name" %}</b></label>
+          <label for="id_name" class="col text-center col-4 form-label"><b>{% trans "Name" %}</b></label>
         </div>
-        <div class="col col-6 float-end">	
+        <div class="col col-6 float-center">	
           {% render_field form.login placeholder="Introduce your user name" %}
         </div>
         </div>
         <div class="row">
         <div class="col col-6 float-start">
-          <label for="id_password" class="col col-4 form-label"><b>{% trans "Password" %}</b></label>
+          <label for="id_password" class="col text-center col-4 form-label"><b>{% trans "Password" %}</b></label>
         </div>
-        <div class="col col-6 float-end">	
+        <div class="col col-6">	
           {% render_field form.password placeholder="Introduce your password" %}
         </div>
         </div>    
