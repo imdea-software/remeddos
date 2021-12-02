@@ -831,8 +831,9 @@ def display_graphs(request,route_slug):
     zapi = ZabbixAPI(settings.ZABBIX_SOURCE)
     zapi.login(settings.ZABBIX_USER, settings.ZABBIX_PWD)
     query = get_query(route.name, route.destination, route.source)
+    # ['188701']
     item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
-    #item = zapi.do_request(method='item.get', params={"output":"extends","search":{"key_":f'jnxFWCounterByteCount[""'}})
+    #item = zapi.do_request(method='graph.get', params:{"output":"extends","hostids": 188701})
     print('this is the item: ',item)
     item_id = [i['itemid'] for i in item['result']]
     print('query que recibimos ', item_id)
@@ -1002,8 +1003,10 @@ class ProcessWebHookView(CsrfExemptMixin, View):
         message = json.loads(request.body)
         id_event = message['event']['id']
         anomaly_ticket, anomaly_info = petition_geni(id_event)
-        post.apply_async(args=[anomaly_ticket, anomaly_info, id_event], kwargs={'kwarg1':'anomaly_ticket','kwarg2':'anomaly_info','kwarg3':'id_event'})
-        return HttpResponse()
+        print('entra en el process view')
+        #post.apply_async(args=[anomaly_ticket, anomaly_info, id_event], kwargs={'kwarg1':'anomaly_ticket','kwarg2':'anomaly_info','kwarg3':'id_event'})
+        
+        return post(request,anomaly_ticket, anomaly_info, id_event) 
         
 
 

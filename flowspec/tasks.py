@@ -320,10 +320,14 @@ def back_up_nigth():
 
 
 @shared_task
-def post(anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
+def post(request,anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
     import time
-    import subprocess     
-    print('New webhook message, event status: ', anomaly_info['status'], ' ', anomaly_info['severity'])
+    import subprocess 
+    from flowspec.models import AttackEvent    
+    print('New webhook message, event status: ', anomaly_info['status'], ' ', anomaly_info['severity'],' ', id_event)
+    if anomaly_info['status']=='Burst':
+        pass
+        return HttpResponse()
     if not anomaly_info['institution_name'] == 'Non-Home':
         if anomaly_info['status'] == 'Open' or anomaly_info == 'Ongoing':
             print('something happened , id: ', id_event)
@@ -331,31 +335,36 @@ def post(anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
             event_ticket, event_info = petition_geni(id_event)
             event_data, event, traffic_event = event_ticket['response']['result']['data'],  event_ticket['response']['result']['data'][0]['event'], event_ticket['response']['result']['data'][0]['traffic_characteristics']
             net_event = event_ticket['response']['result']['data'][0]['network_elements'] if event_ticket['response']['result']['data'][0]['network_elements'] else ''
-            if event_info['max_value'] > (event_info['threshold_value']*200) and not event_info['status'] == 'Recovered' or event_info['status']=='Burst':
-                # rule proposition and send email to user
+            if ((event_info['max_value']/event_info['threshold_value'])*100) > 200 and not event_info['status'] == 'Recovered' and not event_info['status']=='Burst':
+                print('trace 0')
+                # first rule proposition and send email to user
                 id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = event_info['id'], event_info['status'], event_info['severity'], event_info['max_value'], event_info['threshold_value'] , event_info['attack_name'], event_info['institution_name'], event_info['initial_date'], event_info['ip_attacked']
-                ip = get_ip_address(ip_attacked)
-                send_message(f"Nuevo ataque a la institución '{institution_name}' de tipo '{attack_name}' contra el recurso '{ip}'. La regla para poder mitigar este ataque que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")  
+                print('ip attacked: ', ip_attacked)
+                #ip = get_ip_address(ip_attacked)
+                send_message(f"Nuevo ataque a la institución '{institution_name}' de tipo '{attack_name}' contra el recurso '{ip_attacked}'. La regla para poder mitigar este ataque que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")  
                 recovered = False
-                geni_attack = AttackEvent(id_attack=id_attack,institution_name=institution_name,name_attack=name,status=status,max_value=max_value,threshold_value=th_value,ip_attacked=ip_attacked,severity=severity_type)                    
+                geni_attack = AttackEvent(id_attack=id_attack,institution_name=institution_name,name_attack=attack_name,status=status,max_value=max_value,threshold_value=th_value,ip_attacked=ip_attacked,severity=severity_type)                    
                 geni_attack.save()
                 time.sleep(210)
                 print('trace 1')
                 event_data, info = petition_geni(id_event)
                 print('trace 2 after geni petition')
-                if (event_info['max_value'] > (event_info['threshold_value']*200)) and not info['status'] == 'Recovered' or info['status']=='Burst':
+                if ((event_info['max_value']/event_info['threshold_value'])*100) > 200 and not info['status'] == 'Recovered' and not info['status']=='Burst':
                     print('trace 3 inside second condition after waiting 210 second')
                     id_att, status, max_v, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']                  
                     attack = AttackEvent.objects.get(id_attack=id_event)
                     attack.status, attack.max_value, attack.threshold_value = info['status'], info['max_value'], info['threshold_value']
                     attack.save()
                     send_message(f'El ataque registrado anteriormente a la institucion {institution_name} con id {id_att} persiste y hemos obtenido nuevos datos del {name}, la regla de firewall que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : id: {id_event}, status: {status},  max_value: {max_v}, threshold value: {th_value}')
+                    # second rule proposition
                     # preguntar si no es recover un bucle hasta que devuelva recovery cada 5 min
                     # check multi threading in case there are multiple attacks going on 
                     while recovered:
+                        print('inside while loop')
                         time.sleep(300)
                         attack_data, attack_info = petition_geni(id_event)
-                        if attack_info['max_value'] > (attack_info['threshold_value']*200) and not attack_info['status'] == 'Recovered' or attack_info == 'Burst':
+                        if ((event_info['max_value']/event_info['threshold_value'])*100) > 200 and not attack_info['status'] == 'Recovered' and not attack_info == 'Burst':
+                            # again send rule proposition
                             #GeniEvents.objects.create(event=event_info,traffic_characteristics=traffic_event,network_characteristics=net_event)
                             id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
                             attack = AttackEvent.objects.get(id_attack=id_event)
@@ -364,7 +373,7 @@ def post(anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
                             send_message(f"El ataque registrado anteriormente a la institución {institution_name} persiste {name} y hemos obtenido nuevos datos, la regla de firewall que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")
                             recovered = False
                         else: 
-                            if attack_info['status'] == 'Recovered':
+                            if attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':
                             # si es recovered coger los datos de inicio y fin del ataque, informar
                                 id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
                                 attack = AttackEvent.objects.get(id_attack=id_event)
@@ -372,15 +381,24 @@ def post(anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
                                 attack.save()
                                 send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} ha terminado. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")
                                 recovered = True
+                                return HttpResponse()
                 else:
+                    if info['status'] == 'Recovered' or info['status']=='Burst':
+                        attack = AttackEvent.objects.get(id_attack=id_event)
+                        id_att, status, max_v, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
+                        send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} y estado {status} ha terminado. Más información sobre el ataque : Id: {id_attack}, Max Value: {max_value}, Threshold value: {th_value}.")                  
                     # send message to slack saying the attack has finished
-                     pass
+                        return HttpResponse()
                 # wait 4 min 
                 # rule proposition and send email to user
                 # repeat process every 5 min until status equals 'recovered'
-                GeniEvents.objects.create(event=event_info,traffic_characteristics=traffic_event,network_characteristics=net_event)
+                #GeniEvents.objects.create(event=event_info,traffic_characteristics=traffic_event,network_characteristics=net_event)
+        elif anomaly_info['status'] =='Burst':
+            print('evento descartado, estado burst') 
+            return HttpResponse()
         else: 
-            pass
-            
+            # check if it's recovered and already in database to inform the attack is over
+            return HttpResponse()       
     else:
         pass
+        return HttpResponse()
