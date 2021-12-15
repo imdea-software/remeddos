@@ -125,12 +125,7 @@ def get_query(routename, dest, src):
   print(query)
   return query
 
-"""  
-from flowspy.settings import *; from pybix import GraphImageAPI; from pyzabbix import ZabbixAPI; from flowspec.models import *;from flowspec.helpers import *; route = Route.objects.get(name='ntestflag_IMDEA')
 
-zapi = ZabbixAPI(settings.ZABBIX_SOURCE); zapi.login(settings.ZABBIX_USER, settings.ZABBIX_PWD);
-query = get_query(route.name, route.destination, route.source)
- """
 
 
 def petition_geni(id_event):

@@ -19,7 +19,6 @@ from flowspec.models import *
 LOG_FILENAME = os.path.join(settings.LOG_FILE_LOCATION, 'celery_jobs.log')
 
 #slack channel 
-client = slack.WebClient(token=settings.SLACK_TOKEN)
 
 # FORMAT = '%(asctime)s %(levelname)s: %(message)s'
 # logging.basicConfig(format=FORMAT)
@@ -46,32 +45,32 @@ def add(route, callback=None):
         route.status = status
         route.response = response
         route.save()
-        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {response}")
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
+        send_message(message)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {response}")
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
+        send_message(message)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {response}")
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
+        send_message(message)
     except Exception as e:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
-        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {response}")
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
+        send_message(message)
     except TransactionManagementError: 
         route.status = "ERROR"
         route.response = "Transaction Management Error"
         route.save()
-        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {response}")
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
+        send_message(message)
 
 @shared_task(ignore_result=True)
 def edit(route, callback=None):
@@ -87,26 +86,26 @@ def edit(route, callback=None):
         route.status = status
         route.response = response
         route.save()
-        message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {response}")
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
+        send_message(message)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {response}")
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
+        send_message(message)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {response}")
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
+        send_message(message)
     except Exception:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
-        message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {response}")
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
+        send_message(message)
 
 
 @shared_task(ignore_result=True)
@@ -128,25 +127,25 @@ def delete(route, **kwargs):
         route.response = response
         route.save()
         message = (f"Suspending rule:  {route.name}")
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        send_message(message)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
         message = (f"[{route.applier}] Suspending rule:  {route.name} - Result: {response}")
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        send_message(message)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
         message = (f"[{route.applier}] Suspending rule:  {route.name} - Result: {response}")
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        send_message(message)
     except Exception as e:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
         message = (f"[{route.applier}] Suspending rule:  {route.name} - Result: {response}")
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        send_message(message)
 
 
 # May not work in the first place... proxy is not aware of Route models
@@ -178,7 +177,7 @@ def batch_delete(routes, **kwargs):
             route.expires = datetime.date.today()
             route.save()
             message = (f"[{route.applier_username_nice}] Rule removal: %s%s- Result %s" % (route.name, reason_text, response), route.applier)
-            client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+            send_message(message)
     else:
         return False
 
@@ -195,13 +194,13 @@ def check_sync(route_name=None, selected_routes=[]):
         if route.has_expired() and (route.status != 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE'):
             if route.status != 'ERROR':
                 message = ('Expiring %s route %s' %(route.status, route.name)) 
-                client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+                send_message(message)
                 route.status='EXPIRED'
                 route.save()
                 delete(route)
             if route.status == 'ERROR' and route.has_expired():
                 message = ('Deleting %s route with error %s' %(route.status, route.name)) 
-                client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+                send_message(message)
                 route.status='EXPIRED'
                 print(' this is route, ',route.status)
                 route.save()
@@ -239,19 +238,19 @@ def notify_expired():
                         if expiration_days == 1:
                             days_num = ' day'
                         message = ('Route %s expires %s%s. Notifying %s (%s)' %(route.name, expiration_days_text, days_num, route.applier, route.applier.email))
-                        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+                        send_message(message)
                         send_mail(settings.EMAIL_SUBJECT_PREFIX + "Rule %s expires %s%s" %
                                 (route.name,expiration_days_text, days_num),
                                 mail_body, settings.SERVER_EMAIL,
                                 [route.applier.email])
                     except Exception as e:
                         message = ("Exception: %s"%e)
-                        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+                        send_message(message)
         else:
             message = ("Route: %s, won't expire." % route.name)
             client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
     messagae = ('Expiration notification process finished')
-    client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+    send_message(message)
 
 @shared_task
 def expired_val_codes():
@@ -295,15 +294,15 @@ def routes_sync():
             if (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):
                 route.commit_add()
                 message = ('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
-                client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+                send_message(message)
             else:
                 if (route.has_expired()==True) or (route.status == 'EXPIRED' or route.status != 'ADMININACTIVE' or route.status != 'INACTIVE'):
                     message = ('Route: %s route status: %s'%(route.status, route.name))
-                    client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+                    send_message(message)
                     route.check_sync()             
     else:
         message = ('There are no routes out of sync')
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        send_message(message)
  
 def back_up_nigth():
     now = datetime.datetime.now()
@@ -312,10 +311,10 @@ def back_up_nigth():
     try:
         call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
         message = 'Back up succesfully created.'
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message) 
+        send_message(message) 
     except Exception as e:
         message = ('An error came up and the database was not created. %s'%e)
-        client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+        send_message(message)
     pass
 
 
@@ -325,9 +324,6 @@ def post(request,anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
     import subprocess 
     from flowspec.models import AttackEvent    
     print('New webhook message, event status: ', anomaly_info['status'], ' ', anomaly_info['severity'],' ', id_event)
-    if anomaly_info['status']=='Burst':
-        pass
-        return HttpResponse()
     if not anomaly_info['institution_name'] == 'Non-Home':
         if anomaly_info['status'] == 'Open' or anomaly_info == 'Ongoing':
             print('something happened , id: ', id_event)
@@ -335,7 +331,10 @@ def post(request,anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
             event_ticket, event_info = petition_geni(id_event)
             event_data, event, traffic_event = event_ticket['response']['result']['data'],  event_ticket['response']['result']['data'][0]['event'], event_ticket['response']['result']['data'][0]['traffic_characteristics']
             net_event = event_ticket['response']['result']['data'][0]['network_elements'] if event_ticket['response']['result']['data'][0]['network_elements'] else ''
-            if ((event_info['max_value']/event_info['threshold_value'])*100) > 200 and not event_info['status'] == 'Recovered' and not event_info['status']=='Burst':
+            mv, tv = float(event_info['max_value']), float(event_info['threshold_value'])
+            print('before condition',' ', type(mv),' ', mv)
+            
+            if ((mv/tv)*100) > 100 and not event_info['status'] == 'Recovered' and not event_info['status']=='Burst':
                 print('trace 0')
                 # first rule proposition and send email to user
                 id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = event_info['id'], event_info['status'], event_info['severity'], event_info['max_value'], event_info['threshold_value'] , event_info['attack_name'], event_info['institution_name'], event_info['initial_date'], event_info['ip_attacked']
@@ -349,7 +348,8 @@ def post(request,anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
                 print('trace 1')
                 event_data, info = petition_geni(id_event)
                 print('trace 2 after geni petition')
-                if ((event_info['max_value']/event_info['threshold_value'])*100) > 200 and not info['status'] == 'Recovered' and not info['status']=='Burst':
+                mv, tv = float(info['max_value']), float(info['threshold_value'])
+                if ((mv/tv)*100) > 200 and not info['status'] == 'Recovered' and not info['status']=='Burst':
                     print('trace 3 inside second condition after waiting 210 second')
                     id_att, status, max_v, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']                  
                     attack = AttackEvent.objects.get(id_attack=id_event)
@@ -363,7 +363,8 @@ def post(request,anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
                         print('inside while loop')
                         time.sleep(300)
                         attack_data, attack_info = petition_geni(id_event)
-                        if ((event_info['max_value']/event_info['threshold_value'])*100) > 200 and not attack_info['status'] == 'Recovered' and not attack_info == 'Burst':
+                        mv, thv = float(attack_info['max_value']), float(attack_info['threshold_value'])
+                        if ((mv/thv)*100) > 200 and not attack_info['status'] == 'Recovered' and not attack_info == 'Burst':
                             # again send rule proposition
                             #GeniEvents.objects.create(event=event_info,traffic_characteristics=traffic_event,network_characteristics=net_event)
                             id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
@@ -379,26 +380,24 @@ def post(request,anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
                                 attack = AttackEvent.objects.get(id_attack=id_event)
                                 attack.status, attack.max_value, attack.threshold_value = attack_info['status'], attack_info['max_value'], attack_info['threshold_value']
                                 attack.save()
-                                send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} ha terminado. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")
+                                send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} e id {id_attack} ha terminado. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")
                                 recovered = True
-                                return HttpResponse()
                 else:
                     if info['status'] == 'Recovered' or info['status']=='Burst':
                         attack = AttackEvent.objects.get(id_attack=id_event)
                         id_att, status, max_v, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
                         send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} y estado {status} ha terminado. Más información sobre el ataque : Id: {id_attack}, Max Value: {max_value}, Threshold value: {th_value}.")                  
                     # send message to slack saying the attack has finished
-                        return HttpResponse()
                 # wait 4 min 
                 # rule proposition and send email to user
                 # repeat process every 5 min until status equals 'recovered'
                 #GeniEvents.objects.create(event=event_info,traffic_characteristics=traffic_event,network_characteristics=net_event)
         elif anomaly_info['status'] =='Burst':
             print('evento descartado, estado burst') 
-            return HttpResponse()
+            pass
         else: 
             # check if it's recovered and already in database to inform the attack is over
-            return HttpResponse()       
+            pass     
     else:
         pass
-        return HttpResponse()
+        

@@ -280,7 +280,7 @@ def verify_add_user(request):
     if request.is_ajax and request.method == "GET":
         num = get_code()
         user = request.user
-        msg = "The user {user} has requested a security number:  '{code}' for adding a new rule".format(user=user,code=num)
+        msg = "El usuario {user} ha solicitado un codigo de seguridad para añadir una nueva regla. Código: '{code}'.".format(user=user,code=num)
         code = Validation(value=num,user=request.user)
         code.save()
         send_message(msg)
@@ -296,12 +296,12 @@ def verify_add_user(request):
                     return HttpResponseRedirect(url)
                 else:
                     form = ValidationForm(request.GET)
-                    message = "The code introduced does not match the one that has been sent, please try again."
+                    message = "El código introducido es erróneo porfavor introduzca el último código enviado."
                     return render(request,'values/add_value.html', {'form': form, 'message':message})
             
             except Exception as e:
                 form = ValidationForm(request.GET)
-                message = "The code used is not valid. Please introduce it again."
+                message = "El código introducido es erróneo porfavor introduzca el último código enviado."
                 return render(request,'values/add_value.html', {'form': form, 'message':message})
             
 
@@ -379,7 +379,7 @@ def verify_edit_user(request,route_slug):
         num = get_code()
         user= request.user
         route = Route.objects.get(name=route_slug)
-        msg = "El usuario {user} ha solicitado el siguiente código para editar la regla: {route_slug}. Código:  '{code}' for editing an existing rule".format(user=user,code=num,route_slug=route_slug)
+        msg = "El usuario {user} ha solicitado el siguiente código para editar la regla: {route_slug}. Código:  '{code}'.".format(user=user,code=num,route_slug=route_slug)
         code = Validation(value=num,user=request.user)
         code.save()
         send_message(msg)
@@ -398,12 +398,12 @@ def verify_edit_user(request,route_slug):
                     return HttpResponseRedirect(url)
                 else:
                     form = ValidationForm(request.GET)
-                    message = "The code introduced does not match the code that has been sent, please try again."
+                    message = "El código introducido es erróneo porfavor introduzca el último código enviado."
                     return render(request,'values/add_value.html', {'form': form, 'message':message})
 
             except Exception as e:
                 form = ValidationForm(request.GET)
-                message = "The code used is not valid. Please introduce it again.", e
+                message = "Ha sucedido un error, porfavor introduzca el último código enviado.", e
                 return render(request,'values/add_value.html', {'form': form, 'message':message})
 
 @verified_email_required
@@ -521,12 +521,12 @@ def verify_delete_user(request, route_slug):
     if request.method =='GET':
         num = get_code()
         user = request.user
-        msg = "The user {user} has requested a security number:  '{code}' for deleting an existing rule".format(user=user,code=num)
+        msg = "El usuario: {user} ha solicitado un código para poder eliminar una regla. Código: '{code}'.".format(user=user,code=num)
         code = Validation(value=num,user=request.user)
         code.save()
         send_message(msg)
         form = ValidationForm(request.GET)
-        message = "CAREFUL. You are about to delete an existing rule, are you sure?"
+        message = f"CUIDADO. Seguro que quiere eliminar la siguiente regla {route_slug}?"
         return render(request,'values/add_value.html', {'form': form, 'message':message,'status':'delete'})
             
     if request.method=='POST':
@@ -921,17 +921,17 @@ def routes_sync(request):
             route = Route.objects.get(name=route)
             if (route.has_expired()==False) and (route.status== 'ACTIVE' or route.status== 'OUTOFSYNC'):
                 route.save()
-                message = ('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
+                message = ('Estado: %s, regla de firewall no sincronizada: %s, guardando regla de firewall.' %(route.status, route.name))
                 send_message(message)
             else:
                 if (route.has_expired()==True) or (route.status== 'EXPIRED' and route.status!= 'ADMININACTIVE' and route.status!= 'INACTIVE'):
                     route.check_sync() 
-                    message = ('status: %s route  %s, checking route.' %(route.status, route.name))
+                    message = ('Estado: %s, regla de firewall  %s, comprobando regla.' %(route.status, route.name))
                     send_message(message)
-        message = 'Routes syncronised.'
+        message = 'Reglas sincronizadas.'
         send_message(message)
     else:
-        message = 'There are no routes out of sync.'
+        message = 'No hay reglas sin sincronizar.'
         send_message(message)
     return render(request,'routes_synced.html',{'message':message})
 
@@ -943,11 +943,11 @@ def backup(request):
     current_date = now.strftime("%d-%B-%Y") 
     try:
         call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
-        message = 'Back up succesfully created.'
+        message = 'Copia de seguridad creada con éxito.'
         send_message(message)
         return render(request,'routes_synced.html',{'message':message}) 
     except Exception as e:
-        message = ('An error came up and the database was not created. %s'%e)
+        message = ('Ha ocurrido un error intentando crear la copia de seguridad. %s'%e)
         send_message(message)
         return render(request,'routes_synced.html',{'message':message})
 
@@ -963,11 +963,11 @@ def restore_backup(request):
         filename = request.POST.get("value", "")
         try:
             call_command(f"dbrestore", interactive=False, input_filename=filename)
-            message = 'The back up was succesfully restore. We recommend you to also syncronised all your firewall routes from the router'
+            message = 'La copia de seguridad ha sido restaurada con éxito, recomendamos en caso de caida también sincronizar su router con la base de datos.'
             send_message(message)
             return render(request,'routes_synced.html',{'message':message}) 
         except Exception as e:
-            message = ('An error came up and the database was not created. ',e)
+            message = ('Ha ocurrido un error y no se ha podido restaurar la base de datos. Error:  ',e)
             send_message(message)
             return render(request,'routes_synced.html',{'message':message})
 
@@ -979,10 +979,10 @@ def restore_last_backup():
         CHOICES_FILES.append(f)
     try:
         call_command(f"dbrestore", interactive=False, input_filename=CHOICES_FILES[0])
-        message = 'The back up was succesfully restore. We recommend you to also syncronised all your firewall routes from the router'
+        message = 'La copia de seguridad ha sido restaurada con éxito.'
         send_message(message)
     except Exception as e:
-        message = ('An error came up and the database was not created. ',e)
+        message = ('Ha ocurrido un error y no se ha podido restaurar la base de datos. Error: ',e)
         send_message(message)
 
 
