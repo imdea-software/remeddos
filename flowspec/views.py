@@ -277,25 +277,14 @@ def build_routes_json(groutes, is_superuser):
 @verified_email_required
 @login_required
 def verify_add_user(request):
-    """ num = get_code()
-    user = request.user
-    msg = "The user {user} has requested a security number:  '{code}' for adding a new rule".format(user=user,code=num)
-    code = Validation(value=num,user=request.user)
-    code.save()
-    send_message(msg)
-    message = "Introduce the number that has been sent to your linked account"
-    return HttpResponse({'value': num, 'message':message, 'status':'add'},content_type='application/json') """
-    """ if request.method =='GET':
+    if request.is_ajax and request.method == "GET":
         num = get_code()
         user = request.user
         msg = "The user {user} has requested a security number:  '{code}' for adding a new rule".format(user=user,code=num)
         code = Validation(value=num,user=request.user)
         code.save()
         send_message(msg)
-        form = ValidationForm(request.GET)
-        message = "Introduce the number that has been sent to your linked account"
-        return render(request,'values/add_value.html', {'form': form, 'message':message, 'status':'add'})
-         """
+        return JsonResponse({"valid":True}, status = 200)     
     if request.method=='POST':
         form = ValidationForm(request.POST)
         if form.is_valid():
@@ -389,13 +378,14 @@ def verify_edit_user(request,route_slug):
     if request.method =='GET':
         num = get_code()
         user= request.user
-        msg = "The user {user} has requested a security number:  '{code}' for editing an existing rule".format(user=user,code=num)
+        route = Route.objects.get(name=route_slug)
+        msg = "El usuario {user} ha solicitado el siguiente código para editar la regla: {route_slug}. Código:  '{code}' for editing an existing rule".format(user=user,code=num,route_slug=route_slug)
         code = Validation(value=num,user=request.user)
         code.save()
         send_message(msg)
         form = ValidationForm(request.GET)
         message = ""
-        return render(request,'values/add_value.html', {'form': form, 'message':message,'status':'edit'})
+        return render(request,'values/add_value.html', {'form': form, 'message':message,'status':'edit', 'route':route})
         
     if request.method=='POST':
         form = ValidationForm(request.POST)
@@ -1005,8 +995,8 @@ class ProcessWebHookView(CsrfExemptMixin, View):
         anomaly_ticket, anomaly_info = petition_geni(id_event)
         print('entra en el process view')
         #post.apply_async(args=[anomaly_ticket, anomaly_info, id_event], kwargs={'kwarg1':'anomaly_ticket','kwarg2':'anomaly_info','kwarg3':'id_event'})
-        
-        return post(request,anomaly_ticket, anomaly_info, id_event) 
+        post(request,anomaly_ticket, anomaly_info, id_event) 
+        return HttpResponse()
         
 
 

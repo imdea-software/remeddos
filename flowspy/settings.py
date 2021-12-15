@@ -158,6 +158,7 @@ TEMPLATES = [
     },
 ]
 
+APPEND_SLASH=False
 
 ROOT_URLCONF = 'flowspy.urls'
 WSGI_APPLICATION = 'flowspy.wsgi.application'

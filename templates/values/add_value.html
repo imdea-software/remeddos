@@ -14,37 +14,54 @@
     } */
 
 </style>
-<div class="container-fluid p-5">
+<div class="container p-5">
     <div></div>
     <div class="row">
-    <div class="col text-end">
-        {% if status == "add" %}
-        <h4 class="page-header">{% trans "Add a new rule" %}</h4>
-        {% endif %}
+    <div class="col text-center">
         {% if status == "edit" %}
-        <h4 class="page-header">{% trans "Edit a rule" %}</h4>
+        <h3 class="fw-light page-header ">Do you wish to edit the following route:  <span class="text-info"> {{route.name}} </span> ?</h3>
         {% endif %}
         {% if status == "delete" %}
-        <h4 class="page-header">{% trans "Delete a rule" %}</h4>
+        <h3 class="fw-light page-header ">Do you wish to delete the following route:  <span class="text-info"> {{route.name}} </span> ?</h3>
         {% endif %}
     </div>
 </div>
-    <div class="form-group">
-<form method="POST" class="row row-cols-lg-auto g-3 align-items-center">
+
+<div class="container-fluid p-5">
+<div class="row">
+<form method="POST" class="col-6 g-3 align-items-center">
             {% csrf_token %}
+            <div class="col-md-8">
             <label for="id_value" class="form-label">Value: </label>
             <input type="text" id="id_value" name="value" class="form-control" aria-describedby="valueHelpBlock">
-            <div id="valueHelpBlock" class="form-text">
-            <p class="text-center">Please introduce the code that has been sent to your redifod account.</p>
+         
+            <p class="text-center fw-light">Please introduce the code that has been sent to your redifod account.</p>
             </div>
-            <div class="row">
-                <div class="col col-5 float-end m-5">
-                    <input type="submit" class="btn btn-outline-primary text-end" value="Submit">
+                <div class="col-12">
+                    <input type="submit" class="btn btn-outline-info align-middle" value="Submit">
                 </div>
-            </div>
-            
         </form>
-    </div>
+        <div class="col-6">
+                <table class="table table-borderless align-middle p-2">
+                        <thead>
+                            <tr>
+                            <th class="text-center">Route information</th>
+                            </tr>
+                        </thead>
+                        <tr><td>Name:   <span class="fw-light">  {{route.name}}</span> </td></tr>
+                        <tr><td>Source Address:<span class="fw-light">  {{route.source}}</td></tr>
+                        <tr><td>Destination Address:   <span class="fw-light"> {{route.destination}} </td></tr>
+                            {% if route.protocol %}
+                        <tr><td>Protocol:    <span class="fw-light">  {{route.protocol}}</span> </td></tr>
+                        {% endif %}
+                        {% if route.sourceport %}
+                        <tr><td>Source Port:   <span class="fw-light"> {{route.sourceport}}</span> </td></tr>
+                        {% endif %}
+                        {% if route.destinationport %}
+                        <tr><td>Destination Port: <span class="fw-light">  {{route.destinationport}}</span> </td></tr>
+                        {% endif %}
+                    </table>  
+        </div>
 </div>
 
 {% endblock %}

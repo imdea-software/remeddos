@@ -50,10 +50,10 @@
                             <a href="#" class="nav_link text-white text-decoration-none fw-light text-wrap" data-bs-toggle="modal" data-bs-target="#confbModal" ><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Create back up file"></i><span class="nav_name text-wrap">Create back up file</span></a>
                             <a href="#" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="modal" data-bs-target="#confsrModal"><i class="bi-router" data-bs-toggle="tooltip" data-bs-placement="top" title="Sync routes from router"></i><span class="nav_name text-wrap" >Sync from router</span></a>
                             <a href="#" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="modal" data-bs-target="#confresdbModal"><i class="bi-arrow-repeat" data-bs-toggle="tooltip" data-bs-placement="top" title="Restore from DB"></i><span class="nav_name text-wrap">Restore from DB</span></a>
-                            <a href="#" class="nav_link text-white text-decoration-none fw-light"data-bs-toggle="modal" data-bs-target="#confresfModal"><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Restore from back up file"></i><span class="nav_name">Restore from back up file</span></a>
+                            <a href="#" class="nav_link text-white text-decoration-none fw-light"data-bs-toggle="modal" data-bs-target="#confresfileModal"><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Restore from back up file"></i><span class="nav_name">Restore from back up file</span></a>
                         </div>
-                        <!-- <a href="#" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="modal" data-bs-target="#addRouteM"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Add Route"></i> <span class="nav_name">Add Route</span></a> -->
-                        <a href="{% url 'add' %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Add Route"></i> <span class="nav_name">Add Route</span></a>  
+                        <a href="#" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="modal" data-bs-target="#addRouteM" id="submitButton"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Add Route"></i> <span class="nav_name">Add Route</span></a> 
+                        <!-- <a href="{% url 'add' %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Add Route"></i> <span class="nav_name">Add Route</span></a> -->  
                     <a href="{% url 'user-profile' %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-person nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="My profile"></i> <span class="nav_name">My profile</span></a>
                     {% if user.is_superuser %} 
                     <a href="{% url 'admin:index'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-gear nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Admin Dashboard"></i> <span class="nav_name">Admin</span></a> 
@@ -75,7 +75,7 @@
 
   
    <!-- ADD ROUTE - Modal -->
-   <div class="modal" id="addRouteM" tabindex="-1" role="dialog" aria-labelledby="addRouteMLabel" aria-hidden="true">
+   <div class="modal fade" id="addRouteM" tabindex="-1" role="dialog" aria-labelledby="addRouteMLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
@@ -94,18 +94,16 @@
                 </div>
                 <div class="modal-footer m-2">
                   {% if user.is_authenticated %}
-                  <form action="{% url 'add-route' %}" class="row gx-3 gy-2 align-items-center">
+                  <form action="{% url 'add-route' %}" method="POST" id="verify_user_add" class="row gx-3 gy-2 align-items-center">
                     {% csrf_token %}
                     <div class="row">
-                      <form action="{url 'add-route'}" method="POST" id="verify_user_add">
                       <label for="id_value" class="col form-label float-start m-2">Value: </label>
                       <input type="text" id="id_value" name="value" class="col form-control m-2 " aria-describedby="valueHelpBlock">
                       <button type="submit" class="btn btn-outline-primary btn-sm col float-end m-2">Yes</button>
-                    </form>
                     </div>
                   </form>
                     {% else %}
-                    <p>You first need to login before creating any back up file.</p>
+                    <p>You first need to login before adding a new rule.</p>
                     {% endif %}
         </div>
       </div>
@@ -202,7 +200,7 @@
   </div>
 </div>
           <!-- Back up File Restore Modal -->
-          <div class="modal fade" id="confresfModal" tabindex="-1" role="dialog" aria-labelledby="confresfModalLabel" aria-hidden="true">
+          <div class="modal fade" id="confresfileModal" tabindex="-1" role="dialog" aria-labelledby="confresfModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
               <div class="modal-content">
                 <div class="modal-header">
@@ -257,6 +255,22 @@
 	}
 
 	$(document).ready(function() {
+
+    $('#submitButton').click(function(){
+      console.log('i am called');
+      $.ajax({
+              url: "{% url 'add-route' %}",
+              type: "GET",
+              dataType: "json",
+              success: (data) => {
+                console.log('it worked');
+              },
+              error: (error) => {
+                console.log(error);
+              }
+            });
+     })
+     
   $.ajaxSetup({ cache: false });
   $("#routes_table_next").addClass("btn btn-default");
   $("#routes_table_previous").addClass("btn btn-default");
