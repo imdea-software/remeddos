@@ -104,6 +104,14 @@ ROUTE_STATES = (
         ("ADMININACTIVE", "ADMININACTIVE"),
     ) 
 
+TCP_CHOICES =(
+    ("ack","ACK"),
+    ("rst","RST"),
+    ("fin","FIN"),
+    ("push","PUSH"),
+    ("urgent","URGENT"),
+    ("syn","SYN"),
+)
 
 #def days_offset(): return datetime.date.today() + datetime.timedelta(days = settings.EXPIRATION_DAYS_OFFSET)
 def days_offset(): return datetime.date.today() + datetime.timedelta(days = settings.EXPIRATION_DAYS_OFFSET-1)
@@ -144,12 +152,12 @@ class ThenAction(models.Model):
         ret = "%s"%(self.action) if self.action_value==None else "%s:%s" %(self.action, self.action_value)
         return ret
 
-        
-
     class Meta:
         db_table = u'then_action'
         ordering = ['action', 'action_value']
         unique_together = ("action", "action_value")
+
+
 
 
 class Route(models.Model):    
@@ -165,7 +173,8 @@ class Route(models.Model):
     icmptype = models.CharField(max_length=32, blank=True, null=True, verbose_name="ICMP-Type")
     packetlength = models.CharField(max_length=65535, blank=True, null=True, verbose_name="Packet Length")
     protocol = models.ManyToManyField(MatchProtocol, blank=True, verbose_name=_("Protocol"))
-    tcpflag = models.CharField(max_length=128, blank=True, null=True, verbose_name="TCP flag")
+    tcpflag = models.CharField(max_length=50, choices=TCP_CHOICES, blank=True, null=True, verbose_name="TCP flag")
+    #tcpflag = models.ManyToManyField(TCPFlags, verbose_name=_("TCP Flag"))
     then = models.ManyToManyField(ThenAction, verbose_name=_("Then"))
     filed = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
