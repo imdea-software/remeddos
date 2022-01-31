@@ -28,5 +28,6 @@ urlpatterns = [
     path('edit/<slug:route_slug>/',views.routedetails,name="route-details"),
     re_path(r'^routestats/(?P<route_slug>[\w-]+)/$', views.routestats, name="routestats"),
     re_path(r'^setup/', views.setup, name='setup'),
+    path('ajax_graphs/',views.ajax_graphs, name='ajax-graphs'),
 ]
 

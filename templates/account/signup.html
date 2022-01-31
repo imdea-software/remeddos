@@ -1,5 +1,6 @@
-{% extends "../base1.html" %}
+{% extends "../base.html" %}
 {% load widget_tweaks %}
+{% load static %}
 {% load i18n %}
 
 {% block title %}{% trans "Signup" %}{% endblock %}
@@ -10,69 +11,78 @@
     font-size: 15px;
   }
 </style>
-<div class="container">
+<script>
+  function avoidMultipleSubmitting(){
+    document.getElementById('registerButton').disabled=true; 
+  }
+</script>
+<div class="container-fluid p-5">
+    
   <div class="row">
-    <div class="col l12 m12 s12 center">
-<h5>{% trans "Sign Up" %}</h5>
-</div>
-</div>
+      <div class="col m-2 p-2">
+      <h4 class="fw-light">{% trans "Registrate" %}</h4>
+      </div>  
+    </div>
 
-<div class="row">
-  <div class="col l12 m12 s12 center">
-<p>{% blocktrans %}Already have an account? Then please <a href="{{ login_url }}">sign in</a>.{% endblocktrans %}</p>
-</div>
-</div>
+  <div class="row">
+        <div class="col">
+      <p>{% blocktrans %} ¿Tienes ya una cuenta? Entonces accede a ella <a href="{{ login_url }}">aquí</a>.{% endblocktrans %}</p>
+      </div>
+  </div>
 
-<div class="row">
-<form id="signup_form" method="POST" action="{{ account_signup }}">
+
+<form id="signup_form" method="POST" action="{{ account_signup }}" class="row g-3">
   
   {% csrf_token %}
 
-      <div class="row">
-        <div class="col l6 m6 s6 left">
-          <label for="id_email" class="col l4 m4 s4 black-text"><b>{% trans "Email" %}</b></label>
-        </div>
-        <div class="col l6 m6 s6 right">	
-          {% render_field form.email class+="validate" placeholder="Please introduce your email" %}
+      <div class="row g-3">
+        <div class="col col-md-6">
+          <label for="id_email" class="col l4 m4 s4 black-text"><b>{% trans "Email:" %}</b></label>
+          {% render_field form.email class+="form-control validate" placeholder="Introduce su email" %}
         </div>
         </div>
 
         <div class="row">
-          <div class="col l6 m6 s6 left">
-            <label for="id_username" class="col l4 m4 s4 black-text"><b>{% trans "Name" %}</b></label>
-          </div>
-          <div class="col l6 m6 s6 right">	
-            {% render_field form.username class+="validate" placeholder="Introduce your username" %}
+          <div class="col col-md-6">
+            <label for="id_username" class="col l4 m4 s4 black-text"><b>{% trans "Nombre de usuario:" %}</b></label>
+            {% render_field form.username class+="form-control validate" placeholder="Introduce su nombre de usuario" %}
           </div>
           </div>
 
           <div class="row">
-            <div class="col l6 m6 s6 left">
-              <label for="id_password1" class="col l4 m4 s4 black-text"><b>{% trans "Password" %}</b></label>
-            </div>
-            <div class="col l6 m6 s6 right">	
-              {% render_field form.password1 class+="validate" placeholder="Please introduce your password" %}
+            <div class="col col-md-6">
+              <label for="id_password1" class="col l4 m4 s4 black-text"><b>{% trans "Contraseña:" %}</b></label>
+              {% render_field form.password1 class+="form-control validate" placeholder="Porfavor introduce tu contraseña" %}
             </div>
             </div>
 
           <div class="row">
-            <div class="col l6 m6 s6 left">
-              <label for="id_password2" class="col l4 m4 s4 black-text"><b>{% trans "Password confirmation" %}</b></label>
-            </div>
-            <div class="col l6 m6 s6 right">	
-              {% render_field form.password2 class+="validate" placeholder="Please introduce your password again" %}
+            <div class="col col-md-6">
+              <label for="id_password2" class="col l4 m4 s4 black-text"><b>{% trans "Confirme su contraseña:" %}</b></label>	
+              {% render_field form.password2 class+="form-control validate" placeholder="Porfavor vuelva a introducir su contraseña" %}
             </div>
             </div>
             {% if redirect_field_value %}
             <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
             {% endif %}
 
-          <div class="row">
-            <div class="col l12 m12 s12 center">
-                  <button type="submit" class="btn waves-effect">{% trans "Sign Up" %}</button>
+          <div class="row p-2">
+            <div class="col col-6">
+                  <button type="submit" class="btn btn-outline-info">{% trans "Registrar perfil" %}</button>
             </div>
           </div>
 </form>
+
+<div class="row g-3 p-5">
+  <figure class="figure col col-3">
+    <img src="{% static 'redimadrid_horizontal.png' %}" alt="RediMadrid logo" class="figure-img img-fluid w-75">
+  </figure>
+  <figure class="figure col col-3">
+    <img src="{% static 'imdea_logo.jpg' %}" class="figure-img img-fluid w-50 h-50" alt="IMDEA Software Madrid Logo">
+    <figcaption class="figure-caption text-center">RediMadrid - IMDEA Software Institute</figcaption>
+  </figure>
+  
+</div>
 
 </div>
 

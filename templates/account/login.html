@@ -1,6 +1,7 @@
 {% extends "../base.html" %}
 {% load widget_tweaks %}
 {% load i18n %}
+{% load static %}
 {% load account socialaccount %}
 
 {% block title %}{% trans "Sign In" %}{% endblock %}
@@ -8,8 +9,8 @@
 {% block contentplaceholder %}
 <div class="container-fluid p-5">
 <div class="row m-2">
-  <div class="col text-center m-2 p-2">
-    <h4 class="fw-light">{% trans "Sign In" %}</h4>
+  <div class="col m-2 p-2">
+    <h4 class="fw-light">{% trans "Accede a tu perfil" %}</h4>
     </div>
     </div>
 
@@ -36,48 +37,52 @@
 </div>
 {% else %}
 <div class="row">
-    <div class="col float-end">
-      <p class="text-end">{% blocktrans %}If you have not created an account yet, then please
-      <a href="{{ signup_url }}">sign up</a> first.{% endblocktrans %}</p>
+    <div class="col">
+      <p>{% blocktrans %}Si aún no tiene un perfil registrado porfavor visite el siguiente <a href="{{ signup_url }}">link.</a>{% endblocktrans %}</p>
       {% endif %}
     </div>
 </div>
 
-<div class="row">
-  <div class="col">
-      <form method="POST" action="{% url 'account_login' %}">
+      <form method="POST" action="{% url 'account_login' %}" class="row g-3">
         {% csrf_token %}
-        <div class="row">
-        <div class="col col-6 float-start">
-          <label for="id_name" class="col text-center col-4 form-label"><b>{% trans "Name" %}</b></label>
-        </div>
-        <div class="col col-6 float-center">	
-          {% render_field form.login placeholder="Introduce your user name" %}
+        <div class="row g-3">
+        <div class="col col-md-6">
+          <label for="id_name" class="form-label"><b>{% trans "Nombre" %}</b></label>
+          {% render_field form.login class+="form-control" placeholder="Introduce tu nombre de usuario" %}
         </div>
         </div>
         <div class="row">
-        <div class="col col-6 float-start">
-          <label for="id_password" class="col text-center col-4 form-label"><b>{% trans "Password" %}</b></label>
-        </div>
-        <div class="col col-6">	
-          {% render_field form.password placeholder="Introduce your password" %}
+        <div class="col col-6">
+          <label for="id_password" class="form-label"><b>{% trans "Contraseña" %}</b></label>
+          {% render_field form.password class+="form-control" placeholder="Introduce tu contraseña" %}
         </div>
         </div>    
             {% if redirect_field_value %}
         <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
         {% endif %}
         <div class="row">
-        <div class="col col-6 float-start m-2">
-        <a class="secondaryAction" href="{% url 'account_reset_password' %}">{% trans "Forgot Password?" %}</a>
+        <div class="col col-6">
+        <a class="secondaryAction" href="{% url 'account_reset_password' %}">{% trans "Olvidaste tu contraseña?" %}</a>
         </div>
-        <div class="col col-2 float-end m-2">
-            <button class="primaryAction btn btn-outline-info float-end" type="submit">{% trans "Sign In" %}</button>
       </div>
+      <div class="col col-6">
+      <button type="submit" class="primaryAction btn btn-outline-info">{% trans "Acceder" %}</button>
     </div>
-      </form>
-    </div>
+  </form>
+  
+
+  <div class="row g-3 p-5">
+    <figure class="figure col col-3">
+      <img src="{% static 'redimadrid_horizontal.png' %}" alt="RediMadrid logo" class="figure-img img-fluid w-75">
+    </figure>
+    <figure class="figure col col-3">
+      <img src="{% static 'imdea_logo.jpg' %}" class="figure-img img-fluid w-50 h-50" alt="IMDEA Software Madrid Logo">
+      <figcaption class="figure-caption text-center">RediMadrid - IMDEA Software Institute</figcaption>
+    </figure>  
   </div>
   
+
+
 </div>
 
 {% endblock %}

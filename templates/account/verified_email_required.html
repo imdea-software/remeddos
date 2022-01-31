@@ -1,39 +1,32 @@
-{% extends "../base1.html" %}
-
+{% extends "../base.html" %}
+{% load static %}
 {% load i18n %}
 
 {% block title %}{% trans "Verify Your E-mail Address" %}{% endblock %}
 
 {% block contentplaceholder %}
-<div class="container">
+<div class="container-fluid p-5">
+
+
     <div class="row">
-      <div class="col l12 m12 s12 center" style="margin:20px;">
-            <h4>{% trans "Verify Your E-mail Address" %}</h4>
-            </div>
-            </div>
+      <div class="col">
+            <h4>{% trans "Verifica tu identidad" %}</h4>
+      </div>
+    </div>
 
 {% url 'account_email' as email_url %}
-<div class="container">
     <div class="row">
-      <div class="col l12 m12 s12 center">
-            <p>{% blocktrans %}This part of the site requires us to verify that
-            you are who you claim to be. For this purpose, we require that you
-            verify ownership of your e-mail address. {% endblocktrans %}</p>
-</div>
-</div>
+      <div class="col alert alert-info" role="alert">
+            <p>{% blocktrans %}
+            Para poder acceder a la aplicación necesitamos verificar tu identidad. Es por esto por lo que debes verificar tu correo electrónico a través del email que le hemos enviado. En caso de error no dude en consultar con nosotros. {% endblocktrans %}</p>
+      </div>
+    </div>
 
     <div class="row">
-      <div class="col l12 m12 s12 center" >
-            <p>{% blocktrans %}We have sent an e-mail to you for
-            verification. Please click on the link inside this e-mail. Please
-            contact us if you do not receive it within a few minutes.{% endblocktrans %}</p>
+      <div class="col alert alert-info" role="alert" >
+            <p>{% blocktrans %}Hemos enviado un correo a la dirección que nos ha facilitado si este no ha llegado en unos minutos por favor póngase en concacto con nosotros.{% endblocktrans %}</p>
         </div>
-    </div>
-    <div class="row">
-      <div class="col l12 m12 s12 center">
-            <p>{% blocktrans %}<strong>Note:</strong> you can still <a href="{{ email_url }}">change your e-mail address</a>.{% endblocktrans %}</p>
-     </div>
-     </div>
-</div>   
+    </div>  
+</div>
 
 {% endblock %}

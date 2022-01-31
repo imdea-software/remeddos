@@ -74,6 +74,7 @@ def get_peer_techc_mails(user, peer):
 
 
 def get_peers(username):
+  print('USERNAME: ', username)
   user = User.objects.get(username=username)
   up = UserProfile.objects.get(user=user)
   peers = up.peers.all()
@@ -94,7 +95,7 @@ def translate_protocol(prot):
   return protocol 
 
 def translate_tcpflags(tf):
-  tcpflag_dict = {'ack':'10','rst':'2d','fin':'01','push':'08','urgent':'20','syn':'02'}
+  tcpflag_dict = {'ack':'10','rst':'04','fin':'01','push':'08','urgent':'20','syn':'02'}
   tcpflags = tcpflag_dict.get(tf,"Invalid argument")
   return tcpflags
 
@@ -119,13 +120,17 @@ def get_query(routename, dest, src):
   tcp_flags = route.tcpflag if route.tcpflag else ''
   if route.tcpflag:
     tcp_flags = f',tcp-flag:{translate_tcpflags(route.tcpflag)}'
-  print('tcp flags: ',tcp_flags)          
   p_length =  f',len={route.packetlength}' if route.packetlength else ''
   query = (f'jnxFWCounterByteCount["{destination},{source}{protocol}{destport}{sourceport}{icmpcode}{icmptype}{tcp_flags}{p_length}"]')
-  print(query)
   return query
 
-
+def get_graph_name(routename,dest,src):
+  q = get_query(routename,dest,src)
+  q1 = q.strip('jnxFWCounterByteCount[')
+  q2 = q1.strip(']')
+  q3 = q2.strip('"')
+  graph_name = (f'FWCounter {q3}') 
+  return graph_name
 
 
 def petition_geni(id_event):

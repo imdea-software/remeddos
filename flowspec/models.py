@@ -37,6 +37,7 @@ import datetime
 import logging
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
+from django.core.exceptions import ObjectDoesNotExist
 
 from flowspec.junos import create_junos_name
 
@@ -164,9 +165,9 @@ class ThenAction(models.Model):
 class Route(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"))
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
-    source = models.CharField(max_length=32, help_text=_("Network address. Use address/CIDR notation"), verbose_name=_("Source Address"))
+    source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"))
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
-    destination = models.CharField(max_length=32, help_text=_("Network address. Use address/CIDR notation"), verbose_name=_("Destination Address"))
+    destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"))
     destinationport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Destination Port"))
     port = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Port"))
     dscp = models.ManyToManyField(MatchDscp, blank=True, verbose_name="DSCP")
@@ -621,16 +622,21 @@ class Route(models.Model):
 class Backup_signal(models.Model):
     boolean = models.BooleanField(default=False, null=False)
 
+    def __str__(self):
+        return '%s'%self.boolean
+
 
 def signal_test(sender,instance, **kwargs):
     print('its working')
     try: 
-        backupboolean = Backup_signals.objects.latest('pk')
+        backupboolean = Backup_signal.objects.latest('pk')
     except ObjectDoesNotExist:
         backupboolean = Backup_signal(boolean=True)
+        backupboolean.save()
     if not backupboolean.boolean: 
         print('working backupfile')
         backupboolean.boolean == True
+        backupboolean.save()
     else:
         pass
 

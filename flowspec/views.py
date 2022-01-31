@@ -24,7 +24,7 @@ from allauth.account.decorators import verified_email_required
 from django.contrib.auth import logout
 from django.contrib.sites.models import Site
 from django.contrib.auth.models import User
-from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
+from django.http import HttpResponseRedirect, HttpResponse, JsonResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, render
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
@@ -134,12 +134,12 @@ def dashboard(request):
     if peers:
         if request.user.is_superuser:
             all_group_routes = Route.objects.all().order_by('-last_updated')[:10]
-            #add method for revising which rules are expired and which not for deleting the ones that are 
+            # add method for revising which rules are expired and which not for deleting the ones that are 
             for group_route in all_group_routes:
                 group_route.has_expired()
         else:
             all_group_routes = Route.objects.filter(applier=request.user)
-            ##checking if any route is expired, if they are, the rules are deleted
+            # checking if any route is expired, if they are, the rules are deleted
             for group_route in all_group_routes:
                 group_route.has_expired()
         if all_group_routes is None:
@@ -526,8 +526,9 @@ def verify_delete_user(request, route_slug):
         code.save()
         send_message(msg)
         form = ValidationForm(request.GET)
+        route = Route.objects.get(name=route_slug)
         message = f"CUIDADO. Seguro que quiere eliminar la siguiente regla {route_slug}?"
-        return render(request,'values/add_value.html', {'form': form, 'message':message,'status':'delete'})
+        return render(request,'values/add_value.html', {'form': form, 'message':message,'status':'delete', 'route':route})
             
     if request.method=='POST':
         form = ValidationForm(request.POST)
@@ -803,33 +804,68 @@ def fetch_graphs(source, destination, item_id,routename):
     graph = managing_files(string_items,routename)
     return graph
 
+
+def graphs(timefrom,timetill, routename):
+    zapi = ZabbixAPI(ZABBIX_SOURCE)
+    zapi.login(ZABBIX_USER,ZABBIX_PWD)
+    route = get_object_or_404(Route, name=routename)
+    query = get_query(route.name, route.destination, route.source)
+
+    #in order to access history log we need to send the dates as timestamp
+    from_date_obj = datetime.datetime.strptime(timefrom,"%Y/%m/%d %H:%M")
+    till_date_obj = datetime.datetime.strptime(timetill,"%Y/%m/%d %H:%M")
+
+    ts_from = int(from_date_obj.timestamp())
+    ts_till = int(till_date_obj.timestamp())
+    #query for getting the itemid and the hostid
+    item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
+    item_id = [i['itemid'] for i in item['result']]
+    hostid = [i['hostid'] for i in item['result']]
+    #if query fails it might be because parameters are not int parsed
+    item_history = zapi.history.get(hostids=hostid,itemids=item_id,time_from=ts_from,time_till=ts_till)
+    
+    beats_date = []; beats_hour = []; clock_value = []; beat_value = []; beats_fulltime = []; beats_values = []
+
+    for x in item_history:
+        clock_value.append(x['clock'])
+        beat_value.append(x['value'])
+    
+    for x in clock_value:
+        y = datetime.datetime.fromtimestamp(int(x))
+        beats_date.append(y.strftime("%m/%d/%Y"))
+        beats_hour.append(y.strftime("%H:%M:%S"))
+        beats_fulltime.append(y.strftime("%Y/%m/%d %H:%M:%S"))
+    
+    beats_values = dict(zip(beats_hour,beat_value))
+    return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
+
+def ajax_graphs(request):
+    if request.method == "POST":
+        print('yess')
+        from_time = request.POST.get('from')
+        till_time = request.POST.get('till')
+        routename = request.POST.get('routename')
+        if from_time and till_time:
+            beats_date, beats_hour, beats_value, beats_values, bfulltime = graphs(from_time, till_time, routename)
+            data = {
+                'beats_date':beats_date,
+                'beats_hour': beats_hour,
+                'beats_value' : beats_value,
+            }
+            """ bv = json.dumps(beats_values) """
+            print(type(bfulltime))
+            return JsonResponse({'status':'succesful','time':bfulltime,'beats':beats_value},status=200)
+        else:
+            print('trace2, the bad one')
+            return JsonResponse({'message':'Porfavor introduce los parámetros necesarios para ver el gráfico'}, status=400)
+
+
 @verified_email_required
 @login_required
 @never_cache
 def display_graphs(request,route_slug):
-    # connect to zabbix
-    # fetch graphs id related to the ip sent as params
-    # find the items id related to the fw rule
-    # fetch the graphs
-    # return the graphs url to be display in a certain template
-    # VALIDATE FIRST WHETER IS AN IPV4 IT COULD BE 0/0 OR AN IPV6(::/0)
-    #from pybix import GraphImageAPI
-    #from flowspy.settings import *; from flowspec.views import *; from pybix import GraphImageAPI; from pyzabbix import ZabbixAPI; from flowspec.models import *
-    
-    route = get_object_or_404(Route, name=route_slug)
-    #prot = route.protocol
-    zapi = ZabbixAPI(settings.ZABBIX_SOURCE)
-    zapi.login(settings.ZABBIX_USER, settings.ZABBIX_PWD)
-    query = get_query(route.name, route.destination, route.source)
-    # ['188701']
-    item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
-    #item = zapi.do_request(method='graph.get', params:{"output":"extends","hostids": 188701})
-    print('this is the item: ',item)
-    item_id = [i['itemid'] for i in item['result']]
-    print('query que recibimos ', item_id)
-    source = '0/0' if route.source == '0.0.0.0/0' else route.source[:-3]; destination = '0/0' if route.destination == '0.0.0.0/0' else route.destination[:-3]
-    graphs = fetch_graphs(source, destination, item_id,route.name)   
-    return render(request,'graphs.html',{'route':route,'graphs':graphs})
+    route = get_object_or_404(Route, name=route_slug) 
+    return render(request,'graphs.html',{'route':route})
     
 def get_routes_router():
     retriever = Retriever()
@@ -854,7 +890,7 @@ def sync_router(request):
     for children in routes:
         then = '' ; then_action = '' ; protocol = [] ; destination = [] ; source = '' ; src_port =  '' ; dest_port = '' ; tcpflags = '' ; icmpcode = ''; icmptype = ''; packetlength = ''; prot = '';  name_fw = ''
         for child in children:
-            if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name': 
+            if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
                 name_fw = child.text
                 if (peer in name_fw):
                     name_peer = child.text
@@ -876,7 +912,7 @@ def sync_router(request):
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-code': icmpcode = c.text 
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type': icmptype = c.text 
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length' and c.text != '': packetlength = c.text
-                            if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source': source = c.text                            
+                            if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source': source = c.text                       
             if (peer in name_fw):
                 try:
                     route = Route(name=name_fw,applier=applier,source=source,sourceport=src_port,destination=destination,destinationport=dest_port,icmpcode=icmpcode,icmptype=icmptype,packetlength=packetlength,tcpflag=tcpflags,status="ACTIVE")  

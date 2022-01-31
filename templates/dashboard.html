@@ -21,7 +21,7 @@
 <div class="container p-5">
             <div class="row">
                 <div class="col">
-                    <h1 class="text-end">{% trans "Dashboard" %}</h1>
+                    <h1 class="text-center fw-light">{% trans "Dashboard" %}</h1>
                 </div>
             </div>
 	<div class="row">
@@ -29,7 +29,7 @@
                 	<div class="panel panel-default">
 						<div class="panel-body">
                         <div class="panel-heading">
-                            <i class="bi-clock"></i> {% trans "Timeline" %} - {% trans "Latest 10" %}
+                            <i class="bi-clock"></i> {% trans "Timeline" %} - {% trans "Últimos 10" %}
                         </div>
 					</div>
 				</div>
@@ -44,7 +44,7 @@
                                     	{% if route.status == 'EXPIRED' or route.status == 'ADMININACTIVE' or route.status == 'INACTIVE' or route.status == 'OUTOFSYNC'%}
 											<div class="timeline-badge"><i class="bi-shield"></i></div>
 											{% if route.status == 'EXPIRED' or route.status == 'ADMININACTIVE' or route.status == 'INACTIVE' %}
-												<div class="timeline-badge"><i class="bi-chart-line"></i></div>
+												<div class="timeline-badge"><i class="bi-bug"></i></div>
 											{% else %}
 												{% if route.status == 'OUTOFSYNC' %}
 													<div class="timeline-badge danger"><i class="bi bi-bug-fill"></i></div>
@@ -67,12 +67,12 @@
                                         <div class="timeline-heading card-title">
                                             <h4 class="timeline-title" style="color: darkolivegreen;">{{route.name}}</h4>
                                             <p>
-                                                <small class="text-muted"><i class="bi-pencil"></i> {% trans "Last update" %}: {{route.last_updated}} {% trans "by" %} {{route.applier_username_nice}}</small>
+                                                <small class="text-muted"><i class="bi-pencil"></i> {% trans "Ultima actualización" %}: {{route.last_updated}} {% trans "por" %} {{route.applier_username_nice}}</small>
                                             </p>
                                             <p>	{% if route.expires %}
-                                                <small class="text-muted"><i class="bi-clock"></i> {% trans "Expires" %}: {{ route.expires|date:"d M y" }}</small>
+                                                <small class="text-muted"><i class="bi-clock"></i> {% trans "Expira" %}: {{ route.expires|date:"d M y" }}</small>
 												{% else %}
-												<small class="text-muted"><i class="bi-clock"></i> {% trans "Expires" %}: Never</small>
+												<small class="text-muted"><i class="bi-clock"></i> {% trans "Expira" %}: Never</small>
 												{% endif %}
                                             </p>
                                         </div>
@@ -80,7 +80,7 @@
                                         		<p class="fs-6">
                                         			{% if route.status == 'EXPIRED' or route.status == 'ADMININACTIVE' or route.status == 'INACTIVE' or route.status == 'OUTOFSYNC'%}
 														{% if route.status == 'EXPIRED' or route.status == 'ADMININACTIVE' or route.status == 'INACTIVE' %}
-														<span class="badge pill bg-dark">DEACTIVATED</span>
+														<span class="badge pill bg-dark">DESACTIVADA</span>
 														{% else %}
 															{% if route.status == 'OUTOFSYNC' %}
 																<span class="badge pill bg-danger">ERROR</span>
@@ -109,18 +109,18 @@
 										<div class="row">
 										<div class="btn-group d-block gap-2 flex-row-reverse">
 										{% ifequal route.status 'ACTIVE' %}
-											<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-warning" id="edit_button_{{route.pk}}">{% trans "Edit" %}</a>
-											<a href="{% url 'display-graphs' route.name %}" class="btn-outline btn btn-xs btn-info" id="display_button_{{route.pk}}">{% trans "Show Graph!" %}</a>
+											<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-warning" id="edit_button_{{route.pk}}">{% trans "Editar" %}</a>
+											<a href="{% url 'display-graphs' route.name %}" class="btn-outline btn btn-xs btn-info" id="display_button_{{route.pk}}">{% trans "Mostrar gráfica!" %}</a>
 											<!-- <button class="del_buttonpre btn-outline btn btn-xs btn-warning" id="{{route.name}}" data-routename="{{route.name}}">{% trans "Deactivate" %}</button> -->
 										{% else %}
 											{% if route.status == 'EXPIRED' or route.status == 'ADMININACTIVE' or route.status == 'INACTIVE' %}
-												<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-outline" id="edit_button_{{route.pk}}" type="button">{% trans "Reactivate" %}</a>
+												<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-outline" id="edit_button_{{route.pk}}" type="button">{% trans "Reactivar" %}</a>
 											{% else %}
 												{% ifequal route.status 'OUTOFSYNC' %}
-													<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-outline" id="edit_button_{{route.pk}}">{% trans "ReSync" %}</a>
+													<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-outline" id="edit_button_{{route.pk}}">{% trans "Resincronizar" %}</a>
 												{% else %}
 													{% ifequal route.status 'ERROR' %}
-														<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-outline" id="edit_button_{{route.pk}}">{% trans "Fix it!" %}</a>
+														<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-outline" id="edit_button_{{route.pk}}">{% trans "Arreglar!" %}</a>
 													{% else %}
 													-
 													{% endifequal %}
@@ -158,7 +158,7 @@
             	oldhtml = my.parent().html();
             	last_element = my.parent();
             	var routename = $(this).data("routename");
-				var btn = '<a href="#" data-toggle="tooltip" title="This will deactivate your rule"  data-routename="'+routename+'" class="del_button btn btn-xs btn-warning"> {% trans "Deactivate" %}</a>'
+				var btn = '<a href="#" data-toggle="tooltip" title="This will deactivate your rule"  data-routename="'+routename+'" class="del_button btn btn-xs btn-warning"> {% trans "Desactivar" %}</a>'
 				var back = '<a href="#" class="revertbutton btn btn-xs btn-info"><i class="fa fa-undo"></i></a>';
             	my.parent().html(back+" "+btn);
             	return false;

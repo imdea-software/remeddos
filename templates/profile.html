@@ -6,22 +6,22 @@
 {% block contentplaceholder %}
 
 
-<div class="container p-5">
+<div class="container p-5 m-2">
     <div class="row">
         <div class="col">
-            <h5 class="text-end">{% trans "My profile" %}</h5>
+            <h5 class="text-end">{% trans "Mi perfil" %}</h5>
         </div>
     </div>
 
     <div class="row">
         <div class="col">
-                    <h6 class="text-center"> {% trans "My Networks" %}</h6>
+                    <h6 class="text-center"> {% trans "" %}</h6>
             </div>
                 <div class="section">
                 <table class="table table-borderless align-middle p-2">
                         <thead>
                             <tr>
-                            <th>{% trans "Organization" %}</th><th>{% trans "Networks" %}</th>
+                            <th>{% trans "Organización" %}</th><th>{% trans "Redes" %}</th>
                             </tr>
                         </thead>
                         {% for peer in peers %}
@@ -47,16 +47,16 @@
                         <table class="table table-borderless align-middle p-2">
                                 <thead>
                                     <tr>
-                                    <th class="center">{% trans " My Profile" %}</th>
+                                    <th class="center">{% trans "" %}</th>
                                     </tr>
                                 </thead>
                                 <tr>
-                                    <td><span><b>{% trans "Username" %}</b></span>: {{user.username}} </td>
+                                    <td><span><b>{% trans "Nombre de usuario" %}</b></span>: {{user.username}} </td>
                                     {% if user.first_name %}
-                                        <td><span><b>{% trans "First name" %}</b></span> : {{user.first_name}}</td>
+                                        <td><span><b>{% trans "Nombre" %}</b></span> : {{user.first_name}}</td>
                                     {% endif %}
                                     {% if user.last_name %}
-                                    <td><span><b>{% trans "Last name" %}</b></span> : {{user.last_name}} </td>
+                                    <td><span><b>{% trans "Apellido(s)" %}</b></span> : {{user.last_name}} </td>
                                     {% endif %}
                                     {% if user.email %}
                                         <td><span><b>{% trans "Email" %}</b></span> : {{user.email}} </td>
@@ -65,7 +65,7 @@
                             </table>  
                 </div>
                 <div class="col col-3">
-                    <a class="btn btn-outline-info align-middle float-end" id="routebutton" href="{% url 'account_change_password' %}">{% trans "Change Password" %}</a>
+                    <a class="btn btn-outline-info align-middle float-end" id="routebutton" href="{% url 'account_change_password' %}">{% trans "Cambiar contraseña" %}</a>
                     </div> 
             </div>
     

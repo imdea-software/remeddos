@@ -22,19 +22,18 @@
 
 {% block title %}{% trans "Synced Routes" %}{% endblock %}
 {% block contentplaceholder %}
-<div class="container-fluid p-5">
+<div class="container p-5 m-2">
     <div class="row">
-        <div class="col float-end">
-        <h4> Choose a back up file to restore the database.</h4>
+        <div class="col">
+        <h4 class="fw-light"> Choose a back up file to restore the database.</h4>
     </div>
     </div>
-    <div class="section">
-        <form action="{% url 'restore' %}" method='POST'>
+    <div class="row">
+        <form action="{% url 'restore' %}" class="row g-3 align-items-center" method='POST'>
         {% csrf_token %}
         {% load unescape %}
             {% for file in files %}
-            <div class="row">
-                <div class="col float-start">
+                <div class="col col-2 float-start">
                 <div class=" {% if form.applier.errors %} has-error {% endif %}"></div>
                 <div class="form-check">
                     <input type="checkbox" class="form-check-input" id="value" value="{{file}}" name="value">
@@ -43,17 +42,22 @@
                     </label>
                 </div>
                 </label>
-              </div>
-            </div>              
+              </div>             
             {% endfor %}
+        <div class="col col-3 float-end">
+            <div class="card" style="width: 18rem;">
+                <div class="card-body">
+                  <h5 class="card-title text-warning">Warning!</h5>
+                  <p class="card-text">If you have not back up your database before permforming this action you may lose some data.</p>
+                </div>
+              </div>
         </div>
         <div class="divider"></div><br>
-                <div class="row">
-                 <div class="col">
-                    <button type="submit" id="applybutton" value="{% trans 'Apply' %}" class="btn btn-outline btn-dark float-end">Apply</button>
+        <div class="row"></div>
+                 <div class="col float-end">
+                    <button type="submit" id="applybutton" value="{% trans 'Apply' %}" class="btn btn-outline btn-warning">Apply</button>
                 </div>
-            </div>
     </form>
-
+</div>
 </div>
 {% endblock %}

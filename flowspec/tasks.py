@@ -207,6 +207,8 @@ def check_sync(route_name=None, selected_routes=[]):
         else:
             if route.status != 'EXPIRED':
                 route.check_sync()
+
+                
 @shared_task(ignore_result=True)
 def notify_expired():
     from flowspec.models import Route
@@ -304,17 +306,23 @@ def routes_sync():
         message = ('There are no routes out of sync')
         send_message(message)
  
+@shared_task
 def back_up():
+    from flowspec.models import Backup_signal
+    from django.core.management import call_command
+    import datetime
+
     now = datetime.datetime.now()
     current_time = now.strftime("%H:%M")
     current_date = now.strftime("%d-%B-%Y")
-    signal_object = Backup_signal.object.latest('pk')
+    signal_object = Backup_signal.objects.latest('pk')
     if signal_object.boolean: 
         try:
             call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
             message = 'Back up succesfully created.'
-            signal_object.boolean == False
+            signal_object.boolean = False
             signal_object.save()
+            print('it worked ', signal_object)
             send_message(message) 
         except Exception as e:
             message = ('An error came up and the database was not created. %s'%e)
@@ -338,9 +346,11 @@ def post(request,anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
             event_data, event, traffic_event = event_ticket['response']['result']['data'],  event_ticket['response']['result']['data'][0]['event'], event_ticket['response']['result']['data'][0]['traffic_characteristics']
             net_event = event_ticket['response']['result']['data'][0]['network_elements'] if event_ticket['response']['result']['data'][0]['network_elements'] else ''
             mv, tv = float(event_info['max_value']), float(event_info['threshold_value'])
-            print('before condition',' ', type(mv),' ', mv)
-            
             if ((mv/tv)*100) > 100 and not event_info['status'] == 'Recovered' and not event_info['status']=='Burst':
+                print('traffic_event', traffic_event)
+                print('##########')
+                print('_event_data', event_data)
+                print('##########')
                 print('trace 0')
                 # first rule proposition and send email to user
                 id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = event_info['id'], event_info['status'], event_info['severity'], event_info['max_value'], event_info['threshold_value'] , event_info['attack_name'], event_info['institution_name'], event_info['initial_date'], event_info['ip_attacked']
@@ -351,6 +361,7 @@ def post(request,anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
                 geni_attack = AttackEvent(id_attack=id_attack,institution_name=institution_name,name_attack=attack_name,status=status,max_value=max_value,threshold_value=th_value,ip_attacked=ip_attacked,severity=severity_type)                    
                 geni_attack.save()
                 time.sleep(210)
+                # dest ip protrocolo de origen y el puerto y el tcp-flag si es udp debe ser descartado porque siempre va a ser 0
                 print('trace 1')
                 event_data, info = petition_geni(id_event)
                 print('trace 2 after geni petition')
@@ -393,7 +404,7 @@ def post(request,anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
                         attack = AttackEvent.objects.get(id_attack=id_event)
                         id_att, status, max_v, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
                         send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} y estado {status} ha terminado. Más información sobre el ataque : Id: {id_attack}, Max Value: {max_value}, Threshold value: {th_value}.")                  
-                    # send message to slack saying the attack has finished
+                # send message to slack saying the attack has finished
                 # wait 4 min 
                 # rule proposition and send email to user
                 # repeat process every 5 min until status equals 'recovered'
