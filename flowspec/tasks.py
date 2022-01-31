@@ -216,7 +216,7 @@ def notify_expired():
     from django.template.loader import render_to_string
 
     message = ('Initializing expiration notification')
-    client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+    send_message(message)
     routes = Route.objects.all()
     today = datetime.date.today()
     for route in routes:
@@ -248,7 +248,7 @@ def notify_expired():
                         send_message(message)
         else:
             message = ("Route: %s, won't expire." % route.name)
-            client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+            send_message(message)
     messagae = ('Expiration notification process finished')
     send_message(message)
 
@@ -304,18 +304,24 @@ def routes_sync():
         message = ('There are no routes out of sync')
         send_message(message)
  
-def back_up_nigth():
+def back_up():
     now = datetime.datetime.now()
     current_time = now.strftime("%H:%M")
-    current_date = now.strftime("%d-%B-%Y") 
-    try:
-        call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
-        message = 'Back up succesfully created.'
-        send_message(message) 
-    except Exception as e:
-        message = ('An error came up and the database was not created. %s'%e)
-        send_message(message)
-    pass
+    current_date = now.strftime("%d-%B-%Y")
+    signal_object = Backup_signal.object.latest('pk')
+    if signal_object.boolean: 
+        try:
+            call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
+            message = 'Back up succesfully created.'
+            signal_object.boolean == False
+            signal_object.save()
+            send_message(message) 
+        except Exception as e:
+            message = ('An error came up and the database was not created. %s'%e)
+            send_message(message)
+        pass
+    else:
+        print('There are no changes in the database')
 
 
 @shared_task
@@ -339,8 +345,8 @@ def post(request,anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
                 # first rule proposition and send email to user
                 id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = event_info['id'], event_info['status'], event_info['severity'], event_info['max_value'], event_info['threshold_value'] , event_info['attack_name'], event_info['institution_name'], event_info['initial_date'], event_info['ip_attacked']
                 print('ip attacked: ', ip_attacked)
-                #ip = get_ip_address(ip_attacked)
-                send_message(f"Nuevo ataque a la institución '{institution_name}' de tipo '{attack_name}' contra el recurso '{ip_attacked}'. La regla para poder mitigar este ataque que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")  
+                ip = get_ip_address(ip_attacked)
+                send_message(f"Nuevo ataque a la institución '{institution_name}' de tipo '{attack_name}' contra el recurso '{ip}'. La regla para poder mitigar este ataque que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")  
                 recovered = False
                 geni_attack = AttackEvent(id_attack=id_attack,institution_name=institution_name,name_attack=attack_name,status=status,max_value=max_value,threshold_value=th_value,ip_attacked=ip_attacked,severity=severity_type)                    
                 geni_attack.save()

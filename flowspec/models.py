@@ -51,6 +51,7 @@ import jsonpickle
 from json import JSONEncoder
 
 from django.contrib.postgres.fields import HStoreField
+from django.db.models.signals import post_save, post_delete
 
 
 FORMAT = '%(asctime)s %(levelname)s: %(message)s'
@@ -617,6 +618,26 @@ class Route(models.Model):
     def get_absolute_url(self):
         return reverse('route-details', kwargs={'route_slug': self.name})
 
+class Backup_signal(models.Model):
+    boolean = models.BooleanField(default=False, null=False)
+
+
+def signal_test(sender,instance, **kwargs):
+    print('its working')
+    try: 
+        backupboolean = Backup_signals.objects.latest('pk')
+    except ObjectDoesNotExist:
+        backupboolean = Backup_signal(boolean=True)
+    if not backupboolean.boolean: 
+        print('working backupfile')
+        backupboolean.boolean == True
+    else:
+        pass
+
+
+
+post_save.connect(signal_test, sender=Route)
+post_delete.connect(signal_test,sender=Route)
 
 class Validation(models.Model):
     value = models.CharField(max_length=10, blank=False, null=False)
@@ -677,9 +698,3 @@ class AttackEvent(models.Model):
     def __str__(self):
         return '%s, %s, %s'%(self.id_attack, self.name_attack, self.status)
 
-##### SIGNALS 
-
-@receiver(post_save, sender=Route) 
-def backup_changes(sender, instance, created, **kwargs):
-    if created: 
-       return print('its working')

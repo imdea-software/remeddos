@@ -154,10 +154,15 @@ def petition_geni(id_event):
 
 def get_ip_address(ip):
   # 62.204.192.200
+  # 193.146.228.27
   import subprocess
   process = subprocess.Popen(["nslookup", ip], stdout=subprocess.PIPE)
   output = str(process.communicate()[0]).split("'")
-  helper = output[1].split("\\t"); h = helper[1].split("\\n")
-  address = h[0].split("=")
-  return address[1]
+  try:
+    helper = output[1].split("\\t"); h = helper[1].split("\\n")
+    address = h[0].split("=")
+    return address[1]
+  except Exception as e:
+    print('There was an error when trying to parse the ip. Error: ',e)
+    return ip
   
