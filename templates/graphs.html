@@ -13,6 +13,7 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script> 
     <script src="{% static 'datepicker/js/plugin-datepicker.js' %}"></script>
     <script src="https://www.gstatic.com/charts/loader.js"></script>
+    
 
 {% endblock %}
 
@@ -24,6 +25,7 @@
 </style>
 
 {% block pagejsbottom %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
 <script>
 function sameOrigin(url) {
     // test that a given url is a same-origin URL
@@ -86,31 +88,32 @@ $("#dateForm").on('submit', function(event){
       success: function(response){         
           if(response['beats'] && response['time']){
             var beats = response['beats'];
-              var time = response['time'];
-              console.log(beats)
-            
-              google.charts.load('current', {'packages':['corechart']});
-              google.charts.setOnLoadCallback(drawChart);
-
-              function drawChart() {
-                var data = new google.visualization.DataTable();
-                data.addColumn('number','Tiempo');
-                data.addColumn('number', 'Beats');
-                data.addRows(0);
-                var options = {
-                  title: '{{route.name}}',
-                  curveType: 'function',
-                  legend: { position: 'bottom' }
-              };
-
-              var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
-              chart.draw(data, options);
-        }
+            var time = response['beats_hour'];
+            var ctx = $('#curve_chart');
+            new Chart(ctx,{
+              type:'line',
+              data: {
+                labels: time,
+                datasets:[{
+                  data: beats,
+                  borderColor:'#8e5ea2',
+                  fill:false
+                }]
+              },
+              options: {
+                responsive:true,
+                legend:{
+                  position:'top',
+                },
+                title:{
+                  text:'Gráfico de regla firewall.'
+                }
+              }
+            });
           }else{
             document.getElementById('curve_chart').innerHTML=response['message'];
           }
-              
-            },
+        },
         error: function(){
         alert('error de ajax');
             }
@@ -176,7 +179,7 @@ $("#dateForm").on('submit', function(event){
         
     </div>
   
-  <div class="w-100 h-100" id="curve_chart" name="curve_chart">
-</div>
+  <canvas class="" id="curve_chart" name="curve_chart">
+</canvas>
   
 {% endblock %}

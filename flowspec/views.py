@@ -761,100 +761,23 @@ def setup(request):
     else:
         raise PermissionDenied
 
-def managing_files(string_items,routename):
-    i = 0
-    files = []
-    graph = ''
-    src = './'
-    dest = settings.MEDIA_ROOT
-    # locate the file dir & move files
-    for f_name in os.listdir('./'):
-        if f_name.endswith('.png'):
-            files.append(f_name)
-    for f in files:
-        src = './' + f
-        shutil.move(src,dest)
-    # rename files with the id for each graph   
-    for f in files:
-        src = settings.MEDIA_ROOT + f
-        os.rename(src,settings.MEDIA_ROOT+routename+'.png')
-        i+=1
-    graph = (routename+'.png')
-    return graph
-
-
-def fetch_graphs(source, destination, item_id,routename):
-    # by default pybix downloads the img into the output path so
-    # checks if there's a graph associated with that id first if not 
-    # it will collect the img & will change the image's name and direction to make it more accessible
-    dest = settings.MEDIA_ROOT
-    route = get_object_or_404(Route, name=routename)
-    string_items = '_'.join([str(item) for item in item_id])
-    graphs = string_items+'.png'
-    graph = GraphImageAPI(url=settings.ZABBIX_SOURCE,user=settings.ZABBIX_USER,password=settings.ZABBIX_PWD)
-    try:
-        prev_fwg = get_object_or_404(Graph, route=route)
-        prev_fwg.delete() 
-        fwg = Graph(graph_img=graph.get_by_item_ids(item_id),route=route)
-        fwg.save()
-    except:
-        fwg = Graph(graph_img=graph.get_by_item_ids(item_id),route=route)
-        fwg.graph_img=graphs
-        fwg.save()
-    graph = managing_files(string_items,routename)
-    return graph
-
-
-def graphs(timefrom,timetill, routename):
-    zapi = ZabbixAPI(ZABBIX_SOURCE)
-    zapi.login(ZABBIX_USER,ZABBIX_PWD)
-    route = get_object_or_404(Route, name=routename)
-    query = get_query(route.name, route.destination, route.source)
-
-    #in order to access history log we need to send the dates as timestamp
-    from_date_obj = datetime.datetime.strptime(timefrom,"%Y/%m/%d %H:%M")
-    till_date_obj = datetime.datetime.strptime(timetill,"%Y/%m/%d %H:%M")
-
-    ts_from = int(from_date_obj.timestamp())
-    ts_till = int(till_date_obj.timestamp())
-    #query for getting the itemid and the hostid
-    item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
-    item_id = [i['itemid'] for i in item['result']]
-    hostid = [i['hostid'] for i in item['result']]
-    #if query fails it might be because parameters are not int parsed
-    item_history = zapi.history.get(hostids=hostid,itemids=item_id,time_from=ts_from,time_till=ts_till)
-    
-    beats_date = []; beats_hour = []; clock_value = []; beat_value = []; beats_fulltime = []; beats_values = []
-
-    for x in item_history:
-        clock_value.append(x['clock'])
-        beat_value.append(x['value'])
-    
-    for x in clock_value:
-        y = datetime.datetime.fromtimestamp(int(x))
-        beats_date.append(y.strftime("%m/%d/%Y"))
-        beats_hour.append(y.strftime("%H:%M:%S"))
-        beats_fulltime.append(y.strftime("%Y/%m/%d %H:%M:%S"))
-    
-    beats_values = dict(zip(beats_hour,beat_value))
-    return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
-
 def ajax_graphs(request):
     if request.method == "POST":
         print('yess')
         from_time = request.POST.get('from')
         till_time = request.POST.get('till')
         routename = request.POST.get('routename')
+        print('request post: ',from_time,till_time, routename)
         if from_time and till_time:
             beats_date, beats_hour, beats_value, beats_values, bfulltime = graphs(from_time, till_time, routename)
             data = {
                 'beats_date':beats_date,
                 'beats_hour': beats_hour,
-                'beats_value' : beats_value,
+                'beats' : beats_value,
+                'time' : bfulltime,
             }
-            """ bv = json.dumps(beats_values) """
-            print(type(bfulltime))
-            return JsonResponse({'status':'succesful','time':bfulltime,'beats':beats_value},status=200)
+            print('trace2, the good one')
+            return JsonResponse(data,status=200)
         else:
             print('trace2, the bad one')
             return JsonResponse({'message':'Porfavor introduce los parámetros necesarios para ver el gráfico'}, status=400)
