@@ -95,18 +95,33 @@ $("#dateForm").on('submit', function(event){
               data: {
                 labels: time,
                 datasets:[{
+                  label:'Beats',
                   data: beats,
                   borderColor:'#8e5ea2',
                   fill:false
                 }]
               },
               options: {
+                scales:{
+                  yAxes:[{
+                    ticks:{
+                      beginAtZero:true,
+                    }
+                  }]
+                },
+                maintainAspectRatio:true,
                 responsive:true,
                 legend:{
                   position:'top',
                 },
                 title:{
-                  text:'Gráfico de regla firewall.'
+                  display: true,
+                  text:'Gráfico de {{route.name}}.'
+                },
+                elements:{
+                  line:{
+                    tension: 0,
+                  }
                 }
               }
             });
@@ -115,7 +130,7 @@ $("#dateForm").on('submit', function(event){
           }
         },
         error: function(){
-        alert('error de ajax');
+          document.getElementById('curve_chart').innerHTML='Ha habido un error en su petición porfavor contacte con RediMadrid';
             }
           });
         event.preventDefault();
@@ -179,7 +194,7 @@ $("#dateForm").on('submit', function(event){
         
     </div>
   
-  <canvas class="" id="curve_chart" name="curve_chart">
+  <canvas id="curve_chart" name="curve_chart">
 </canvas>
   
 {% endblock %}
