@@ -18,7 +18,7 @@
 {% block title %}{% trans "Mis reglas FW" %}{% endblock %}
 {% block contentplaceholder %}
 {% csrf_token %}
-<div class="container ">
+<div class="container">
     <div class="row rows-cols-4 p-5">
         <div class="col">
             <h3 class="page-heading text-center fw-light">{% trans "Reglas de Firewall" %} </h3>
@@ -215,7 +215,7 @@ $(document).ready( function(){
                      		else
                      		{
                      			if (status == "OUTOFSYNC"){
-                     				return '<span class="badge pill bg-danger">ERROR</span>';
+                     				return '<span class="badge pill bg-dark">DESACTIVADA</span>';
                      			}
                      			else{
                      				return status;

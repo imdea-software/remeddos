@@ -90,4 +90,4 @@ pillow==8.3.1
 django-dbbackup==3.3.0
 dj-webhooks==0.2.1
 django-braces==1.14.0
-telegram-send==0.25
+django-sass==1.1.0

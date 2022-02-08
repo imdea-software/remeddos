@@ -192,6 +192,7 @@ INSTALLED_APPS = (
     'allauth.account',
     'allauth.socialaccount',
     'dbbackup',
+    'django_sass',
 )
 
 #---DBBACKUP 

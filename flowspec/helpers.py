@@ -8,7 +8,6 @@ from django.shortcuts import get_object_or_404
 import os
 import logging
 import slack
-import telegram_send
 from pyzabbix import ZabbixAPI
 import datetime
 from flowspec.models import *
@@ -41,9 +40,9 @@ def greet(message):
   bot.reply_to(message,'Hello there! How is it going?')
   bot.polling() """
 
-def send_message_tg(message):
+""" def send_message_tg(message):
   print(message)
-  telegram_send.send(messages=[message])
+  telegram_send.send(messages=[message]) """
 """ def send_message_tg(message):
   import requests
   id_chat ='@redimadrid_bot'
@@ -77,7 +76,6 @@ def get_peer_techc_mails(user, peer):
 
 
 def get_peers(username):
-  print('USERNAME: ', username)
   user = User.objects.get(username=username)
   up = UserProfile.objects.get(user=user)
   peers = up.peers.all()
@@ -178,37 +176,54 @@ def get_ip_address(ip):
 
 def graphs(timefrom,timetill, routename):
   from flowspec.models import Route
-  
   zapi = ZabbixAPI(ZABBIX_SOURCE)
   zapi.login(ZABBIX_USER,ZABBIX_PWD)
   route = get_object_or_404(Route, name=routename)
   query = get_query(route.name, route.destination, route.source)
-
   #in order to access history log we need to send the dates as timestamp
-  from_date_obj = datetime.datetime.strptime(timefrom,"%Y/%m/%d %H:%M")
-  till_date_obj = datetime.datetime.strptime(timetill,"%Y/%m/%d %H:%M")
+  if not timefrom=='' and not timetill=='':
+    from_date_obj = datetime.datetime.strptime(timefrom,"%Y/%m/%d %H:%M")
+    till_date_obj = datetime.datetime.strptime(timetill,"%Y/%m/%d %H:%M")
 
-  ts_from = int(from_date_obj.timestamp())
-  ts_till = int(till_date_obj.timestamp())
-  #query for getting the itemid and the hostid
-  item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
-  item_id = [i['itemid'] for i in item['result']]
-  hostid = [i['hostid'] for i in item['result']]
-  #if query fails it might be because parameters are not int parsed
-  print('this are the query items: ',hostid,item_id,ts_from,ts_till)
-  item_history = zapi.history.get(hostids=hostid,itemids=item_id,time_from=ts_from,time_till=ts_till)
-    
-  beats_date = []; beats_hour = []; clock_value = []; beat_value = []; beats_fulltime = []; beats_values = []
+    ts_from = int(from_date_obj.timestamp())
+    ts_till = int(till_date_obj.timestamp())
+    #query for getting the itemid and the hostid
+    item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
+    item_id = [i['itemid'] for i in item['result']]
+    hostid = [i['hostid'] for i in item['result']]
+    #if query fails it might be because parameters are not int parsed
+    item_history = zapi.history.get(hostids=hostid,itemids=item_id,time_from=ts_from,time_till=ts_till)
+      
+    beats_date = []; beats_hour = []; clock_value = []; beat_value = []; beats_fulltime = []; beats_values = []
 
-  for x in item_history:
-    clock_value.append(x['clock'])
-    beat_value.append(x['value'])
-    
-  for x in clock_value:
-    y = datetime.datetime.fromtimestamp(int(x))
-    beats_date.append(y.strftime("%m/%d/%Y"))
-    beats_hour.append(y.strftime("%H:%M:%S"))
-    beats_fulltime.append(y.strftime("%Y/%m/%d %H:%M:%S"))
-    
-  beats_values = dict(zip(beats_hour,beat_value))
-  return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
+    for x in item_history:
+      clock_value.append(x['clock'])
+      beat_value.append(x['value'])
+      
+    for x in clock_value:
+      y = datetime.datetime.fromtimestamp(int(x))
+      beats_date.append(y.strftime("%m/%d/%Y"))
+      beats_hour.append(y.strftime("%H:%M:%S"))
+      beats_fulltime.append(y.strftime("%Y/%m/%d %H:%M:%S"))
+      
+    beats_values = dict(zip(beats_hour,beat_value))
+    return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
+  else:
+    item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
+    item_id = [i['itemid'] for i in item['result']]
+    hostid = [i['hostid'] for i in item['result']]
+    item_history = zapi.history.get(hostids=hostid,itemids=item_id,limit=20)
+      
+    beats_date = []; beats_hour = []; clock_value = []; beat_value = []; beats_fulltime = []; beats_values = []
+    for x in item_history:
+      clock_value.append(x['clock'])
+      beat_value.append(x['value'])
+      
+    for x in clock_value:
+      y = datetime.datetime.fromtimestamp(int(x))
+      beats_date.append(y.strftime("%m/%d/%Y"))
+      beats_hour.append(y.strftime("%H:%M:%S"))
+      beats_fulltime.append(y.strftime("%Y/%m/%d %H:%M:%S"))
+      
+    beats_values = dict(zip(beats_hour,beat_value))
+    return beats_date, beats_hour, beat_value, beats_values, beats_fulltime

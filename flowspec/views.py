@@ -761,13 +761,15 @@ def setup(request):
     else:
         raise PermissionDenied
 
+
+@verified_email_required
+@login_required
+@never_cache
 def ajax_graphs(request):
     if request.method == "POST":
-        print('yess')
         from_time = request.POST.get('from')
         till_time = request.POST.get('till')
         routename = request.POST.get('routename')
-        print('request post: ',from_time,till_time, routename)
         if from_time and till_time:
             beats_date, beats_hour, beats_value, beats_values, bfulltime = graphs(from_time, till_time, routename)
             data = {
@@ -776,11 +778,16 @@ def ajax_graphs(request):
                 'beats' : beats_value,
                 'time' : bfulltime,
             }
-            print('trace2, the good one')
             return JsonResponse(data,status=200)
         else:
-            print('trace2, the bad one')
-            return JsonResponse({'message':'Porfavor introduce los parámetros necesarios para ver el gráfico'}, status=400)
+            beats_date, beats_hour, beats_value, beats_values, bfulltime = graphs(from_time, till_time, routename)
+            data = {
+                'beats_date':beats_date,
+                'beats_hour': beats_hour,
+                'beats' : beats_value,
+                'time' : bfulltime,
+            }
+            return JsonResponse(data,status=200)
 
 
 @verified_email_required
@@ -803,7 +810,10 @@ def get_routes_router():
     for flow_nodes in flow:
         routes = flow_nodes   
     return routes
-    
+
+@verified_email_required
+@login_required
+@never_cache  
 def sync_router(request):
     # find what peer organisation does the user belong to
     peer = get_peers(request.user)

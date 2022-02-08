@@ -3,26 +3,26 @@
 {% load i18n %}
 
 {% block extrahead %}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.css">
-<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet"/> 
-<link href="{% static 'datepicker/css/bootstrap-datetimepicker.css' %}">
+<link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="{% static 'datepicker/plugins/css/style.css' %}">
+<link rel="stylesheet" href="{% static 'datepicker/plugins/css/bootstrap-datetimepicker.min.css' %}">
+
+
 {% endblock %}
 {% block pagejs%}
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment-with-locales.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script> 
-    <script src="{% static 'datepicker/js/plugin-datepicker.js' %}"></script>
-    <script src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="https://www.gstatic.com/charts/loader.js"></script> 
+    <script src="{%  static 'datepicker/plugins/js/popper.js' %}"></script>
+    <script src="{%  static 'datepicker/plugins/js/moment-with-locales.min.js' %}"></script>
+    <script src="{%  static 'datepicker/plugins/js/bootstrap-datetimepicker.min.js' %}"></script>
+    <script src="{%  static 'datepicker/plugins/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'datepicker/plugins/js/bootstrap-datetimepicker.min.js'%}"></script>
+    <script src="{% static 'datepicker/plugins/js/main.js' %}"></script>
     
 
 {% endblock %}
 
 {% block title %}{% trans "Gráficos" %}{% endblock %}
-<style>
-  #dtp{
-    color: black !important;
-  }
-</style>
 
 {% block pagejsbottom %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
@@ -134,67 +134,42 @@ $("#dateForm").on('submit', function(event){
             }
           });
         event.preventDefault();
-})
-
-	$(document).ready( function(){
-		$('#id_from').datetimepicker({
-        format: 'YYYY/MM/DD HH:mm'
-    });
-    $('#id_till').datetimepicker({
-			format: 'YYYY/MM/DD HH:mm'
-		});
-  }) 
-     
+})     
 </script>
 {% endblock %}
 
 {% block contentplaceholder %}
-
 <div class="container-fluid p-5 m-2">
   <div class="row g-3">
     <div class="col">
-      <h2 class="fw-light text-muted text-center p-3 m-2 text-start">Regla de firewall: {{route.name}} </h2>
+      <h3 class="fw-light text-muted text-center p-3 m-2 text-start">Regla de firewall: {{route.name}} </h3>
       </div>
       </div>
-      <form class="row row-cols-sm w-50 g-3 align-items-end" method="POST" id="dateForm" name="dateForm">
+      <form class="d-flex flex-row bd-highlight mb-3 datepickers" method="POST" id="dateForm" name="dateForm">
         {% csrf_token %}
         <input type="hidden" value={{route.name}} id="routename" name="routename">
-        <div class='col-sm-4'>
+        <div class='p-2 bd-highlight'>
           <div class="form-group">
-              <div class='input-group' id='id_from'>
-                  <input type='text' class="form-control" id="from" name="from" placeholder="Desde">
-                  <span class="input-group-addon">
-                      <span class="glyphicon glyphicon-calendar"></span>
-                  </span>
+              <div class='input-group date' id='id_from'>
+                  <input type='text' class="form-control js-datetimepicker" id="from" name="from" placeholder="Desde">
               </div>
           </div>
       </div>
-      <div class='col-sm-4'>
+      <div class='p-2 bd-highlight'>
         <div class="form-group">
             <div class='input-group date' id='id_till'>
-                <input type='text' class="form-control" id="till" name="till" placeholder="Hasta">
-                <span class="input-group-addon">
-                    <span class="glyphicon glyphicon-calendar"></span>
-                </span>
+                <input type='text' class="form-control js-datetimepicker" id="till" name="till" placeholder="Hasta">
             </div>
         </div>
     </div>
-        <div class="col-sm-2">
+        <div class="p-2 bd-highlight">
           <button type="submit" class="btn btn-light btn-sm">Aceptar</button>
         </div>
       </form>
-      <div class="row">
-      <div class="col">
-        <figure class="figure">
-          <!-- <img src="{{ MEDIA_URL }}{{ graphs }}" class="figure-img img-fluid " alt="IMDEA Software Madrid Logo"> -->
-          <figcaption class="figure-caption text-center fw-light">Creada por: {{route.applier}}, {% if route.then.action %} acción: {{route.then.action}}, {% endif %} {% if route.source%} dirección de origen: {{route.source}}, {% endif %} {% if route.destination %} dirección de destino: {{route.destination}}. {% endif %}</figcaption>
-        </figure> 
-      </div>
-    </div>
         
     </div>
   
-  <canvas id="curve_chart" name="curve_chart">
+  <canvas id="curve_chart" class="w-100 h-75" name="curve_chart">
 </canvas>
   
 {% endblock %}

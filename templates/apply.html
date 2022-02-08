@@ -21,22 +21,30 @@
 </li>
 {% endblock %}
 {% block extrahead %}
-    <link href="{% static 'css/plugins/morris/morris-0.4.3.min.css' %}" rel="stylesheet">
-    <link href="{% static 'css/plugins/timeline/timeline.css' %}" rel="stylesheet">
-    <link href="{% static 'datepicker/css/datepicker.css' %}" rel="stylesheet">
-
+	<!-- <link href="{% static 'css/plugins/morris/morris-0.4.3.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/plugins/timeline/timeline.css' %}" rel="stylesheet"> -->
+	<link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+	<link rel="stylesheet" href="{% static 'datepicker/plugins/css/style.css' %}">
+	<link rel="stylesheet" href="{% static 'datepicker/plugins/css/bootstrap-datetimepicker.min.css' %}">
 {% endblock %}
 
 {% block pagejsbottom %}
-<script type="text/javascript" src="{% static 'datepicker/js/bootstrap-datepicker.js' %}"></script><script>
+    <script src="{%  static 'datepicker/plugins/js/popper.js' %}"></script>
+    <script src="{%  static 'datepicker/plugins/js/moment-with-locales.min.js' %}"></script>
+    <script src="{%  static 'datepicker/plugins/js/bootstrap-datetimepicker.min.js' %}"></script>
+    <script src="{%  static 'datepicker/plugins/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'datepicker/plugins/js/bootstrap-datetimepicker.min.js'%}"></script>
+    <script src="{% static 'datepicker/plugins/js/main.js' %}"></script>
+<script>
 	$(document).ready( function(){
 		$('#id_then').removeAttr("multiple");
 
-		$('#id_expires').datepicker({
+		/* $('#id_expires').datepicker({
 			startDate: '+1d',
 			endDate: '+{{maxexpires|add:-1}}d',
 			autoclose: true
-		});
+		}); */
 		$('#setFromAll').click(function(){
 			$("#id_source").val('0.0.0.0/0');
 		});
@@ -276,12 +284,14 @@ function avoidMultipleSubmitting(){
 				<hr>
                 <div class="row">
                 <div class="form-text {% if form.expires.errors %} has-error {% endif %}"></div>
+				<div class="form-group">
                   <label for="id_expires" class="col col-2 form-label"><b>{% trans "Caduca: " %}</b></label>
-		        <div class="col col-8">
-		            {% render_field form.expires class+="form-control datepicker" data-date-format="yyyy-mm-dd" placeholder="Para que una regla no caduque dejar este campo vacío." %}
+		        <div class="col col-8 input-group date" id="id_expires">
+		            {% render_field form.expires class+="form-control js-datetimepicker"  placeholder="Para que una regla no caduque dejar este campo vacío." %}
 		            {% if form.expires.errors %} <span class="help-block"> {{ form.expires.errors|join:", " }} </span>
 		            {% endif %}
 		        </div>
+				</div>
 		        </div>
 
 
