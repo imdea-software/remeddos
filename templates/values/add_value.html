@@ -41,7 +41,9 @@
                     <input type="submit" class="btn btn-outline-info align-middle" value="Enviar">
                 </div>
         </form>
+        
         <div class="col-6">
+            {% if route %}
                 <table class="table table-borderless align-middle p-2">
                         <thead>
                             <tr>
@@ -58,7 +60,9 @@
                         <tr><td>Puerto de destino: <span class="fw-light">  {{route.destinationport}}</span> </td></tr>
                         {% endif %}
                     </table>  
+                    {% endif %}
         </div>
+        
 </div>
 
 {% endblock %}

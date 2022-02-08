@@ -303,7 +303,10 @@ def verify_add_user(request):
                 form = ValidationForm(request.GET)
                 message = "El código introducido es erróneo porfavor introduzca el último código enviado."
                 return render(request,'values/add_value.html', {'form': form, 'message':message})
-            
+        else:
+            form = ValidationForm(request.GET)
+            message = "El código introducido es erróneo porfavor introduzca el último código enviado."
+            return render(request,'values/add_value.html', {'form': form, 'message':message})
 
 
 @verified_email_required
