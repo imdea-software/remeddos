@@ -10,6 +10,7 @@ import logging
 import slack
 from pyzabbix import ZabbixAPI
 import datetime
+from datetime import timedelta
 from flowspec.models import *
 
 FORMAT = '%(asctime)s %(levelname)s: %(message)s'
@@ -191,15 +192,17 @@ def graphs(timefrom,timetill, routename):
     item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
     item_id = [i['itemid'] for i in item['result']]
     hostid = [i['hostid'] for i in item['result']]
+    print('host ',from_date_obj,till_date_obj)
     #if query fails it might be because parameters are not int parsed
     item_history = zapi.history.get(hostids=hostid,itemids=item_id,time_from=ts_from,time_till=ts_till)
+    
       
     beats_date = []; beats_hour = []; clock_value = []; beat_value = []; beats_fulltime = []; beats_values = []
 
     for x in item_history:
       clock_value.append(x['clock'])
       beat_value.append(x['value'])
-      
+   
     for x in clock_value:
       y = datetime.datetime.fromtimestamp(int(x))
       beats_date.append(y.strftime("%m/%d/%Y"))
@@ -209,21 +212,39 @@ def graphs(timefrom,timetill, routename):
     beats_values = dict(zip(beats_hour,beat_value))
     return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
   else:
-    item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
-    item_id = [i['itemid'] for i in item['result']]
-    hostid = [i['hostid'] for i in item['result']]
-    item_history = zapi.history.get(hostids=hostid,itemids=item_id,limit=20)
-      
-    beats_date = []; beats_hour = []; clock_value = []; beat_value = []; beats_fulltime = []; beats_values = []
-    for x in item_history:
-      clock_value.append(x['clock'])
-      beat_value.append(x['value'])
-      
-    for x in clock_value:
-      y = datetime.datetime.fromtimestamp(int(x))
-      beats_date.append(y.strftime("%m/%d/%Y"))
-      beats_hour.append(y.strftime("%H:%M:%S"))
-      beats_fulltime.append(y.strftime("%Y/%m/%d %H:%M:%S"))
-      
-    beats_values = dict(zip(beats_hour,beat_value))
+    beats_date, beats_hour, beat_value, beats_values, beats_fulltime = get_default_graph(routename)
     return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
+
+
+def get_default_graph(routename):
+  from flowspec.models import Route
+  zapi = ZabbixAPI(ZABBIX_SOURCE)
+  zapi.login(ZABBIX_USER,ZABBIX_PWD)
+  route = get_object_or_404(Route, name=routename)
+  query = get_query(route.name, route.destination, route.source)
+
+  item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
+  item_id = [i['itemid'] for i in item['result']]
+  hostid = [i['hostid'] for i in item['result']]
+
+  now = datetime.datetime.now() 
+  yesterday = datetime.datetime.now() - timedelta(1)
+  ts_from = int(yesterday.timestamp())
+  ts_till = int(now.timestamp())
+    
+  item_history = zapi.history.get(hostids=hostid,itemids=item_id,time_from=ts_from,time_till=ts_till)
+  
+      
+  beats_date = []; beats_hour = []; clock_value = []; beat_value = []; beats_fulltime = []; beats_values = []
+  for x in item_history:
+    clock_value.append(x['clock'])
+    beat_value.append(x['value'])
+      
+  for x in clock_value:
+    y = datetime.datetime.fromtimestamp(int(x))
+    beats_date.append(y.strftime("%m/%d/%Y"))
+    beats_hour.append(y.strftime("%H:%M:%S"))
+    beats_fulltime.append(y.strftime("%Y/%m/%d %H:%M:%S"))
+      
+  beats_values = dict(zip(beats_hour,beat_value))
+  return beats_date, beats_hour, beat_value, beats_values, beats_fulltime

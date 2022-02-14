@@ -49,6 +49,7 @@ from django.forms.models import model_to_dict
 from flowspec.forms import *
 from flowspec.models import *
 from peers.models import *
+from flowspec.tasks import *
 
 #from registration.models import RegistrationProfile 
 
@@ -769,7 +770,18 @@ def setup(request):
 @login_required
 @never_cache
 def ajax_graphs(request):
+    if request.method == 'GET':
+        routename = request.GET.get('routename')
+        beats_date, beats_hour, beats_value, beats_values, bfulltime = get_default_graph(routename)
+        data = {
+                'beats_date':beats_date,
+                'beats_hour': beats_hour,
+                'beats' : beats_value,
+                'time' : bfulltime,
+            }
+        return JsonResponse(data,status=200)
     if request.method == "POST":
+        print('inside ajax_graphs')
         from_time = request.POST.get('from')
         till_time = request.POST.get('till')
         routename = request.POST.get('routename')
@@ -783,7 +795,7 @@ def ajax_graphs(request):
             }
             return JsonResponse(data,status=200)
         else:
-            beats_date, beats_hour, beats_value, beats_values, bfulltime = graphs(from_time, till_time, routename)
+            beats_date, beats_hour, beats_value, beats_values, bfulltime = get_default_graph(routename)
             data = {
                 'beats_date':beats_date,
                 'beats_hour': beats_hour,
@@ -797,7 +809,7 @@ def ajax_graphs(request):
 @login_required
 @never_cache
 def display_graphs(request,route_slug):
-    route = get_object_or_404(Route, name=route_slug) 
+    route = get_object_or_404(Route, name=route_slug)
     return render(request,'graphs.html',{'route':route})
     
 def get_routes_router():

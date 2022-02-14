@@ -134,7 +134,77 @@ $("#dateForm").on('submit', function(event){
             }
           });
         event.preventDefault();
-})     
+}) 
+$('document').ready(function(){
+  var form = document.querySelector("[name='dateForm']")
+  var routename = form.elements.routename.value;
+  var url = "{% url 'ajax-graphs' %}";
+  var csrftoken = getCookie('csrftoken');
+  $.ajaxSetup({
+      beforeSend: function(xhr, settings) {
+        if (!csrfSafeMethod(settings.type) && sameOrigin(settings.url)) {
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+      }
+    }
+  })
+  $.ajax({
+    url: url,
+    data : {
+        "routename": routename,
+      },
+      type : "GET",
+      dataType:"json",
+      success: function(response){         
+          if(response['beats'] && response['time']){
+            var beats = response['beats'];
+            var time = response['beats_hour'];
+            var ctx = $('#curve_chart');
+            new Chart(ctx,{
+              type:'line', 
+              data: {
+                labels: time,
+                datasets:[{
+                  label:'Beats',
+                  data: beats,
+                  borderColor:'rgb(75, 192, 192)',
+                  fill:false,
+                  tension: 0.1
+                }]
+              },
+              options: {
+                scales:{
+                  yAxes:[{
+                    ticks:{
+                      beginAtZero:true,
+                    }
+                  }]
+                },
+                maintainAspectRatio:true,
+                responsive:true,
+                legend:{
+                  position:'top',
+                },
+                title:{
+                  display: true,
+                  text:'Gráfico de {{route.name}}.'
+                },
+                elements:{
+                  line:{
+                    tension: 0,
+                  }
+                }
+              }
+            });
+          }else{
+            document.getElementById('curve_chart').innerHTML=response['message'];
+          }
+        },
+        error: function(){
+          document.getElementById('curve_chart').innerHTML='Ha habido un error en su petición porfavor contacte con RediMadrid';
+            }
+  });
+
+})    
 </script>
 {% endblock %}
 
@@ -166,7 +236,6 @@ $("#dateForm").on('submit', function(event){
           <button type="submit" class="btn btn-light btn-sm">Aceptar</button>
         </div>
       </form>
-        
     </div>
   
   <canvas id="curve_chart" class="w-100 h-75" name="curve_chart">
