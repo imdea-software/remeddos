@@ -38,6 +38,7 @@ import logging
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.core.exceptions import ObjectDoesNotExist
+from simple_history.models import HistoricalRecords
 
 from flowspec.junos import create_junos_name
 
@@ -48,7 +49,6 @@ import flowspec.tasks
 from flowspec.tasks import *
 
 import json
-import jsonpickle
 from json import JSONEncoder
 
 from django.contrib.postgres.fields import HStoreField
@@ -165,9 +165,9 @@ class ThenAction(models.Model):
 class Route(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"))
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
-    source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"))
+    source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=True, null=True)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
-    destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"))
+    destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=True, null=True)
     destinationport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Destination Port"))
     port = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Port"))
     dscp = models.ManyToManyField(MatchDscp, blank=True, verbose_name="DSCP")
@@ -185,6 +185,9 @@ class Route(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
+    history = HistoricalRecords(use_base_model_db=True)
+    
+
     @property
     def applier_username(self):
         if self.applier:
@@ -206,6 +209,18 @@ class Route(models.Model):
             return ret
         else:
             return None
+
+    @property
+    def check_history_changes(self):
+        if self.history:
+            iter = self.history.all().order_by('history_date').iterator()
+            history_records = []
+            for record_pair in iter_for_delta_changes(iter):
+                old_record, new_record = record_pair
+                delta = new_record.diff_against(old_record)
+                for change in delta.changes:
+                    history_records.append(f'El atributo: {change.field} ha cambiado de: {change.old} a: {change.new}.')
+        return history_records
 
     def __str__(self):
         return "%s, %s, %s, %s, %s, %s"%(self.name,self.expires, self.applier, self.status,self.source,self.destination)
@@ -349,6 +364,8 @@ class Route(models.Model):
         return False
 
     def check_sync(self):
+        if self.status == 'INACTIVE' or 'ADMINACTIVE':
+            self.save()
         if not self.is_synced():
             self.status= "OUTOFSYNC"
             self.save()
@@ -667,40 +684,4 @@ class Graph(models.Model):
     def __str__(self):
         return self.route.name
 
-
-# ========== WEBHOOK RECIEVER ============ #
-
-class WebhookMessage(models.Model):
-    received_at = models.DateTimeField(auto_now_add=True)
-    message = models.JSONField(null=True)
-
-    def __str__(self):
-        return str(self.message)
-
-class GeniEvents(models.Model):
-    received_at = models.DateTimeField(auto_now_add=True)
-    event = models.JSONField(null=True)
-    traffic_characteristics = models.JSONField(null=True)
-    network_characteristics = models.JSONField(null=True)
-
-    def __str__(self):
-        return str(self.event)
-
-class AttackEvent(models.Model):
-    id_attack = models.CharField(primary_key=True, max_length=10)
-    name_attack = models.CharField(max_length=35,blank=False, null=False)
-    institution_name = models.CharField(max_length=50,blank=True, null=True)
-    status =  models.CharField(max_length=35,blank=False, null=False)
-    max_value = models.CharField(max_length=50,blank=False, null=False)
-    threshold_value = models.CharField(max_length=50,blank=False, null=False)
-    ip_attacked = models.CharField(max_length=50,blank=True, null=True)
-    severity = models.CharField(max_length=35,blank=True, null=True)
-    traffic_characteristics = models.JSONField(null=True)
-    network_characteristics = models.JSONField(null=True)
-    traffic_characteristics = models.JSONField(null=True)
-    network_characteristics = models.JSONField(null=True)
-    received_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return '%s, %s, %s'%(self.id_attack, self.name_attack, self.status)
 

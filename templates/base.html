@@ -63,6 +63,9 @@
                     {% if user.is_staff%} 
                     <a href="{% url 'admin:index'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Panel de Administrador"></i> <span class="nav_name">Admin</span></a> 
                     {% endif %}
+                    {% if user.is_staff%} 
+                    <a href="{% url 'attack-list'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-table nav_icon text-danger' data-bs-toggle="tooltip" data-bs-placement="top" title="Registrador de ataquqes"></i> <span class="nav_name">Golem</span></a> 
+                    {% endif %}
                 </div>
             </div>
             <a href="{% url 'account_logout' %}" class="nav_link linklogout text-white text-decoration-none fw-light"> <i class='bi-person-x-fill nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Salir"></i> <span class="nav_name">Salir</span> </a>
@@ -135,7 +138,7 @@
                   {% if user.is_authenticated %}
                   <button type="button" class="btn btn-outline secondary" data-bs-dismiss="modal">Close</button>
                   <form action="{% url 'backup' %}">
-                    <button type="submit" class="btn btn-outline-primary">Yes</button>
+                    <button type="submit" class="btn btn-outline-primary">Sí</button>
                   </form>
                     {% else %}
                     <p>Primero debe identificarse para poder configurar reglas.</p>

@@ -35,17 +35,16 @@ class PortRangeForm(forms.CharField):
 
     def clean(self, value):
         """Validation of Port Range value.
+            Supported format is the list of ports or port ranges separated by ','.
+            A port range is a tuple of ports separated by '-'.
 
-Supported format is the list of ports or port ranges separated by ','.
-A port range is a tuple of ports separated by '-'.
-
-Example: 80,1000-1100,8088
-This method validates input:
-* input must not be empty
-* all ports must be integer 0 >= p >= 65535
-* value is matched with regular expression: "^[0-9]+([-,][0-9]+)*$"
-* ports in a port range A-B must ordered: A < B
-"""
+            Example: 80,1000-1100,8088
+            This method validates input:
+            * input must not be empty
+            * all ports must be integer 0 >= p >= 65535
+            * value is matched with regular expression: "^[0-9]+([-,][0-9]+)*$"
+            * ports in a port range A-B must ordered: A < B
+        """
         if value:
             regexp = re.compile(r"^[0-9]+([-,][0-9]+)*$")
             r = re.match(regexp, value)
@@ -82,6 +81,7 @@ class RouteForm(forms.ModelForm):
     sourceport = PortRangeForm()
     destinationport = PortRangeForm()
     port = PortRangeForm()
+
     class Meta:
         model = Route
         fields = '__all__'
@@ -97,25 +97,34 @@ class RouteForm(forms.ModelForm):
     def clean_source(self):
         # run validator which is used by rest framework too
         source = self.cleaned_data['source']
-        res = clean_source(
-            User.objects.get(pk=self.data['applier']),
-            source
-        )
-        if res != source:
-            raise forms.ValidationError(res)
+        if source:
+            res = clean_source(
+                User.objects.get(pk=self.data['applier']),
+                source
+            )
+            if res != source:
+                raise forms.ValidationError(res)
+            else:
+                return res
         else:
-            return res
+            source = '0.0.0.0'
+            return source
 
     def clean_destination(self):
         destination = self.cleaned_data.get('destination')
-        res = clean_destination(
-            User.objects.get(pk=self.data['applier']),
-            destination
-        )
-        if destination != res:
-            raise forms.ValidationError(res)
+        if destination:
+            res = clean_destination(
+                User.objects.get(pk=self.data['applier']),
+                destination
+            )
+            if destination != res:
+                raise forms.ValidationError(res)
+            else:
+                print(res,type(res))
+                return res
         else:
-            return res
+            destination = '0.0.0.0'
+            return destination
 
     def clean_expires(self):
         date = self.cleaned_data['expires']

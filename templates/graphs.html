@@ -204,11 +204,19 @@ $('document').ready(function(){
             }
   });
 
-})    
+})
 </script>
 {% endblock %}
 
 {% block contentplaceholder %}
+<style>
+  .bootstrap-datetimepicker-widget{
+    width: fit-content !important;
+  }
+  .bootstrap-datetimepicker-widget div{
+    border-style: none !important;
+  }
+</style>
 <div class="container-fluid p-5 m-2">
   <div class="row g-3">
     <div class="col">

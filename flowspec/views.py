@@ -158,6 +158,7 @@ def group_routes(request):
     try:
         request.user.profile.peers.all()
         routes = Route.objects.filter(applier=request.user).values_list('name',flat=True)
+        #rutas = Route.objects.filter()
        
     except UserProfile.DoesNotExist:
         error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
@@ -347,7 +348,7 @@ def add_route(request):
         else:
             request_data['applier'] = applier
             try:
-                del requset_data['issuperuser']
+                del request_data['issuperuser']
             except:
                 pass
         form = RouteForm(request_data)
@@ -467,6 +468,7 @@ def edit_route(request, route_slug):
                 route.response = "Applying"
                 route.source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
                 route.destination = IPNetwork('%s/%s' % (IPNetwork(route.destination).network.compressed, IPNetwork(route.destination).prefixlen)).compressed
+                
                 try:
                     route.requesters_address = request.META['HTTP_X_FORWARDED_FOR']
                 except:

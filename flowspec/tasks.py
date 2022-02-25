@@ -15,6 +15,7 @@ import slack
 from flowspec.helpers import *
 from django.http import HttpResponse
 from flowspec.models import *
+from golem.helpers import *
 
 LOG_FILENAME = os.path.join(settings.LOG_FILE_LOCATION, 'celery_jobs.log')
 
@@ -336,29 +337,38 @@ def back_up():
 def post(request,anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
     import time
     import subprocess 
-    from flowspec.models import AttackEvent    
+    from golem.models import GolemAttack
+    from golem.helpers import petition_geni
     print('New webhook message, event status: ', anomaly_info['status'], ' ', anomaly_info['severity'],' ', id_event)
     if not anomaly_info['institution_name'] == 'Non-Home':
         if anomaly_info['status'] == 'Open' or anomaly_info == 'Ongoing':
+
             print('something happened , id: ', id_event)
             time.sleep(90)
             event_ticket, event_info = petition_geni(id_event)
             event_data, event, traffic_event = event_ticket['response']['result']['data'],  event_ticket['response']['result']['data'][0]['event'], event_ticket['response']['result']['data'][0]['traffic_characteristics']
             net_event = event_ticket['response']['result']['data'][0]['network_elements'] if event_ticket['response']['result']['data'][0]['network_elements'] else ''
+            print('DATA EVENT: ')
+            print(event_ticket)
+            print('=================')
+            print('DAAATA INFO: ')
+            print(event_info)
+            print('===================')
             mv, tv = float(event_info['max_value']), float(event_info['threshold_value'])
+            
+            #remove first filter
             if ((mv/tv)*100) > 100 and not event_info['status'] == 'Recovered' and not event_info['status']=='Burst':
-                print('traffic_event', traffic_event)
-                print('##########')
-                print('_event_data', event_data)
-                print('##########')
-                print('trace 0')
                 # first rule proposition and send email to user
                 id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = event_info['id'], event_info['status'], event_info['severity'], event_info['max_value'], event_info['threshold_value'] , event_info['attack_name'], event_info['institution_name'], event_info['initial_date'], event_info['ip_attacked']
+                route = create_route(max_value, th_value, attack_name, ip)
                 print('ip attacked: ', ip_attacked)
                 ip = get_ip_address(ip_attacked)
                 send_message(f"Nuevo ataque a la institución '{institution_name}' de tipo '{attack_name}' contra el recurso '{ip}'. La regla para poder mitigar este ataque que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")  
                 recovered = False
-                geni_attack = AttackEvent(id_attack=id_attack,institution_name=institution_name,name_attack=attack_name,status=status,max_value=max_value,threshold_value=th_value,ip_attacked=ip_attacked,severity=severity_type)                    
+                peer = Peer.objects.get(peer_name=institution_name)
+                # next line should be route = Route proposed by us REDIMADRID
+                # save the route BUT DO NOT COMMIT IT 
+                geni_attack = GolemAttack(id_name=id_attack, peer=peer, source = ip, status = status, max_value=max_value,threshold_value=th_value)                    
                 geni_attack.save()
                 time.sleep(210)
                 # dest ip protrocolo de origen y el puerto y el tcp-flag si es udp debe ser descartado porque siempre va a ser 0
@@ -369,7 +379,7 @@ def post(request,anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
                 if ((mv/tv)*100) > 200 and not info['status'] == 'Recovered' and not info['status']=='Burst':
                     print('trace 3 inside second condition after waiting 210 second')
                     id_att, status, max_v, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']                  
-                    attack = AttackEvent.objects.get(id_attack=id_event)
+                    attack = GolemAttack.objects.get(id_name=id_event)
                     attack.status, attack.max_value, attack.threshold_value = info['status'], info['max_value'], info['threshold_value']
                     attack.save()
                     send_message(f'El ataque registrado anteriormente a la institucion {institution_name} con id {id_att} persiste y hemos obtenido nuevos datos del {name}, la regla de firewall que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : id: {id_event}, status: {status},  max_value: {max_v}, threshold value: {th_value}')
@@ -383,10 +393,10 @@ def post(request,anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
                         mv, thv = float(attack_info['max_value']), float(attack_info['threshold_value'])
                         if ((mv/thv)*100) > 200 and not attack_info['status'] == 'Recovered' and not attack_info == 'Burst':
                             # again send rule proposition
-                            #GeniEvents.objects.create(event=event_info,traffic_characteristics=traffic_event,network_characteristics=net_event)
                             id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
-                            attack = AttackEvent.objects.get(id_attack=id_event)
+                            attack = GolemAttack.objects.get(id_name=id_event)
                             attack.status, attack.max_value, attack.threshold_value = attack_info['status'], attack_info['max_value'], attack_info['threshold_value']
+                            #proponer regla aquí otra vez route = Route.objects.get(name='')
                             attack.save()
                             send_message(f"El ataque registrado anteriormente a la institución {institution_name} persiste {name} y hemos obtenido nuevos datos, la regla de firewall que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")
                             recovered = False
@@ -394,14 +404,14 @@ def post(request,anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
                             if attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':
                             # si es recovered coger los datos de inicio y fin del ataque, informar
                                 id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
-                                attack = AttackEvent.objects.get(id_attack=id_event)
+                                attack = GolemAttack.objects.get(id_name=id_event)
                                 attack.status, attack.max_value, attack.threshold_value = attack_info['status'], attack_info['max_value'], attack_info['threshold_value']
                                 attack.save()
                                 send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} e id {id_attack} ha terminado. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")
                                 recovered = True
                 else:
                     if info['status'] == 'Recovered' or info['status']=='Burst':
-                        attack = AttackEvent.objects.get(id_attack=id_event)
+                        attack = GolemAttack.objects.get(id_name=id_event)
                         id_att, status, max_v, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
                         send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} y estado {status} ha terminado. Más información sobre el ataque : Id: {id_attack}, Max Value: {max_value}, Threshold value: {th_value}.")                  
                 # send message to slack saying the attack has finished

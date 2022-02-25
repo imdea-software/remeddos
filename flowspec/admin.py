@@ -126,10 +126,6 @@ admin.site.register(MatchProtocol)
 admin.site.register(MatchDscp)
 admin.site.register(ThenAction)
 admin.site.register(Route, RouteAdmin)
-admin.site.register(WebhookMessage)
 admin.site.register(User, UserProfileAdmin)
 admin.site.disable_action('delete_selected')
-admin.site.register(GeniEvents, GeniEventsAdmin)
-admin.site.register(AttackEvent)
-
 

@@ -1,0 +1,25 @@
+{% extends "../base.html" %}
+
+{% load i18n %}
+
+{% block title %}{% trans "Ataques recientes" %}{% endblock %}
+
+{% block contentplaceholder %}
+<div class="container-fluid p-5">
+<div class="row">
+  <div class="col text-end">
+    <h5>{% trans "Ataques recientes" %}</h5>
+    </div>
+    </div>
+<div class="row">
+    <div class="col align-middle">
+        {% if attacks %}
+        <table>
+            {{attacks}}
+        </table>
+        {% endif %}
+</div>
+</div>
+</div>
+</div>
+{% endblock %}

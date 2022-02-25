@@ -39,12 +39,6 @@
 <script>
 	$(document).ready( function(){
 		$('#id_then').removeAttr("multiple");
-
-		/* $('#id_expires').datepicker({
-			startDate: '+1d',
-			endDate: '+{{maxexpires|add:-1}}d',
-			autoclose: true
-		}); */
 		$('#setFromAll').click(function(){
 			$("#id_source").val('0.0.0.0/0');
 		});
@@ -124,7 +118,7 @@ function avoidMultipleSubmitting(){
 
     <div class="row">
         <div class="col text-end">
-            <i class="fa fa-shield fa-fw"></i> Regla de Firewall
+            <i class="fa fa-shield fa-fw"></i> Regla de Firewall, aquellos campos marcados con (*) son obligatorios.
         </div>
     </div>
     
@@ -144,7 +138,7 @@ function avoidMultipleSubmitting(){
 			{% else %}
                     <div class="row p-1">
 					    <div class="form-text {% if form.name.errors %} has-error {% endif %}"></div>
-                        <label for="id_name" class="col col-2 form-label"><b>{% trans "Nombre: " %}</b></label>
+                        <label for="id_name" class="col col-2 form-label"><b>{% trans "Nombre (*): " %}</b></label>
                         <div class="col col-8">
                         {% render_field form.name class+="form-control" placeholder="Ej. ntpattack. Un identificador indicando la organización a la que pertenece el usuario será añadido." %}
                         {% if form.name.errors %} <span class="help-block"> {{ form.name.errors|join:", " }} </span>
@@ -167,6 +161,10 @@ function avoidMultipleSubmitting(){
                  <input type="hidden" id="id_applier" name="applier" value="{{applier}}"/>
                 {% endif %}
 					<hr>
+					<div class="row p-1">
+						<p class="">Para aplicar una regla con un origen '0.0.0.0/0' dejar el campo vacio o introducir '0.0.0.0'</p>
+					</div>
+
                     <div class="row p-1">
 					<div class="form-text {% if form.source.errors %} has-error {% endif %}"></div>
 					<label for="id_source" class="col form-label"><b>{% trans "Dirección de origen: " %}</b></label>
@@ -179,7 +177,7 @@ function avoidMultipleSubmitting(){
                     
                     <div class="row p-1">
 					<div class="form-text {% if form.destination.errors %} has-error {% endif %}"></div>
-					<label for="id_destination" class="col form-label"><b>{% trans "Dirección de destinado:" %}</b></label>
+					<label for="id_destination" class="col form-label"><b>{% trans "Dirección de destinado (*):" %}</b></label>
 					<div class="col col-6">
 						{% render_field form.destination class+="form-control" placeholder=form.destination.help_text %}
 						{% if form.destination.errors %} <span class="help-block"> {{ form.destination.errors|join:", " }} </span>
@@ -189,7 +187,8 @@ function avoidMultipleSubmitting(){
 						<img src="{% static 'secure_destination.png' %}" style="height: 30px;"/>
 					</div>
 					</div>
-                    
+					<hr>
+                    <p>Para seleccionar más de un protocolo utilizar Ctrl.</p>
                     <div class="row p-1">
 					<div class="form-text {% if form.protocol.errors %} has-error {% endif %}">
 					<label for="id_protocol" class="col col-2 form-label"><b>{% trans "Protocolo(s)" %}</b></label>
@@ -205,7 +204,7 @@ function avoidMultipleSubmitting(){
 						<div class="form-text {% if form.packetlength.errors %} has-error {% endif %}"></div>
 						<label for="id_packetlength" class="col col-2 form-label"><b>{% trans "Packet Length: " %}</b></label>
 						<div class="col col-6">
-							{% render_field form.packetlength class+="form-control" %}
+							{% render_field form.packetlength class+="form-control" placeholder="" %}
 							{% if form.packetlength.errors %} <span class="help-block"> {{ form.packetlength.errors|join:", " }} </span>
 							{% endif %}
 						</div>
@@ -249,7 +248,7 @@ function avoidMultipleSubmitting(){
 		        <!--  PORTS -->
                 <hr>
 		        <div class="form-text ">
-		        	<label class="col col-10"><small>{% trans "Selecciona los puertos de origen/destino para las direcciones de origen/destino." %}</small></label>
+		        	<label class="col col-10">{% trans "Selecciona los puertos de origen/destino para las direcciones de origen/destino. Ejemplo: 80,100-120,443. No debes indicar los puertos si el protocolo es ICMP." %}</label>
 		        </div>
                 <div class="row p-1">
 		        <div class="form-text {% if form.sourceport.errors %} has-error {% endif %} {% if form.destinationport.errors %} has-error {% endif %} {% if form.port.errors %} has-error {% endif %}"></div>
@@ -282,12 +281,13 @@ function avoidMultipleSubmitting(){
 		        </div>
                 
 				<hr>
+				<p>Si no quieres que una regla caduque dejar el siguiente campo vacío, la duración debe ser mínimo de 1 día. </p>
                 <div class="row">
                 <div class="form-text {% if form.expires.errors %} has-error {% endif %}"></div>
 				<div class="form-group">
-                  <label for="id_expires" class="col col-2 form-label"><b>{% trans "Caduca: " %}</b></label>
-		        <div class="col col-8 input-group date" id="id_expires">
-		            {% render_field form.expires class+="form-control js-datetimepicker"  placeholder="Para que una regla no caduque dejar este campo vacío." %}
+                  <label for="id_expires" class="col col-2 form-label"><b>{% trans "Caduca (*): " %}</b></label>
+		        <div class="col col-8 date" id="id_expire">
+		            {% render_field form.expires class+="form-control js-datetimepicker"  placeholder="Fecha" %}
 		            {% if form.expires.errors %} <span class="help-block"> {{ form.expires.errors|join:", " }} </span>
 		            {% endif %}
 		        </div>

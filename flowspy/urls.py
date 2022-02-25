@@ -9,6 +9,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.conf.urls.i18n import i18n_patterns
 import flowspec.views
+import golem.views
 
 
 from flowspec.viewsets import (
@@ -46,7 +47,8 @@ urlpatterns = [
     re_path(r'^altlogin/?',auth_views.LoginView.as_view(template_name= 'overview/login.html'), name="altlogin"),
     re_path(r'^api/', include(router.urls)),
     re_path(r'^i18n/', include('django.conf.urls.i18n')),
-    path('endpoint',flowspec.views.ProcessWebHookView.as_view(),name="endpoint"),     
+    path('endpoint',golem.views.ProcessWebHookView.as_view(),name="endpoint"),
+    path('golem/',include('golem.urls')),     
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

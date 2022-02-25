@@ -2,7 +2,7 @@
 
 	"use strict";
 
-	$('#id_expires').datetimepicker({
+	$('#id_expire').datetimepicker({
 		allowInputToggle: true,
 		showClose: true,
 		showClear: true,

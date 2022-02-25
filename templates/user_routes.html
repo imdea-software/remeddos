@@ -244,11 +244,14 @@ $(document).ready( function(){
                      },
                      {"mData":"expires", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
-                        var parsedate = new Date(data).toLocaleDateString('en-GB',{
+                        var parsedate = new Date(data).toLocaleDateString('es-ES',{
                             year:'numeric',
                             month:'long',
                             day:'numeric',
                         });
+                        if(parsedate=='Invalid Date'){
+                            parsedate = 'No expira'
+                        }
                      	return '<small>'+parsedate+'</small>';
                      }},
                      {"mData":"response", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
