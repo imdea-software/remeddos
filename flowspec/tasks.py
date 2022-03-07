@@ -1,4 +1,5 @@
 from __future__ import absolute_import, unicode_literals
+from socket import IP_TOS
 
 
 from celery import shared_task
@@ -185,29 +186,33 @@ def batch_delete(routes, **kwargs):
 @shared_task
 def check_sync(route_name=None, selected_routes=[]):
     from flowspec.models import Route, MatchPort, MatchDscp, ThenAction
-    if not selected_routes:
-        routes = Route.objects.all()
-    else:
-        routes = selected_routes
-    if route_name:
-        routes = routes.filter(name=route_name)
-    for route in routes:
-        if route.has_expired() and (route.status != 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE'):
-            if route.status != 'ERROR':
-                message = ('Expiring %s route %s' %(route.status, route.name)) 
-                send_message(message)
-                route.status='EXPIRED'
-                route.save()
-                delete(route)
-            if route.status == 'ERROR' and route.has_expired():
-                message = ('Deleting %s route with error %s' %(route.status, route.name)) 
-                send_message(message)
-                route.status='EXPIRED'
-                print(' this is route, ',route.status)
-                route.save()
+    peers = ['CV', 'CIB', 'CSIC', 'CEU', 'CUNEF', 'IMDEA_NET', 'IMDEA', 'UAM', 'UC3M', 'UCM', 'UAH', 'UEM', 'UNED', 'UPM', 'URJC']
+    for peer in peers:
+        if not selected_routes:
+            routes = find_routes(applier=None,peer=peer)
         else:
-            if route.status != 'EXPIRED':
-                route.check_sync()
+            routes = selected_routes
+        if route_name:
+            routes = routes.filter(name=route_name)
+        for route in routes:
+            if route.has_expired() and (route.status != 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE'):
+                if route.status != 'ERROR':
+                    message = ('Expiring %s route %s' %(route.status, route.name)) 
+                    send_message(message)
+                    route.status='EXPIRED'
+                    route.save()
+                    delete(route)
+                if route.status == 'ERROR' and route.has_expired():
+                    message = ('Deleting %s route with error %s' %(route.status, route.name)) 
+                    send_message(message)
+                    route.status='EXPIRED'
+                    print(' this is route, ',route.status)
+                    route.save()
+                elif route.status == 'OUTOFSYN':
+                    route.check_sync()
+            else:
+                if route.status != 'EXPIRED':
+                    route.check_sync()
 
                 
 @shared_task(ignore_result=True)
@@ -217,43 +222,48 @@ def notify_expired():
     from django.contrib.sites.models import Site
     from django.core.mail import send_mail
     from django.template.loader import render_to_string
-
+    peers = ['CV', 'CIB', 'CSIC', 'CEU', 'CUNEF', 'IMDEA_NET', 'IMDEA', 'UAM', 'UC3M', 'UCM', 'UAH', 'UEM', 'UNED', 'UPM', 'URJC']
     message = ('Initializing expiration notification')
-    send_message(message)
-    routes = Route.objects.all()
-    today = datetime.date.today()
-    for route in routes:
-        if route.expires != None:
-            if route.status not in ['EXPIRED', 'ADMININACTIVE', 'INACTIVE', 'ERROR']:
-                expiration_days = (route.expires - today).days
-                if expiration_days < settings.EXPIRATION_NOTIFY_DAYS and expiration_days > 0:
-                    try:
-                        fqdn = Site.objects.get_current().domain
-                        admin_url = "https://%s%s" % \
-                        (fqdn,
-                        "/edit/%s"%route.name)
-                        mail_body = render_to_string("rule_action.txt", {"route": route, 'expiration_days':expiration_days, 'action':'expires', 'url':admin_url})
-                        days_num = ' days'
-                        expiration_days_text = "%s %s" %('in',expiration_days)
-                        if expiration_days == 0:
-                            days_num = ' today'
-                            expiration_days_text = ''
-                        if expiration_days == 1:
-                            days_num = ' day'
-                        message = ('Route %s expires %s%s. Notifying %s (%s)' %(route.name, expiration_days_text, days_num, route.applier, route.applier.email))
-                        send_message(message)
-                        send_mail(settings.EMAIL_SUBJECT_PREFIX + "Rule %s expires %s%s" %
-                                (route.name,expiration_days_text, days_num),
-                                mail_body, settings.SERVER_EMAIL,
-                                [route.applier.email])
-                    except Exception as e:
-                        message = ("Exception: %s"%e)
-                        send_message(message)
-        else:
-            message = ("Route: %s, won't expire." % route.name)
-            send_message(message)
-    messagae = ('Expiration notification process finished')
-    send_message(message)
+    #send_message(message)
+    print(message)
+    for peer in peers:
+        routes = find_routes(applier=None, peer=peer)
+        today = datetime.date.today()
+        for route in routes:
+            print('routes: ', route)
+            if route.expires != None:
+                if route.status not in ['EXPIRED', 'ADMININACTIVE', 'INACTIVE', 'ERROR']:
+                    expiration_days = (route.expires - today).days
+                    if expiration_days < settings.EXPIRATION_NOTIFY_DAYS and expiration_days > 0:
+                        try:
+                            fqdn = Site.objects.get_current().domain
+                            admin_url = "https://%s%s" % \
+                            (fqdn,
+                            "/edit/%s"%route.name)
+                            mail_body = render_to_string("rule_action.txt", {"route": route, 'expiration_days':expiration_days, 'action':'expires', 'url':admin_url})
+                            days_num = ' days'
+                            expiration_days_text = "%s %s" %('in',expiration_days)
+                            if expiration_days == 0:
+                                days_num = ' today'
+                                expiration_days_text = ''
+                            if expiration_days == 1:
+                                days_num = ' day'
+                            message = ('Route %s expires %s%s. Notifying %s (%s)' %(route.name, expiration_days_text, days_num, route.applier, route.applier.email))
+                            send_message(message)
+                            send_mail(settings.EMAIL_SUBJECT_PREFIX + "Rule %s expires %s%s" %
+                                    (route.name,expiration_days_text, days_num),
+                                    mail_body, settings.SERVER_EMAIL,
+                                    [route.applier.email])
+                        except Exception as e:
+                            message = ("Exception: %s"%e)
+                            send_message(message)
+            else:
+                message = ("Route: %s, won't expire." % route.name)
+                send_message(message)
+                print(message)
+                pass
+        messagae = ('Expiration notification process finished')
+        send_message(message)
 
 @shared_task
 def expired_val_codes():
@@ -306,35 +316,12 @@ def routes_sync():
     else:
         message = ('There are no routes out of sync')
         send_message(message)
- 
-@shared_task
-def back_up():
-    from flowspec.models import Backup_signal
-    from django.core.management import call_command
-    import datetime
-
-    now = datetime.datetime.now()
-    current_time = now.strftime("%H:%M")
-    current_date = now.strftime("%d-%B-%Y")
-    signal_object = Backup_signal.objects.latest('pk')
-    if signal_object.boolean: 
-        try:
-            call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
-            message = 'Back up succesfully created.'
-            signal_object.boolean = False
-            signal_object.save()
-            print('it worked ', signal_object)
-            send_message(message) 
-        except Exception as e:
-            message = ('An error came up and the database was not created. %s'%e)
-            send_message(message)
-        pass
-    else:
-        print('There are no changes in the database')
 
 
 @shared_task
 def post(request,anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
+    from flowspec.models import MatchProtocol
+    from golem.models import GolemAttack
     import time
     import subprocess 
     from golem.models import GolemAttack
@@ -342,83 +329,99 @@ def post(request,anomaly_ticket, anomaly_info, id_event, *args, **kwargs):
     print('New webhook message, event status: ', anomaly_info['status'], ' ', anomaly_info['severity'],' ', id_event)
     if not anomaly_info['institution_name'] == 'Non-Home':
         if anomaly_info['status'] == 'Open' or anomaly_info == 'Ongoing':
-
             print('something happened , id: ', id_event)
             time.sleep(90)
             event_ticket, event_info = petition_geni(id_event)
             event_data, event, traffic_event = event_ticket['response']['result']['data'],  event_ticket['response']['result']['data'][0]['event'], event_ticket['response']['result']['data'][0]['traffic_characteristics']
             net_event = event_ticket['response']['result']['data'][0]['network_elements'] if event_ticket['response']['result']['data'][0]['network_elements'] else ''
-            print('DATA EVENT: ')
-            print(event_ticket)
-            print('=================')
-            print('DAAATA INFO: ')
-            print(event_info)
-            print('===================')
             mv, tv = float(event_info['max_value']), float(event_info['threshold_value'])
-            
-            #remove first filter
-            if ((mv/tv)*100) > 100 and not event_info['status'] == 'Recovered' and not event_info['status']=='Burst':
+            print('traza1')
+            print('TRAZA 1 ESTADO ',event_info['status'])
+            if not event_info['status'] == 'Recovered' and not event_info['status']=='Burst':
+                print(traffic_event)
+                print('===================')
                 # first rule proposition and send email to user
                 id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = event_info['id'], event_info['status'], event_info['severity'], event_info['max_value'], event_info['threshold_value'] , event_info['attack_name'], event_info['institution_name'], event_info['initial_date'], event_info['ip_attacked']
-                route = create_route(max_value, th_value, attack_name, ip)
+                ip_dest = traffic_event[1]['data'][0][0]
+                ip_src = traffic_event[0]['data'][0][0]
+                source_port = traffic_event[2]['data'][0][0]; fd = source_port.find(':') ; src_port = source_port[fd+1::]
+                destination_port = traffic_event[3]['data'][0][0]; fn = destination_port.find(':'); dest_port = destination_port[fn+1::]
+                protocol = traffic_event[4]['data'][0][0]
+                tcp_flag = traffic_event[5]['data'][0][0]
+                
+                print('COLLECTED DATA FROM JSONNN : ')
+                print('ip_dest: ', ip_dest,' ip_src: ', ip_src,' src_port: ', src_port,' dest_port: ',  dest_port,' protocol: ', protocol,' tcp-flag: ',tcp_flag)
+                print('===================================')
+                
                 print('ip attacked: ', ip_attacked)
                 ip = get_ip_address(ip_attacked)
+                #route = create_route(max_value, th_value, attack_name, ip)
                 send_message(f"Nuevo ataque a la institución '{institution_name}' de tipo '{attack_name}' contra el recurso '{ip}'. La regla para poder mitigar este ataque que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")  
                 recovered = False
-                peer = Peer.objects.get(peer_name=institution_name)
-                # next line should be route = Route proposed by us REDIMADRID
-                # save the route BUT DO NOT COMMIT IT 
-                geni_attack = GolemAttack(id_name=id_attack, peer=peer, source = ip, status = status, max_value=max_value,threshold_value=th_value)                    
-                geni_attack.save()
-                time.sleep(210)
-                # dest ip protrocolo de origen y el puerto y el tcp-flag si es udp debe ser descartado porque siempre va a ser 0
-                print('trace 1')
-                event_data, info = petition_geni(id_event)
-                print('trace 2 after geni petition')
-                mv, tv = float(info['max_value']), float(info['threshold_value'])
-                if ((mv/tv)*100) > 200 and not info['status'] == 'Recovered' and not info['status']=='Burst':
-                    print('trace 3 inside second condition after waiting 210 second')
-                    id_att, status, max_v, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']                  
-                    attack = GolemAttack.objects.get(id_name=id_event)
-                    attack.status, attack.max_value, attack.threshold_value = info['status'], info['max_value'], info['threshold_value']
-                    attack.save()
-                    send_message(f'El ataque registrado anteriormente a la institucion {institution_name} con id {id_att} persiste y hemos obtenido nuevos datos del {name}, la regla de firewall que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : id: {id_event}, status: {status},  max_value: {max_v}, threshold value: {th_value}')
-                    # second rule proposition
-                    # preguntar si no es recover un bucle hasta que devuelva recovery cada 5 min
-                    # check multi threading in case there are multiple attacks going on 
-                    while recovered:
-                        print('inside while loop')
-                        time.sleep(300)
-                        attack_data, attack_info = petition_geni(id_event)
-                        mv, thv = float(attack_info['max_value']), float(attack_info['threshold_value'])
-                        if ((mv/thv)*100) > 200 and not attack_info['status'] == 'Recovered' and not attack_info == 'Burst':
-                            # again send rule proposition
-                            id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
-                            attack = GolemAttack.objects.get(id_name=id_event)
-                            attack.status, attack.max_value, attack.threshold_value = attack_info['status'], attack_info['max_value'], attack_info['threshold_value']
-                            #proponer regla aquí otra vez route = Route.objects.get(name='')
-                            attack.save()
-                            send_message(f"El ataque registrado anteriormente a la institución {institution_name} persiste {name} y hemos obtenido nuevos datos, la regla de firewall que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")
-                            recovered = False
-                        else: 
-                            if attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':
-                            # si es recovered coger los datos de inicio y fin del ataque, informar
+                #peer = Peer.objects.get(peer_name=institution_name)
+                peer = find_peer(institution_name)
+                if peer:
+                    # next line should be route = Route proposed by us REDIMADRID
+                    # save the route BUT DO NOT COMMIT IT 
+                    print('traza 1')
+                    geni_attack = GolemAttack(id_name=id_attack, peer=peer, ip_src = ip_src, ip_dest=ip_dest, src_port=src_port, dest_port=dest_port, tcpflag=tcp_flag, status = status, max_value=max_value,threshold_value=th_value)                    
+                    geni_attack.save()
+                    for p in protocol:
+                        prot, created = MatchProtocol.objects.get_or_create(protocol=p)
+                        geni_attack.protocol.add(prot.pk)
+                    geni_attack.save()
+                    time.sleep(210)
+                    print('traza 2')
+                    # dest ip protrocolo de origen y el puerto y el tcp-flag si es udp debe ser descartado porque siempre va a ser 0
+                    event_data, info = petition_geni(id_event)
+                    mv, tv = float(info['max_value']), float(info['threshold_value'])
+                    if not info['status'] == 'Recovered' and not info['status']=='Burst':
+                        print('trace 3 inside second condition after waiting 210 second')
+                        id_att, status, max_v, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']                  
+                        attack = GolemAttack.objects.get(id_name=id_event)
+                        attack.status, attack.max_value, attack.threshold_value = info['status'], info['max_value'], info['threshold_value']
+                        attack.save()
+                        send_message(f'El ataque registrado anteriormente a la institucion {institution_name} con id {id_att} persiste y hemos obtenido nuevos datos del {name}, la regla de firewall que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : id: {id_event}, status: {status},  max_value: {max_v}, threshold value: {th_value}')
+                        # second rule proposition
+                        # preguntar si no es recover un bucle hasta que devuelva recovery cada 5 min
+                        # check multi threading in case there are multiple attacks going on 
+                        while recovered:
+                            print('inside while loop')
+                            time.sleep(300)
+                            attack_data, attack_info = petition_geni(id_event)
+                            mv, thv = float(attack_info['max_value']), float(attack_info['threshold_value'])
+                            if not attack_info['status'] == 'Recovered' and not attack_info == 'Burst':
+                                # again send rule proposition
                                 id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
                                 attack = GolemAttack.objects.get(id_name=id_event)
                                 attack.status, attack.max_value, attack.threshold_value = attack_info['status'], attack_info['max_value'], attack_info['threshold_value']
+                                #proponer regla aquí otra vez route = Route.objects.get(name='')
                                 attack.save()
-                                send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} e id {id_attack} ha terminado. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")
-                                recovered = True
+                                send_message(f"El ataque registrado anteriormente a la institución {institution_name} persiste {name} y hemos obtenido nuevos datos, la regla de firewall que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")
+                                recovered = False
+                            else: 
+                                if attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':
+                                    print('Attack finished')
+                                # si es recovered coger los datos de inicio y fin del ataque, informar
+                                    id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
+                                    print('this is started date: ', initial_date)
+                                    attack = GolemAttack.objects.get(id_name=id_event)
+                                    attack.status, attack.max_value, attack.threshold_value = status, max_value, th_value
+                                    attack.save()
+                                    send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} e id {id_attack} ha terminado. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")
+                                    recovered = True
+                    else:
+                        if info['status'] == 'Recovered' or info['status']=='Burst':
+                            attack = GolemAttack.objects.get(id_name=id_event)
+                            id_att, status, max_v, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
+                            send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} y estado {status} ha terminado. Más información sobre el ataque : Id: {id_attack}, Max Value: {max_value}, Threshold value: {th_value}.")                  
+                    # send message to slack saying the attack has finished
+                    # wait 4 min 
+                    # rule proposition and send email to user
+                    # repeat process every 5 min until status equals 'recovered'
+                    #GeniEvents.objects.create(event=event_info,traffic_characteristics=traffic_event,network_characteristics=net_event)
                 else:
-                    if info['status'] == 'Recovered' or info['status']=='Burst':
-                        attack = GolemAttack.objects.get(id_name=id_event)
-                        id_att, status, max_v, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
-                        send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} y estado {status} ha terminado. Más información sobre el ataque : Id: {id_attack}, Max Value: {max_value}, Threshold value: {th_value}.")                  
-                # send message to slack saying the attack has finished
-                # wait 4 min 
-                # rule proposition and send email to user
-                # repeat process every 5 min until status equals 'recovered'
-                #GeniEvents.objects.create(event=event_info,traffic_characteristics=traffic_event,network_characteristics=net_event)
+                    print('La institución que ha sufrido el ataque no está conectada a REMeDDOS.')
         elif anomaly_info['status'] =='Burst':
             print('evento descartado, estado burst') 
             pass

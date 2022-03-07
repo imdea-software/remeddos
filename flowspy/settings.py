@@ -201,8 +201,8 @@ INSTALLED_APPS = (
 #---DBBACKUP 
 DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
 BACK_UP_DIR = os.path.join(BASE_DIR,'_backup/')
-DBBACKUP_STORAGE_OPTIONS = {'location': BACK_UP_DIR}
-DBBACKUP_FILE_NAME_TEMPLATE='{datetime}-redifod.sql'
+""" DBBACKUP_STORAGE_OPTIONS = {'location': BACK_UP_DIR}
+DBBACKUP_FILE_NAME_TEMPLATE='{datetime}-redifod.sql' """
 
 #---STATIC 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')

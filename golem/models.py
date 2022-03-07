@@ -4,6 +4,7 @@ from peers.models import *
 from django.utils import timezone
 from datetime import datetime
 from simple_history.models import HistoricalRecords
+from flowspec.helpers import * 
 
 
 # Create your models here
@@ -17,7 +18,12 @@ class GolemAttack(models.Model):
     peer = models.ForeignKey(Peer,max_length=50,blank=True,null=True,on_delete=models.CASCADE)
     #fk to route (we we'll create here a new proposition of route where it is just commited to the db)
     route = models.ForeignKey(Route,max_length=50,blank=True,null=True,on_delete=models.CASCADE)
-    source = models.GenericIPAddressField(default='0.0.0.0')
+    ip_src = models.GenericIPAddressField(default='0.0.0.0')
+    ip_dest = models.GenericIPAddressField(default='0.0.0.0')
+    src_port = models.CharField(max_length=65535, blank=True, null=True)
+    dest_port = models.CharField(max_length=65535, blank=True, null=True)
+    protocol = models.ManyToManyField(MatchProtocol, blank=True)
+    tcpflag = models.CharField(max_length=100, blank=True, null=True)
     status = models.CharField(max_length=50)
     max_value = models.FloatField()
     threshold_value  = models.FloatField()
@@ -30,7 +36,7 @@ class GolemAttack(models.Model):
 #  el ataque : Id: A377936, Status: Ongoing, Max Value: 264235306.66667, Threshold value: 203800000.
 
     def __str__(self):
-        return (f'{self.id_name}, {self.peer}, {self.route}, {self.source}, {self.status}  ')
+        return (f'{self.id_name}, {self.peer}, {self.route}, {self.status}')
 
     def commit_add():
         # method that will commit the route to the router once the client approves it

@@ -38,7 +38,14 @@ class UserProfile(models.Model):
         return self.username()
 
     def get_peers(self):
-        return self.peers.all()
+        return (f'{self.peers.all()}')
+    
+    def get_peer_tag(self):
+        peers = self.peers.all()
+        peer = ''
+        for p in peers: 
+            peer = p.peer_tag
+        return peer
 
     def get_address_space(self):
         networks = self.domain.networks.all()

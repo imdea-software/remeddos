@@ -36,11 +36,6 @@ app.conf.beat_schedule = {
         "schedule": crontab(minute=1, hour=1),
         "args": (),
     },
-    "back-up-changes-routes": {
-        "task": "flowspec.tasks.back_up",
-        "schedule": crontab(minute=0, hour=0),
-        "args": (),
-    },
     
 }
 

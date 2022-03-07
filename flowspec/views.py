@@ -18,6 +18,7 @@
 #
 
 import json
+from tkinter import N
 from django import forms
 from django.contrib.auth.decorators import login_required
 from allauth.account.decorators import verified_email_required
@@ -93,7 +94,9 @@ def get_code():
 
 @login_required
 def user_routes(request):
-    user_routes = Route.objects.filter(applier=request.user)
+    #user_routes = Route.objects.filter(applier=request.user)
+    user = request.user
+    user_routes = find_routes(user.username)
     return render(
         request,
         'user_routes.html',
@@ -118,6 +121,7 @@ def service_desc(request):
 @login_required
 @never_cache
 def dashboard(request):
+    user = request.user
     all_group_routes = []
     message = ''
     try:
@@ -134,12 +138,15 @@ def dashboard(request):
         )
     if peers:
         if request.user.is_superuser:
-            all_group_routes = Route.objects.all().order_by('-last_updated')[:10]
+            #all_group_routes = Route.objects.all().order_by('-last_updated')[:10]
+            all_group_routes = find_routes(user.username)
             # add method for revising which rules are expired and which not for deleting the ones that are 
             for group_route in all_group_routes:
                 group_route.has_expired()
         else:
-            all_group_routes = Route.objects.filter(applier=request.user)
+            print('2t')
+            #all_group_routes = Route.objects.filter(applier=request.user)
+            all_group_routes = find_routes(user.username)
             # checking if any route is expired, if they are, the rules are deleted
             for group_route in all_group_routes:
                 group_route.has_expired()
@@ -156,9 +163,11 @@ def dashboard(request):
 @never_cache
 def group_routes(request):
     try:
-        request.user.profile.peers.all()
+        user = request.user
+        routes = find_routes(user.username)
+        """ request.user.profile.peers.all()
         routes = Route.objects.filter(applier=request.user).values_list('name',flat=True)
-        #rutas = Route.objects.filter()
+        #rutas = Route.objects.filter() """
        
     except UserProfile.DoesNotExist:
         error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
@@ -180,6 +189,8 @@ def group_routes(request):
 @never_cache
 def group_routes_ajax(request):
     all_group_routes = []
+    applier = request.user
+    user = User.objects.get(username=applier)
     try:
         peers = request.user.profile.peers.prefetch_related('networks')
     except UserProfile.DoesNotExist:
@@ -190,9 +201,11 @@ def group_routes_ajax(request):
             {'error': error}
         )
     if request.user.is_superuser:
-        all_group_routes = Route.objects.all()
+        #all_group_routes = Route.objects.all()
+        all_group_routes = find_routes(user.username)
     else:
-        all_group_routes = Route.objects.filter(applier=request.user)
+        all_group_routes = find_routes(user.username)
+        #all_group_routes = Route.objects.filter(applier=request.user)
     jresp = {}
     routes = build_routes_json(all_group_routes, request.user.is_superuser)
     jresp['aaData'] = routes
@@ -317,6 +330,7 @@ def verify_add_user(request):
 def add_route(request):
     applier_peer_networks = []
     applier = request.user.pk
+    user = request.user.username
     if request.user.is_superuser:       
         applier_peer_networks = PeerRange.objects.all()
         user_peers = request.user.profile.peers.all()
@@ -328,8 +342,10 @@ def add_route(request):
         messages.add_message(request,messages.WARNING,('Insufficient rights on administrative networks. Cannot add rule. Contact your administrator'))
         return HttpResponseRedirect(reverse("group-routes"))
     if request.method == "GET":
-        user = request.user
-        form = RouteForm(initial={'applier': applier})
+        #user = request.user.username
+        form = find_get_form(user)
+        form.applier = applier
+        #form = RouteForm(initial={'applier': applier})
         form.fields['destinationport'].required=False
         form.fields['sourceport'].required=False
         form.fields['port'].required=False
@@ -351,7 +367,8 @@ def add_route(request):
                 del request_data['issuperuser']
             except:
                 pass
-        form = RouteForm(request_data)
+        form = find_post_form(user, request_data)
+       # form = RouteForm(request_data)
         if form.is_valid():
             route = form.save(commit=False)
             if not request.user.is_superuser:
@@ -382,8 +399,9 @@ def add_route(request):
 def verify_edit_user(request,route_slug):
     if request.method =='GET':
         num = get_code()
-        user= request.user
-        route = Route.objects.get(name=route_slug)
+        user= request.user.username
+        print('trace1')
+        route = get_specific_route(user, route_slug)
         msg = "El usuario {user} ha solicitado el siguiente código para editar la regla: {route_slug}. Código:  '{code}'.".format(user=user,code=num,route_slug=route_slug)
         code = Validation(value=num,user=request.user)
         code.save()
@@ -416,7 +434,8 @@ def verify_edit_user(request,route_slug):
 @never_cache
 def edit_route(request, route_slug):
     applier = request.user.pk
-    route_edit = get_object_or_404(Route, name=route_slug)
+    username = request.user.username
+    route_edit = get_object_or_404(get_edit_route(username), name=route_slug)
     applier_peer_networks = []
     if request.user.is_superuser:
         applier_peer_networks = PeerRange.objects.all()
@@ -449,10 +468,8 @@ def edit_route(request, route_slug):
                 del request_data['issuperuser']
             except:
                 pass
-        form = RouteForm(
-            request_data,
-            instance=route_edit
-        )
+        #form = RouteForm(request_data,instance=route_edit)
+        form = find_edit_post_route(username, request_data, route_edit)
         
         critical_changed_values = ['source', 'destination', 'sourceport', 'destinationport', 'port', 'protocol', 'then', 'packetlenght','tcpflags']
         if form.is_valid():
@@ -480,7 +497,8 @@ def edit_route(request, route_slug):
                 form.save_m2m()
                 route.commit_edit()
             return HttpResponseRedirect(reverse("group-routes"))
-        else:  
+        else:
+            routename = route_edit.name  
             if not request.user.is_superuser:
                 form.fields['destinationport'].required=False
                 form.fields['sourceport'].required=False
@@ -492,33 +510,25 @@ def edit_route(request, route_slug):
                     'form': form,
                     'edit': True,
                     'applier': applier,
-                    'routename':route_edit.name, 
+                    'routename':routename, 
                     'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
                 }
             )
     else:
+        routename = route_edit.name
         if (not route_original.status== 'ACTIVE'):
             route_edit.expires = datetime.date.today() + datetime.timedelta(days=settings.EXPIRATION_DAYS_OFFSET-1)
         dictionary = model_to_dict(route_edit, fields=[], exclude=[])
-        
-        routef = Route.objects.get(id=route_edit.pk)       
-        form = RouteForm(instance=routef)
+        routef = get_specific_route_pk(username,route_edit.pk) 
+        form  = get_instance_form(username, routef)
         form.fields['name'].required=False
         form.fields['destinationport'].required=False
         form.fields['sourceport'].required=False
         if not request.user.is_superuser:
             form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
-            form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
-        return render(request,
-            'apply.html',
-            {
-                'form': form,
-                'edit': True,
-                'applier': applier,
-                'routename':route_edit.name,
-                'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
-            }
-        )
+            form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)      
+        print('right before return')
+        return render(request,'apply.html', {'form': form,'edit': True,'applier': applier,'routename':routename,'maxexpires': settings.MAX_RULE_EXPIRE_DAYS})
 
 
 @verified_email_required
@@ -527,12 +537,14 @@ def verify_delete_user(request, route_slug):
     if request.method =='GET':
         num = get_code()
         user = request.user
+        username = request.user.username
         msg = "El usuario: {user} ha solicitado un código para poder eliminar una regla. Código: '{code}'.".format(user=user,code=num)
         code = Validation(value=num,user=request.user)
         code.save()
         send_message(msg)
         form = ValidationForm(request.GET)
-        route = Route.objects.get(name=route_slug)
+        route = get_specific_route(username, route_slug)
+        #route = Route.objects.get(name=route_slug)
         message = f"CUIDADO. Seguro que quiere eliminar la siguiente regla {route_slug}?"
         return render(request,'values/add_value.html', {'form': form, 'message':message,'status':'delete', 'route':route})
             
@@ -559,7 +571,9 @@ def verify_delete_user(request, route_slug):
 @login_required
 @never_cache
 def delete_route(request, route_slug):
-    route = get_object_or_404(Route, name=route_slug)
+    uname = request.user.username
+    route = get_object_or_404(get_edit_route(uname), name=route_slug)
+    #route = get_object_or_404(Route, name=route_slug)
     peers = route.applier.profile.peers.all()
     username = None
     for peer in peers:
@@ -701,13 +715,16 @@ def lookupShibAttr(attrmap, requestMeta):
 @login_required
 @never_cache
 def routedetails(request, route_slug):
-    route = get_object_or_404(Route, name=route_slug)
+    uname = request.user.username
+    route = get_object_or_404(get_edit_route(uname), name=route_slug)
     now = datetime.datetime.now()
     return render(request, 'flowspy/route_details.html', {'route': route,'mytime': now,'tz' : settings.TIME_ZONE,'is_superuser' : request.user.is_superuser,'route_comments_len' : len(str(route.comments))})
 
 @login_required
 def routestats(request, route_slug):
-    route = get_object_or_404(Route, name=route_slug)
+    uname = request.user.username
+    route = get_object_or_404(get_edit_route(uname), name=route_slug)
+    #route = get_object_or_404(Route, name=route_slug)
     import junos
     import time
     res = {}
@@ -772,9 +789,10 @@ def setup(request):
 @login_required
 @never_cache
 def ajax_graphs(request):
+    username = request.user.username
     if request.method == 'GET':
         routename = request.GET.get('routename')
-        beats_date, beats_hour, beats_value, beats_values, bfulltime = get_default_graph(routename)
+        beats_date, beats_hour, beats_value, beats_values, bfulltime = get_default_graph(routename, username)
         data = {
                 'beats_date':beats_date,
                 'beats_hour': beats_hour,
@@ -788,7 +806,7 @@ def ajax_graphs(request):
         till_time = request.POST.get('till')
         routename = request.POST.get('routename')
         if from_time and till_time:
-            beats_date, beats_hour, beats_value, beats_values, bfulltime = graphs(from_time, till_time, routename)
+            beats_date, beats_hour, beats_value, beats_values, bfulltime = graphs(from_time, till_time, routename, username)
             data = {
                 'beats_date':beats_date,
                 'beats_hour': beats_hour,
@@ -797,7 +815,7 @@ def ajax_graphs(request):
             }
             return JsonResponse(data,status=200)
         else:
-            beats_date, beats_hour, beats_value, beats_values, bfulltime = get_default_graph(routename)
+            beats_date, beats_hour, beats_value, beats_values, bfulltime = get_default_graph(routename, username)
             data = {
                 'beats_date':beats_date,
                 'beats_hour': beats_hour,
@@ -811,7 +829,9 @@ def ajax_graphs(request):
 @login_required
 @never_cache
 def display_graphs(request,route_slug):
-    route = get_object_or_404(Route, name=route_slug)
+    uname = request.user.username
+    route = get_object_or_404(get_edit_route(uname), name=route_slug)
+    #route = get_object_or_404(Route, name=route_slug)
     return render(request,'graphs.html',{'route':route})
     
 def get_routes_router():
@@ -830,13 +850,16 @@ def get_routes_router():
 
 @verified_email_required
 @login_required
-@never_cache  
+@never_cache 
+#synchronize routes from the router to the database 
 def sync_router(request):
+    username = request.user.username
     # find what peer organisation does the user belong to
-    peer = get_peers(request.user)
+    peer = get_peer_tag(username)
     # first initialize all the needed vars    
-    applier = User.objects.get(username=request.user); routes = get_routes_router() ; fw_rules = []; message = ''
+    applier = User.objects.get(pk=request.user.pk); routes = get_routes_router() ; fw_rules = []; message = ''
     # for getting the route parameters is needed to run through the xml 
+    print('traza 1')
     for children in routes:
         then = '' ; then_action = '' ; protocol = [] ; destination = [] ; source = '' ; src_port =  '' ; dest_port = '' ; tcpflags = '' ; icmpcode = ''; icmptype = ''; packetlength = ''; prot = '';  name_fw = ''
         for child in children:
@@ -846,6 +869,7 @@ def sync_router(request):
                     name_peer = child.text
                     fw_rules.append(child.text)                              
             # if the user peer organisation is found on the router the program will collect all the vars info    
+            print('traza 2')
             if (peer in name_fw):  
                 for child in children:
                     if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}then':
@@ -863,54 +887,84 @@ def sync_router(request):
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type': icmptype = c.text 
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length' and c.text != '': packetlength = c.text
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source': source = c.text                       
+            print('traza 3')
+            print(peer)
+            print('name_fw: ', name_fw,protocol,applier,destination, source)
             if (peer in name_fw):
                 try:
-                    route = Route(name=name_fw,applier=applier,source=source,sourceport=src_port,destination=destination,destinationport=dest_port,icmpcode=icmpcode,icmptype=icmptype,packetlength=packetlength,tcpflag=tcpflags,status="ACTIVE")  
-                        # check if the route is already in our DB
-                    if not Route.objects.filter(name=route.name).exists():
-                        route.save()
-                        if isinstance(protocol,(list)):
-                            for p in protocol:
-                                prot, created = MatchProtocol.objects.get_or_create(protocol=p)
-                                route.protocol.add(prot.pk)
-                        else:
-                            prot, created = MatchProtocol.objects.get_or_create(protocol=protocol)
-                            route.protocol.add(prot)
-                        th_act, created = ThenAction.objects.get_or_create(action=then,action_value=then_action)
-                        route.then.add(th_act.pk)
-                        message ='All the routes have been properly syncronised with the database'                    
+                    #route = Route(name=name_fw,applier=applier,source=source,sourceport=src_port,destination=destination,
+                    # destinationport=dest_port,icmpcode=icmpcode,icmptype=icmptype,packetlength=packetlength,tcpflag=tcpflags,status="ACTIVE")  
+                    route = get_route(username)
+                    route.name = name_fw
+                    route.applier = applier
+                    route.source = source
+                    route.sourceport = src_port
+                    route.destination = destination
+                    route.destinationport = dest_port
+                    route.icmpcode = icmpcode
+                    route.icmptype = icmptype
+                    route.packetlength = packetlength
+                    route.tcpflag = tcpflags
+                    route.status = 'ACTIVE'
+                    print('Regla firewall ',route)
+                    route.save()
+                    if isinstance(protocol,(list)):
+                        for p in protocol:
+                            prot, created = MatchProtocol.objects.get_or_create(protocol=p)
+                            route.protocol.add(prot.pk)
                     else:
-                        message = 'Routes have already been syncronised.'
-                        pass
+                        prot, created = MatchProtocol.objects.get_or_create(protocol=protocol)
+                        route.protocol.add(prot)
+                    th_act, created = ThenAction.objects.get_or_create(action=then,action_value=then_action)
+                    route.then.add(th_act.pk)
+                    message ='Todas las reglas ya han sido sincronizadas con la base de datos.' 
+                        # check if the route is already in our DB
+                    print('its not exiting thro here')
                 except Exception as e:                    
-                    message = (f'There was an error when trying to sync all routes from the router. {e}')
+                    #message = 'Routes have already been syncronised.'
+                    print(f'Regla: {name_fw} ya ha está sincronizada con la base de datos.')
+            else:
+                # means that the route does not belong to the user's peer
+                pass
     return render(request,'routes_synced.html',{'message':message})
 
 @login_required
 @never_cache
+#synchronize routes from the database to the router
 def routes_sync(request):
-    routes = Route.objects.all(); route = get_routes_router()
-    peer = get_peers(request.user); names = []
+    print('is dis the method? it should be right?')
+    username = request.user.username
+    routes = find_routes(username); route = get_routes_router()
+    peer = get_peer_tag(username); names = []
     for children in route:
         for child in children:
             if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
                 if child.text.endswith('_%s'%peer):
+                    print('names: ',child.text)
                     names.append(child.text)                   
             else:
                 pass  
     routenames = [x.name for x in routes]
     message = ''
     diff = (set(routenames).difference(names))
+    print('route names: ', routenames)
+    print('names: ', names)
     notsynced_routes = list(diff)
+    print('estamos llegando a buen puerto?',notsynced_routes)
     if notsynced_routes:
         for route in notsynced_routes:
-            route = Route.objects.get(name=route)
+            # route = Route.objects.get(name=route)
+            route = get_object_or_404(get_edit_route(username), name=route)
+            print('route: ', route)
+
             if (route.has_expired()==False) and (route.status== 'ACTIVE' or route.status== 'OUTOFSYNC'):
+                print('traza 1')
                 route.save()
                 message = ('Estado: %s, regla de firewall no sincronizada: %s, guardando regla de firewall.' %(route.status, route.name))
                 send_message(message)
             else:
                 if (route.has_expired()==True) or (route.status== 'EXPIRED' and route.status!= 'ADMININACTIVE' and route.status!= 'INACTIVE'):
+                    print('traza 2')
                     route.check_sync() 
                     message = ('Estado: %s, regla de firewall  %s, comprobando regla.' %(route.status, route.name))
                     send_message(message)
@@ -925,10 +979,13 @@ def routes_sync(request):
 @never_cache
 def backup(request):
     now = datetime.datetime.now()
+    user = request.user
+    peer_tag = get_peer_tag(user.username)
     current_time = now.strftime("%H:%M")
     current_date = now.strftime("%d-%B-%Y") 
     try:
-        call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
+        call_command('dumpdata', f'flowspec.Route_{peer_tag}', format='json',output=f'_backup/{peer_tag}/{peer_tag}_backup_{current_date}_{current_time}.json')
+        #call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
         message = 'Copia de seguridad creada con éxito.'
         send_message(message)
         return render(request,'routes_synced.html',{'message':message}) 
@@ -940,23 +997,29 @@ def backup(request):
 @verified_email_required
 @login_required
 def restore_backup(request):
+    user = request.user
+    peer_tag = get_peer_tag(user.username)
+    backup_dir = (settings.BACK_UP_DIR+peer_tag+'/')
     if request.method=='GET':
         CHOICES_FILES = []
-        for f in os.listdir(settings.BACK_UP_DIR):
+        for f in os.listdir(backup_dir):
             CHOICES_FILES.append(f)
         return render(request,'backup_menu.html',{'files':CHOICES_FILES})    
     if request.method=='POST':
         filename = request.POST.get("value", "")
+        fixture_path = (backup_dir+filename)
         try:
-            call_command(f"dbrestore", interactive=False, input_filename=filename)
+            call_command(f"loaddata",fixture_path)
             message = 'La copia de seguridad ha sido restaurada con éxito, recomendamos en caso de caida también sincronizar su router con la base de datos.'
             send_message(message)
             return render(request,'routes_synced.html',{'message':message}) 
         except Exception as e:
-            message = ('Ha ocurrido un error y no se ha podido restaurar la base de datos. Error:  ',e)
-            send_message(message)
-            return render(request,'routes_synced.html',{'message':message})
-
+            """ message = ('Ha ocurrido un error y no se ha podido restaurar la base de datos. Error:  ',e)
+            send_message(message) """
+            print('Ha habiado un error: ',e)
+            #return render(request,'routes_synced.html',{'message':message})
+            return render(request,'routes_synced.html')
+            
 
 
 def restore_last_backup():

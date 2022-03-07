@@ -11,13 +11,15 @@ import slack
 from pyzabbix import ZabbixAPI
 import datetime
 from datetime import timedelta
-from flowspec.models import *
+from django.core.exceptions import ObjectDoesNotExist
+
 
 FORMAT = '%(asctime)s %(levelname)s: %(message)s'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
- 
+
+
 #====TG Settings:
 """ API_KEY = settings.API_KEY_T
 bot = telebot.TeleBot(API_KEY)  """
@@ -93,6 +95,14 @@ def get_peers(username):
     peername = peer.peer_name
   return peername
 
+def get_peer_tag(username):
+  user = User.objects.get(username=username)
+  up = UserProfile.objects.get(user=user)
+  peers = up.peers.all()
+  for peer in peers:
+    peer_tag = peer.peer_tag
+  return peer_tag
+
 def get_back_up_files():
   files = []
   for f in os.listdir(settings.BACK_UP_DIR):
@@ -110,9 +120,10 @@ def translate_tcpflags(tf):
   return tcpflags
 
 
-def get_query(routename, dest, src):
+def get_query(routename, dest, src, username):
   from flowspec.models import Route
-  route = Route.objects.get(name=routename)
+  route = get_specific_route(username,routename)
+  #route = Route.objects.get(name=routename)
   source = '0/0' if src == '0.0.0.0/0' else src[:-3]
   destination = '0/0' if dest == '0.0.0.0/0' else dest[:-3]
   query = (f'jnxFWCounterByteCount["{source},{destination}"]')
@@ -155,15 +166,471 @@ def get_ip_address(ip):
   except Exception as e:
     print('There was an error when trying to parse the ip. Error: ',e)
     return ip
-  
+
+#===================================================== Routes helpers
+def find_route_pk(applier, pk):
+  from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
+  route = {
+    'route': Route.objects.get(id=pk),
+    'IMDEA': Route_IMDEA.objects.get(id=pk),
+    'CV': Route_CV.objects.get(id=pk),
+    'CIB' : Route_CIB.objects.get(id=pk),
+    'CSIC' : Route_CSIC.objects.get(id=pk),
+    'CEU' : Route_CEU.objects.get(id=pk),
+    'CUNEF' : Route_CUNEF.objects.get(id=pk),
+    'IMDEA_NET': Route_IMDEANET.objects.get(id=pk),
+    'UAM' : Route_UAM.objects.get(id=pk),
+    'UC3M' : Route_UC3M.objects.get(id=pk),
+    'UCM' : Route_UCM.objects.get(id=pk),
+    'UAH' : Route_UAH.objects.get(id=pk),
+    'UEM' : Route_UEM.objects.get(id=pk),
+    'UNED' : Route_UNED.objects.get(id=pk),
+    'UPM' : Route_UPM.objects.get(id=pk),
+    'URJC' : Route_URJC.objects.get(id=pk),
+  }
+  peer_tag = get_peer_tag(applier)
+  user_route = route[peer_tag]
+  return user_route
+
+def find_routes(applier=None, peer=None):
+  from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
+  routes = {
+    'route': Route.objects.all(),
+    'IMDEA': Route_IMDEA.objects.all(),
+    'CV': Route_CV.objects.all(),
+    'CIB' : Route_CIB.objects.all(),
+    'CSIC' : Route_CSIC.objects.all(),
+    'CEU' : Route_CEU.objects.all(),
+    'CUNEF' : Route_CUNEF.objects.all(),
+    'IMDEA_NET': Route_IMDEANET.objects.all(),
+    'UAM' : Route_UAM.objects.all(),
+    'UC3M' : Route_UC3M.objects.all(),
+    'UCM' : Route_UCM.objects.all(),
+    'UAH' : Route_UAH.objects.all(),
+    'UEM' : Route_UEM.objects.all(),
+    'UNED' : Route_UNED.objects.all(),
+    'UPM' : Route_UPM.objects.all(),
+    'URJC' : Route_URJC.objects.all(),
+  }
+  if not peer: 
+    peer_tag = get_peer_tag(applier)
+    user_routes = routes[peer_tag]
+    return user_routes
+  else:
+    user_routes = routes[peer]
+    return user_routes
+
+def get_route(applier):
+  from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
+  routes = {
+    'route': Route(),
+    'IMDEA': Route_IMDEA(),
+    'CV': Route_CV(),
+    'CIB' : Route_CIB(),
+    'CSIC' : Route_CSIC(),
+    'CEU' : Route_CEU(),
+    'CUNEF' : Route_CUNEF(),
+    'IMDEA_NET': Route_IMDEANET(),
+    'UAM' : Route_UAM(),
+    'UC3M' : Route_UC3M(),
+    'UCM' : Route_UCM(),
+    'UAH' : Route_UAH(),
+    'UEM' : Route_UEM(),
+    'UNED' : Route_UNED(),
+    'UPM' : Route_UPM(),
+    'URJC' : Route_URJC(),
+  }
+  peer_tag = get_peer_tag(applier)
+  user_routes = routes[peer_tag]
+  return user_routes
+
+def get_edit_route(applier):
+  from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
+  routes = {
+    'route': Route,
+    'IMDEA': Route_IMDEA,
+    'CV': Route_CV,
+    'CIB' : Route_CIB,
+    'CSIC' : Route_CSIC,
+    'CEU' : Route_CEU,
+    'CUNEF' : Route_CUNEF,
+    'IMDEA_NET': Route_IMDEANET,
+    'UAM' : Route_UAM,
+    'UC3M' : Route_UC3M,
+    'UCM' : Route_UCM,
+    'UAH' : Route_UAH,
+    'UEM' : Route_UEM,
+    'UNED' : Route_UNED,
+    'UPM' : Route_UPM,
+    'URJC' : Route_URJC,
+  }
+  peer_tag = get_peer_tag(applier)
+  user_routes = routes[peer_tag]
+  return user_routes
+
+def find_edit_post_route(applier, data, route_edit):
+  from flowspec.forms import RouteForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm
+  route_forms = {
+    'route': RouteForm(data, instance=route_edit),
+    'IMDEA': Route_IMDEAForm(data, instance=route_edit),
+    'CV': Route_CVForm(data, instance=route_edit),
+    'CIB' : Route_CIBForm(data, instance=route_edit),
+    'CSIC' : Route_CSICForm(data, instance=route_edit),
+    'CEU' : Route_CEUForm(data, instance=route_edit),
+    'CUNEF' : Route_CUNEFForm(data, instance=route_edit),
+    'IMDEA_NET': Route_IMDEANETForm(data, instance=route_edit),
+    'UAM' : Route_UAMForm(data, instance=route_edit),
+    'UC3M' : Route_UC3MForm(data, instance=route_edit),
+    'UCM' : Route_UCMForm(data, instance=route_edit),
+    'UAH' : Route_UAHForm(data, instance=route_edit),
+    'UEM' : Route_UEMForm(data, instance=route_edit),
+    'UNED' : Route_UNEDForm(data, instance=route_edit),
+    'UPM' : Route_UPMForm(data, instance=route_edit),
+    'URJC' : Route_URJCForm(data, instance=route_edit),
+  }
+  peer_tag = get_peer_tag(applier)
+  form_class = route_forms[peer_tag]
+  return form_class
+
+def find_get_form(applier):
+  from flowspec.forms import RouteForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm
+  route_forms = {
+    'route': RouteForm(),
+    'IMDEA': Route_IMDEAForm(),
+    'CV': Route_CVForm(),
+    'CIB' : Route_CIBForm(),
+    'CSIC' : Route_CSICForm(),
+    'CEU' : Route_CEUForm(),
+    'CUNEF' : Route_CUNEFForm(),
+    'IMDEA_NET': Route_IMDEANETForm(),
+    'UAM' : Route_UAMForm(),
+    'UC3M' : Route_UC3MForm(),
+    'UCM' : Route_UCMForm(),
+    'UAH' : Route_UAHForm(),
+    'UEM' : Route_UEMForm(),
+    'UNED' : Route_UNEDForm(),
+    'UPM' : Route_UPMForm(),
+    'URJC' : Route_URJCForm(),
+  }
+  peer_tag = get_peer_tag(applier)
+  form_class = route_forms[peer_tag]
+  return form_class
+
+def find_post_form(applier, data):
+  from flowspec.forms import RouteForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm
+  route_forms = {
+    'route': RouteForm(data),
+    'IMDEA': Route_IMDEAForm(data),
+    'CV': Route_CVForm(data),
+    'CIB' : Route_CIBForm(data),
+    'CSIC' : Route_CSICForm(data),
+    'CEU' : Route_CEUForm(data),
+    'CUNEF' : Route_CUNEFForm(data),
+    'IMDEA_NET': Route_IMDEANETForm(data),
+    'UAM' : Route_UAMForm(data),
+    'UC3M' : Route_UC3MForm(data),
+    'UCM' : Route_UCMForm(data),
+    'UAH' : Route_UAHForm(data),
+    'UEM' : Route_UEMForm(data),
+    'UNED' : Route_UNEDForm(data),
+    'UPM' : Route_UPMForm(data),
+    'URJC' : Route_URJCForm(data),
+  }
+  peer_tag = get_peer_tag(applier)
+  form_class = route_forms[peer_tag]
+  return form_class
+
+def get_instance_form(applier, route):
+  from flowspec.forms import RouteForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm
+  peer_tag = get_peer_tag(applier)
+  route_form = {
+    'route' : RouteForm(instance = route),
+    'IMDEA' : Route_IMDEAForm(instance = route),
+    'CV': Route_CVForm(instance=route),
+    'CIB' : Route_CIBForm(instance=route),
+    'CSIC' : Route_CSICForm(instance=route),
+    'CEU' : Route_CEUForm(instance=route),
+    'CUNEF' : Route_CUNEFForm(instance=route),
+    'IMDEA_NET': Route_IMDEANETForm(instance=route),
+    'UAM' : Route_UAMForm(instance=route),
+    'UC3M' : Route_UC3MForm(instance=route),
+    'UCM' : Route_UCMForm(instance=route),
+    'UAH' : Route_UAHForm(instance=route),
+    'UEM' : Route_UEMForm(instance=route),
+    'UNED' : Route_UNEDForm(instance=route),
+    'UPM' : Route_UPMForm(instance=route),
+    'URJC' : Route_URJCForm(instance=route),
+  }
+  route = route_form[peer_tag]
+  return route
+
+def get_specific_route(applier, route_slug):
+  from flowspec.models import Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
+  peers = ['CV', 'CIB', 'CSIC', 'CEU', 'CUNEF', 'IMDEA_NET', 'IMDEA', 'UAM', 'UC3M', 'UCM', 'UAH', 'UEM', 'UNED', 'UPM', 'URJC']
+  check = True
+  peer_tag = get_peer_tag(applier)
+  while check:
+    for r in peers:
+      if peer_tag == 'IMDEA': 
+        try:
+          route = Route_IMDEA.objects.get(name=route_slug)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'CV':
+        try:
+          route = Route_CV.objects.get(name=route_slug)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'CIB':
+        try:
+          route = Route_CIB.objects.get(name=route_slug)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'CSIC':
+        try:
+          route = Route_CSIC.objects.get(name=route_slug)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'CEU':
+        try:
+          route = Route_CEU.objects.get(name=route_slug)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'CUNEF':
+        try:
+          route = Route_CUNEF.objects.get(name=route_slug)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'IMDEA_NET':
+        try:
+          route = Route_IMDEANET.objects.get(name=route_slug)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'UAM':
+        try:
+          route = Route_UAM.objects.get(name=route_slug)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'UC3M':
+        try:
+          route = Route_UC3M.objects.get(name=route_slug)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'UCM':
+        try:
+          route = Route_UCM.objects.get(name=route_slug)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'UAH':
+        try:
+          route = Route_UAH.objects.get(name=route_slug)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'UEM':
+        try:
+          route = Route_UEM.objects.get(name=route_slug)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'UNED':
+        try:
+          route = Route_UNED.objects.get(name=route_slug)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'UPM':
+        try:
+          route = Route_UPM.objects.get(name=route_slug)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'URJC':
+        try:
+          route = Route_URJC.objects.get(name=route_slug)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
 
 
-def graphs(timefrom,timetill, routename):
+def get_specific_route_pk(username, pk):
+  from flowspec.models import Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
+  peers = ['CV', 'CIB', 'CSIC', 'CEU', 'CUNEF', 'IMDEA_NET', 'IMDEA', 'UAM', 'UC3M', 'UCM', 'UAH', 'UEM', 'UNED', 'UPM', 'URJC']
+  peer_tag = get_peer_tag(username)
+  check = True
+  while check:
+    for r in peers:
+      if peer_tag == 'IMDEA': 
+        try:
+          route = Route_IMDEA.objects.get(id=pk)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'CV':
+        try:
+          route = Route_CV.objects.get(id=pk)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'CIB':
+        try:
+          route = Route_CIB.objects.get(id=pk)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'CSIC':
+        try:
+          route = Route_CSIC.objects.get(id=pk)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'CEU':
+        try:
+          route = Route_CEU.objects.get(id=pk)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'CUNEF':
+        try:
+          route = Route_CUNEF.objects.get(id=pk)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'IMDEA_NET':
+        try:
+          route = Route_IMDEANET.objects.get(id=pk)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'UAM':
+        try:
+          route = Route_UAM.objects.get(id=pk)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'UC3M':
+        try:
+          route = Route_UC3M.objects.get(id=pk)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'UCM':
+        try:
+          route = Route_UCM.objects.get(id=pk)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'UAH':
+        try:
+          route = Route_UAH.objects.get(id=pk)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'UEM':
+        try:
+          route = Route_UEM.objects.get(id=pk)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'UNED':
+        try:
+          route = Route_UNED.objects.get(id=pk)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'UPM':
+        try:
+          route = Route_UPM.objects.get(id=pk)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'URJC':
+        try:
+          route = Route_URJC.objects.get(id=pk)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+#============================================ 
+
+def find_peer(peer_name):
+  from peers.models import Peer
+  find = peer_name.find('_')
+  pn = peer_name[find+1::]
+  print('pn: ',pn,' peer_name: ',peer_name)
+  peers = ['CV', 'CIB', 'CSIC', 'CEU', 'CUNEF', 'IMDEA_NET', 'IMDEA', 'UAM', 'UC3M', 'UCM', 'UAH', 'UEM', 'UNED', 'UPM', 'URJC']
+  for peer in peers:
+    if peer_name == 'punch.software.imdea.org':
+      return Peer.objects.get(peer_name='Punch')
+    elif peer_name == 'CASA VELAZQUEZ':
+      return Peer.objects.get(peer_name='Casa Velazquez')
+    elif peer_name == 'IMDEA NETWORKS':
+      return Peer.objects.get(peer_name='IMDEA NETWORKS')
+    elif peer_name == 'REDIMADRID':
+      return Peer.objects.get(peer_name='REM_IMDEA')
+    elif peer_name == 'CEU(2)':
+      return Peer.objects.get(peer_name='CEU')
+    elif peer_name == 'UEM':
+      return Peer.objects.get(peer_tag='UEM')
+    elif peer_name == 'URJC':
+      return Peer.objects.get(peer_tag='URJC')
+    elif peer == pn:
+      return Peer.objects.get(peer_name=peer) 
+    elif peer in pn or pn in peer:
+      return Peer.objects.get(peer_tag=peer)
+    else:
+      print(f'The following institution is not connected to REM-E-DDOS {peer_name}')
+      return False   
+
+
+
+
+
+def graphs(timefrom,timetill, routename, username):
   from flowspec.models import Route
   zapi = ZabbixAPI(ZABBIX_SOURCE)
   zapi.login(ZABBIX_USER,ZABBIX_PWD)
-  route = get_object_or_404(Route, name=routename)
-  query = get_query(route.name, route.destination, route.source)
+  route = get_object_or_404(get_edit_route(username), name=routename)
+  query = get_query(route.name, route.destination, route.source, username)
   #in order to access history log we need to send the dates as timestamp
   if not timefrom=='' and not timetill=='':
     from_date_obj = datetime.datetime.strptime(timefrom,"%Y/%m/%d %H:%M")
@@ -199,12 +666,12 @@ def graphs(timefrom,timetill, routename):
     return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
 
 
-def get_default_graph(routename):
+def get_default_graph(routename, username):
   from flowspec.models import Route
   zapi = ZabbixAPI(ZABBIX_SOURCE)
   zapi.login(ZABBIX_USER,ZABBIX_PWD)
-  route = get_object_or_404(Route, name=routename)
-  query = get_query(route.name, route.destination, route.source)
+  route = get_object_or_404(get_edit_route(username), name=routename)
+  query = get_query(route.name, route.destination, route.source, username)
 
   item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
   item_id = [i['itemid'] for i in item['result']]
@@ -231,3 +698,4 @@ def get_default_graph(routename):
       
   beats_values = dict(zip(beats_hour,beat_value))
   return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
+
