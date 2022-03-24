@@ -1,0 +1,79 @@
+{% extends "../base.html" %}
+{% load i18n %}
+{% load static %}
+{% block extrahead %}
+<link rel="stylesheet" href="{% static 'css/plugins/dataTables/style.css' %}">
+<link rel="stylesheet" href="{% static 'css/plugins/dataTables/style.scss' %}">
+{% endblock %}
+{% block title %}{% trans "Ataques recientes" %}{% endblock %}
+
+{% block contentplaceholder %}
+<div class="container">
+
+<div class="row rows-cols-4 p-5">
+    <div class="col">
+        <h5 class="fw-light text-end">Rutas propuestas para el ataque con id: <span class="text-danger">{{golem_name}}</span> </h5>
+    </div>
+</div>
+<div class="row pt-3">
+    <div class="col">
+        {% if routes %}
+        <table id="golem_routes_table" class="table table-striped table-bordered  table-hover table-responsive cell-border display compact w-100 pretty">
+        <thead class="bg-dark text-white">
+           <tr>
+               <th><small>ID</small></th><th><small>Propuesta en:</small></th><th><small>Dest Addr</small></th><th><small>Src Addr</small></th><th><small>Informacion</small></th><th><small>Estado</small></th><td><small>Acciones</small></th>
+            </tr>
+        </thead>
+        <tbody>
+               {% for route in routes %}
+            <tr>
+                <td><small>{{route.name}}</small></td>
+                <td><small>{{route.filed}}</small></td>
+                <td>{% if route.destination %} <small>{{route.destination}}</small><br> {% endif %}</td>
+                <td> {% if route.source %} <small>{{route.source}}</small><br> {% endif %} </td>
+                <td> 
+                    {% if route.protocol %} <small>Protocolo: {% for p in route.protocol.all %} {{p}} {% endfor %}</small><br> {% endif %} 
+                    {% if route.destinationport %} <small>Dst Port: {{route.destinationport}}</small><br> {% endif %}
+                    {% if route.sourceport %} <small>Src Port: {{route.sourceport}}</small><br> {% endif %}
+                    {% if route.tcpflag %} <small>Tcpflags: {{route.tcpflag}}</small><br> {% endif %}
+                    {% if route.icmptype %} <small>Icmptype: {{route.icmptype}</small><br> {% endif %}
+                    {% if route.icmpcode %} <small>Icmpcode: {{route.icmpcode}}</small><br> {% endif %}
+                </td>
+                <td><small>{{route.status}}</small></td>
+                <td>
+                    <small><button class="btn btn-outline btn-danger">Aplicar</button></small>
+                    <a href="" class="btn btn-outline btn-dark">{% trans "Route Details" %}</a>
+                </td>
+            </tr>
+               {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="fw-light">No hay reglas asociadas a este ataque todavía. Porfavor contacte con RediMadrid en caso de que no se proponga ninguna regla antes de que finalice el ataque.</p>
+        {% endif %}
+    </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block pagejsbottom %}
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.5/af-2.3.7/b-2.2.2/datatables.min.js"></script>
+<script type="text/javascript">
+    $(document).ready(function(){
+        $('#golemtable').DataTable({
+            "bAutoWidth": true,
+            "aLengthMenu" : [
+                [5, 15, 20, -1],
+                [5, 15, 20, "All"]
+            ],
+            
+            "bProcessing": true, 
+            "iDisplayLength": 5,
+        });
+    })
+        </script>
+
+
+
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+
+{% block extrahead %}
+{% endblock %}
+{% block title %}{% trans "Actualizaciones" %}{% endblock %}
+{% block contentplaceholder %}
+{% csrf_token %}
+<div class="container">
+    <div class="row m-2 p-5">
+        <div class="col">
+            <h3 class="text-end text-info fw-light"> Regla {{route.name}}</h3>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <table class="table table-responsive table-hover ">
+                <thead>
+                    <th>Actualizaciones</th>
+                </thead>
+                <tbody>
+                    {% for update in updates %}
+                    <tr>
+                        <td>{{update}}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+</div>
+{% endblock %}

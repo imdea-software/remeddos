@@ -114,12 +114,42 @@ def translate_protocol(prot):
   protocol = operations.get(prot,"Invalid argument") 
   return protocol 
 
+def get_protocol(p):
+  from flowspec.models import MatchProtocol
+  protocol = ''
+  print('inside get_protocolo !! : -- ',p)
+  if isinstance(p,(list)):
+    for prot in p:
+      try:
+        fs = prot.find('(')
+        protocol, created = MatchProtocol.objects.get_or_create(protocol=prot[:fs].lower())
+      except Exception as e:
+        protocol, created = MatchProtocol.objects.get_or_create(protocol=p)
+  else:
+    try:
+      fs = p.find('(')
+      protocol,created = MatchProtocol.objects.get_or_create(protocol=p[:fs].lower())
+    except Exception as e:
+      protocol,created = MatchProtocol.objects.get_or_create(protocol=p)
+  return protocol
+
 def translate_tcpflags(tf):
   tcpflag_dict = {'ack':'10','rst':'04','fin':'01','push':'08','urgent':'20','syn':'02'}
   tcpflags = tcpflag_dict.get(tf,"Invalid argument")
   return tcpflags
 
+def check_protocol(protocol):
+  from flowspec.models import MatchProtocol
+  if isinstance(protocol,(list)):
+    for p in protocol:
+      fs = p.find('(')
+      prot, created = MatchProtocol.objects.get_or_create(protocol=p[:fs].lower())
+      return prot
+  else:
+    match_protocol = get_protocol(protocol)
+    return match_protocol
 
+    
 def get_query(routename, dest, src, username):
   from flowspec.models import Route
   route = get_specific_route(username,routename)
@@ -195,7 +225,7 @@ def find_route_pk(applier, pk):
 def find_routes(applier=None, peer=None):
   from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   routes = {
-    'route': Route.objects.all(),
+    'Punch': Route.objects.all(),
     'IMDEA': Route_IMDEA.objects.all(),
     'CV': Route_CV.objects.all(),
     'CIB' : Route_CIB.objects.all(),
@@ -220,10 +250,10 @@ def find_routes(applier=None, peer=None):
     user_routes = routes[peer]
     return user_routes
 
-def get_route(applier):
+def get_route(applier,peer):
   from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   routes = {
-    'route': Route(),
+    'Punch': Route(),
     'IMDEA': Route_IMDEA(),
     'CV': Route_CV(),
     'CIB' : Route_CIB(),
@@ -240,9 +270,13 @@ def get_route(applier):
     'UPM' : Route_UPM(),
     'URJC' : Route_URJC(),
   }
-  peer_tag = get_peer_tag(applier)
-  user_routes = routes[peer_tag]
-  return user_routes
+  if peer==None:
+    peer_tag = get_peer_tag(applier)
+    user_routes = routes[peer_tag]
+    return user_routes
+  elif applier==None:
+    user_routes = routes[peer]
+    return user_routes
 
 def get_edit_route(applier):
   from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
@@ -267,6 +301,7 @@ def get_edit_route(applier):
   peer_tag = get_peer_tag(applier)
   user_routes = routes[peer_tag]
   return user_routes
+
 
 def find_edit_post_route(applier, data, route_edit):
   from flowspec.forms import RouteForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm
@@ -364,122 +399,38 @@ def get_instance_form(applier, route):
   route = route_form[peer_tag]
   return route
 
-def get_specific_route(applier, route_slug):
-  from flowspec.models import Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
-  peers = ['CV', 'CIB', 'CSIC', 'CEU', 'CUNEF', 'IMDEA_NET', 'IMDEA', 'UAM', 'UC3M', 'UCM', 'UAH', 'UEM', 'UNED', 'UPM', 'URJC']
-  check = True
-  peer_tag = get_peer_tag(applier)
-  while check:
-    for r in peers:
-      if peer_tag == 'IMDEA': 
-        try:
-          route = Route_IMDEA.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'CV':
-        try:
-          route = Route_CV.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'CIB':
-        try:
-          route = Route_CIB.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'CSIC':
-        try:
-          route = Route_CSIC.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'CEU':
-        try:
-          route = Route_CEU.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'CUNEF':
-        try:
-          route = Route_CUNEF.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'IMDEA_NET':
-        try:
-          route = Route_IMDEANET.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'UAM':
-        try:
-          route = Route_UAM.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'UC3M':
-        try:
-          route = Route_UC3M.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'UCM':
-        try:
-          route = Route_UCM.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'UAH':
-        try:
-          route = Route_UAH.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'UEM':
-        try:
-          route = Route_UEM.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'UNED':
-        try:
-          route = Route_UNED.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'UPM':
-        try:
-          route = Route_UPM.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'URJC':
-        try:
-          route = Route_URJC.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
+def get_specific_route(applier,peer, route_slug):
+  print('inside specific route')
+  from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
+  if not applier == None:
+    peer_tag = get_peer_tag(applier)
+  else:
+    peer_tag = peer
+  dic = {
+    'route': Route.objects.get(name=route_slug),
+    'IMDEA': Route_IMDEA.objects.get(name=route_slug),
+    'CV': Route_CV.objects.get(name=route_slug),
+    'CIB' : Route_CIB.objects.get(name=route_slug),
+    'CSIC' : Route_CSIC.objects.get(name=route_slug),
+    'CEU' : Route_CEU.objects.get(name=route_slug),
+    'CUNEF' : Route_CUNEF.objects.get(name=route_slug),
+    'IMDEA_NET': Route_IMDEANET.objects.get(name=route_slug),
+    'UAM' : Route_UAM.objects.get(name=route_slug),
+    'UC3M' : Route_UC3M.objects.get(name=route_slug),
+    'UCM' : Route_UCM.objects.get(name=route_slug),
+    'UAH' : Route_UAH.objects.get(name=route_slug),
+    'UEM' : Route_UEM.objects.get(name=route_slug),
+    'UNED' : Route_UNED.objects.get(name=route_slug),
+    'UPM' : Route_UPM.objects.get(name=route_slug),
+    'URJC' : Route_URJC.objects.get(name=route_slug),
+  }
+  route = dic[peer_tag]
+  print('we found the route, ',Route_CUNEF)
+  return route
 
 
 def get_specific_route_pk(username, pk):
-  from flowspec.models import Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
+  from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   peers = ['CV', 'CIB', 'CSIC', 'CEU', 'CUNEF', 'IMDEA_NET', 'IMDEA', 'UAM', 'UC3M', 'UCM', 'UAH', 'UEM', 'UNED', 'UPM', 'URJC']
   peer_tag = get_peer_tag(username)
   check = True
@@ -590,6 +541,13 @@ def get_specific_route_pk(username, pk):
           return route
         except ObjectDoesNotExist:
           check = True
+      elif peer_tag == 'Punch':
+        try:
+          route = Route.objects.get(id=pk)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
 #============================================ 
 
 def find_peer(peer_name):
@@ -602,7 +560,7 @@ def find_peer(peer_name):
     if peer_name == 'punch.software.imdea.org':
       return Peer.objects.get(peer_name='Punch')
     elif peer_name == 'CASA VELAZQUEZ':
-      return Peer.objects.get(peer_name='Casa Velazquez')
+      return Peer.objects.get(peer_tag='CV')
     elif peer_name == 'IMDEA NETWORKS':
       return Peer.objects.get(peer_name='IMDEA NETWORKS')
     elif peer_name == 'REDIMADRID':
@@ -613,17 +571,25 @@ def find_peer(peer_name):
       return Peer.objects.get(peer_tag='UEM')
     elif peer_name == 'URJC':
       return Peer.objects.get(peer_tag='URJC')
+    elif peer_name == 'UNED':
+      return Peer.objects.get(peer_tag='UNED')
+    elif peer_name == 'UAH':
+      return Peer.objects.get(peer_tag='UAH')
+    elif peer_name == 'CSIC':
+      return Peer.objects.get(peer_tag='CSIC')
+    elif peer_name == 'CIB':
+      return Peer.objects.get(peer_tag='CIB')
+    elif peer_name == 'CUNEF':
+      return Peer.objects.get(peer_tag='CUNEF')
     elif peer == pn:
       return Peer.objects.get(peer_name=peer) 
     elif peer in pn or pn in peer:
       return Peer.objects.get(peer_tag=peer)
     else:
       print(f'The following institution is not connected to REM-E-DDOS {peer_name}')
-      return False   
+      return False 
 
-
-
-
+       
 
 def graphs(timefrom,timetill, routename, username):
   from flowspec.models import Route

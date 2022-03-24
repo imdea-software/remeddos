@@ -144,7 +144,6 @@ def dashboard(request):
             for group_route in all_group_routes:
                 group_route.has_expired()
         else:
-            print('2t')
             #all_group_routes = Route.objects.filter(applier=request.user)
             all_group_routes = find_routes(user.username)
             # checking if any route is expired, if they are, the rules are deleted
@@ -401,7 +400,7 @@ def verify_edit_user(request,route_slug):
         num = get_code()
         user= request.user.username
         print('trace1')
-        route = get_specific_route(user, route_slug)
+        route = get_specific_route(applier=user,peer=None, route_slug=route_slug)
         msg = "El usuario {user} ha solicitado el siguiente código para editar la regla: {route_slug}. Código:  '{code}'.".format(user=user,code=num,route_slug=route_slug)
         code = Validation(value=num,user=request.user)
         code.save()
@@ -533,6 +532,7 @@ def edit_route(request, route_slug):
 
 @verified_email_required
 @login_required
+@never_cache
 def verify_delete_user(request, route_slug):
     if request.method =='GET':
         num = get_code()
@@ -543,7 +543,7 @@ def verify_delete_user(request, route_slug):
         code.save()
         send_message(msg)
         form = ValidationForm(request.GET)
-        route = get_specific_route(username, route_slug)
+        route = get_specific_route(applier=username,peer=None,route_slug=route_slug)
         #route = Route.objects.get(name=route_slug)
         message = f"CUIDADO. Seguro que quiere eliminar la siguiente regla {route_slug}?"
         return render(request,'values/add_value.html', {'form': form, 'message':message,'status':'delete', 'route':route})
@@ -711,12 +711,23 @@ def lookupShibAttr(attrmap, requestMeta):
     return ''
 
 
+@verified_email_required
+@login_required
+@never_cache
+def routes_update(request, route_slug):
+#    route = Route.objects.get(name=route_slug)
+    route = get_specific_route(applier=request.user.username,peer=None,route_slug=route_slug)
+    updates = route.check_history_changes()
+    return render(request,'route_updates.html',{'route':route,'updates':updates})
+
+
 # show the details of specific route
 @login_required
 @never_cache
 def routedetails(request, route_slug):
     uname = request.user.username
-    route = get_object_or_404(get_edit_route(uname), name=route_slug)
+    route = get_specific_route(applier=uname,peer=None,route_slug=route_slug)
+    print('this is route, details : ',route)
     now = datetime.datetime.now()
     return render(request, 'flowspy/route_details.html', {'route': route,'mytime': now,'tz' : settings.TIME_ZONE,'is_superuser' : request.user.is_superuser,'route_comments_len' : len(str(route.comments))})
 
@@ -825,6 +836,7 @@ def ajax_graphs(request):
             return JsonResponse(data,status=200)
 
 
+
 @verified_email_required
 @login_required
 @never_cache
@@ -928,11 +940,11 @@ def sync_router(request):
                 pass
     return render(request,'routes_synced.html',{'message':message})
 
+@verified_email_required
 @login_required
-@never_cache
+@never_cache 
 #synchronize routes from the database to the router
 def routes_sync(request):
-    print('is dis the method? it should be right?')
     username = request.user.username
     routes = find_routes(username); route = get_routes_router()
     peer = get_peer_tag(username); names = []
@@ -975,8 +987,9 @@ def routes_sync(request):
         send_message(message)
     return render(request,'routes_synced.html',{'message':message})
 
+@verified_email_required
 @login_required
-@never_cache
+@never_cache 
 def backup(request):
     now = datetime.datetime.now()
     user = request.user
@@ -1020,20 +1033,56 @@ def restore_backup(request):
             #return render(request,'routes_synced.html',{'message':message})
             return render(request,'routes_synced.html')
             
+@verified_email_required
+@login_required
+@never_cache 
+def create_db_backup(request):
+    now = datetime.datetime.now()
+    user = request.user
+    current_time = now.strftime("%H:%M")
+    current_date = now.strftime("%d-%B-%Y")
+    if user.is_superuser: 
+        try:
+            call_command('dumpdata', format='json',output=f'_backup/FOD/FOD_backup_{current_date}_{current_time}.json')
+            #call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
+            message = 'Copia de seguridad creada con éxito.'
+            send_message(message)
+            return render(request,'routes_synced.html',{'message':message}) 
+        except Exception as e:
+            message = ('Ha ocurrido un error intentando crear la copia de seguridad. %s'%e)
+            send_message(message)
+            return render(request,'routes_synced.html',{'message':message})
+    else:
+        return render(request,'routes_synced.html',{'message':'Esta opción solo puede ser usada por un superusuario, disculpe las molestias.'})
+    pass
 
-
-def restore_last_backup():
-    CHOICES_FILES = []
-    for f in os.listdir(settings.BACK_UP_DIR):
-        CHOICES_FILES.append(f)
-    try:
-        call_command(f"dbrestore", interactive=False, input_filename=CHOICES_FILES[0])
-        message = 'La copia de seguridad ha sido restaurada con éxito.'
-        send_message(message)
-    except Exception as e:
-        message = ('Ha ocurrido un error y no se ha podido restaurar la base de datos. Error: ',e)
-        send_message(message)
-
+""" @verified_email_required
+@login_required
+@never_cache  """
+def restore_complete_db(request):
+    user = request.user
+    if user.is_superuser:
+        CHOICES_FILES = []
+        if request.method=='GET':
+            for f in os.listdir(settings.BACK_UP_DIR+'/FOD/'):
+                CHOICES_FILES.append(f)
+            return render(request,'backup_menu.html',{'files':CHOICES_FILES[-1]})    
+    if request.method=='POST':
+        filename = request.POST.get("value", "")
+        fixture_path = (settings.BACK_UP_DIR+'/FOD/'+filename)
+        try:
+            call_command(f"loaddata",fixture_path)
+            message = 'La copia de seguridad ha sido restaurada con éxito.'
+            send_message(message)
+            return render(request,'routes_synced.html',{'message':message}) 
+        except Exception as e:
+            """ message = ('Ha ocurrido un error y no se ha podido restaurar la base de datos. Error:  ',e)
+            send_message(message) """
+            print('Ha habiado un error: ',e)
+            #return render(request,'routes_synced.html',{'message':message})
+            return render(request,'routes_synced.html')
+    else:
+        return render(request,'routes_synced.html',{'message':'Esta opción solo puede ser usada por un superusuario, disculpe las molestias.'})
 
 ##================= Webhook GENI
 

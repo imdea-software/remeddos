@@ -255,7 +255,6 @@ class Route_CV(models.Model):
         else:
             return None
 
-    @property
     def check_history_changes(self):
         if self.history:
             iter = self.history.all().order_by('history_date').iterator()
@@ -264,7 +263,7 @@ class Route_CV(models.Model):
                 old_record, new_record = record_pair
                 delta = new_record.diff_against(old_record)
                 for change in delta.changes:
-                    history_records.append(f'El atributo: {change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    history_records.append(f'{change.field} ha cambiado de: {change.old} a: {change.new}.')
         return history_records
 
     def __str__(self):
@@ -276,13 +275,19 @@ class Route_CV(models.Model):
         verbose_name_plural = "Rules CV"
 
     def save(self, *args, **kwargs):
-        peer_suff = get_peer_tag(self.applier.username)
+        peer_suff = ''
+        if self.applier == None:
+            fd = self.name.find('_')
+            peer_suff = self.name[fd+1:]
+            pass
+        else:
+            peer_suff = get_peer_tag(self.applier.username)
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route_CV, self).save(*args, **kwargs)
         elif not self.pk:
             name = self.name
             self.name = "%s_%s" % (self.name, peer_suff) 
-        super(Route_CV, self).save(*args, **kwargs) 
+        super(Route_CV, self).save(*args, **kwargs)
 
                   
 
@@ -728,7 +733,6 @@ class Route_IMDEA(models.Model):
         else:
             return None
 
-    @property
     def check_history_changes(self):
         if self.history:
             iter = self.history.all().order_by('history_date').iterator()
@@ -737,7 +741,7 @@ class Route_IMDEA(models.Model):
                 old_record, new_record = record_pair
                 delta = new_record.diff_against(old_record)
                 for change in delta.changes:
-                    history_records.append(f'El atributo: {change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    history_records.append(f'{change.field} ha cambiado de: {change.old} a: {change.new}.')
         return history_records
 
     def __str__(self):
@@ -749,7 +753,13 @@ class Route_IMDEA(models.Model):
         verbose_name_plural = "Rules IMDEA"
 
     def save(self, *args, **kwargs):
-        peer_suff = get_peer_tag(self.applier.username)
+        peer_suff = ''
+        if self.applier == None:
+            fd = self.name.find('_')
+            peer_suff = self.name[fd+1:]
+            pass
+        else:
+            peer_suff = get_peer_tag(self.applier.username)
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route_IMDEA, self).save(*args, **kwargs)
         elif not self.pk:
@@ -1203,7 +1213,7 @@ class Route_CIB(models.Model):
         else:
             return None
 
-    @property
+    
     def check_history_changes(self):
         if self.history:
             iter = self.history.all().order_by('history_date').iterator()
@@ -1212,7 +1222,7 @@ class Route_CIB(models.Model):
                 old_record, new_record = record_pair
                 delta = new_record.diff_against(old_record)
                 for change in delta.changes:
-                    history_records.append(f'El atributo: {change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    history_records.append(f'{change.field} ha cambiado de: {change.old} a: {change.new}.')
         return history_records
 
     def __str__(self):
@@ -1224,7 +1234,13 @@ class Route_CIB(models.Model):
         verbose_name_plural = "Rules CIB"
 
     def save(self, *args, **kwargs):
-        peer_suff = get_peer_tag(self.applier.username)
+        peer_suff = ''
+        if self.applier == None:
+            fd = self.name.find('_')
+            peer_suff = self.name[fd+1:]
+            pass
+        else:
+            peer_suff = get_peer_tag(self.applier.username)
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route_CIB, self).save(*args, **kwargs)
         elif not self.pk:
@@ -1676,7 +1692,7 @@ class Route_CSIC(models.Model):
         else:
             return None
 
-    @property
+    
     def check_history_changes(self):
         if self.history:
             iter = self.history.all().order_by('history_date').iterator()
@@ -1685,7 +1701,7 @@ class Route_CSIC(models.Model):
                 old_record, new_record = record_pair
                 delta = new_record.diff_against(old_record)
                 for change in delta.changes:
-                    history_records.append(f'El atributo: {change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    history_records.append(f'{change.field} ha cambiado de: {change.old} a: {change.new}.')
         return history_records
 
     def __str__(self):
@@ -1697,30 +1713,20 @@ class Route_CSIC(models.Model):
         verbose_name_plural = "Rules CSIC"
 
     def save(self, *args, **kwargs):
-        peer_suff = get_peer_tag(self.applier.username)
+        peer_suff = ''
+        if self.applier == None:
+            fd = self.name.find('_')
+            peer_suff = self.name[fd+1:]
+            pass
+        else:
+            peer_suff = get_peer_tag(self.applier.username)
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route_CSIC, self).save(*args, **kwargs)
         elif not self.pk:
             name = self.name
             self.name = "%s_%s" % (self.name, peer_suff) 
-        super(Route_CSIC, self).save(*args, **kwargs) 
+        super(Route_CSIC, self).save(*args, **kwargs)
 
-                  
-
-    def clean(self, *args, **kwargs):
-        from django.core.exceptions import ValidationError
-        if self.destination:
-            try:
-                address = IPNetwork(self.destination)
-                self.destination = address.exploded
-            except Exception:
-                raise ValidationError(_('Invalid network address format at Destination Field'))
-        if self.source:
-            try:
-                address = IPNetwork(self.source)
-                self.source = address.exploded
-            except Exception:
-                raise ValidationError(_('Invalid network address format at Source Field'))
     
     def commit_add(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
@@ -1752,6 +1758,7 @@ class Route_CSIC(models.Model):
             user_mail = '%s' % self.applier.email
             user_mail = user_mail.split(';')
             send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+    
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
@@ -2149,7 +2156,7 @@ class Route_CEU(models.Model):
         else:
             return None
 
-    @property
+    
     def check_history_changes(self):
         if self.history:
             iter = self.history.all().order_by('history_date').iterator()
@@ -2158,7 +2165,7 @@ class Route_CEU(models.Model):
                 old_record, new_record = record_pair
                 delta = new_record.diff_against(old_record)
                 for change in delta.changes:
-                    history_records.append(f'El atributo: {change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    history_records.append(f'{change.field} ha cambiado de: {change.old} a: {change.new}.')
         return history_records
 
     def __str__(self):
@@ -2170,13 +2177,19 @@ class Route_CEU(models.Model):
         verbose_name_plural = "Rules CEU"
 
     def save(self, *args, **kwargs):
-        peer_suff = get_peer_tag(self.applier.username)
+        peer_suff = ''
+        if self.applier == None:
+            fd = self.name.find('_')
+            peer_suff = self.name[fd+1:]
+            pass
+        else:
+            peer_suff = get_peer_tag(self.applier.username)
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route_CEU, self).save(*args, **kwargs)
         elif not self.pk:
             name = self.name
             self.name = "%s_%s" % (self.name, peer_suff) 
-        super(Route_CEU, self).save(*args, **kwargs) 
+        super(Route_CEU, self).save(*args, **kwargs)
 
                   
 
@@ -2622,7 +2635,7 @@ class Route_CUNEF(models.Model):
         else:
             return None
 
-    @property
+    
     def check_history_changes(self):
         if self.history:
             iter = self.history.all().order_by('history_date').iterator()
@@ -2631,7 +2644,7 @@ class Route_CUNEF(models.Model):
                 old_record, new_record = record_pair
                 delta = new_record.diff_against(old_record)
                 for change in delta.changes:
-                    history_records.append(f'El atributo: {change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    history_records.append(f'{change.field} ha cambiado de: {change.old} a: {change.new}.')
         return history_records
 
     def __str__(self):
@@ -2643,13 +2656,19 @@ class Route_CUNEF(models.Model):
         verbose_name_plural = "Rules CUNEF"
 
     def save(self, *args, **kwargs):
-        peer_suff = get_peer_tag(self.applier.username)
+        peer_suff = ''
+        if self.applier == None:
+            fd = self.name.find('_')
+            peer_suff = self.name[fd+1:]
+            pass
+        else:
+            peer_suff = get_peer_tag(self.applier.username)
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route_CUNEF, self).save(*args, **kwargs)
         elif not self.pk:
             name = self.name
             self.name = "%s_%s" % (self.name, peer_suff) 
-        super(Route_CUNEF, self).save(*args, **kwargs) 
+        super(Route_CUNEF, self).save(*args, **kwargs)
 
                   
 
@@ -3095,7 +3114,7 @@ class Route_IMDEANET(models.Model):
         else:
             return None
 
-    @property
+    
     def check_history_changes(self):
         if self.history:
             iter = self.history.all().order_by('history_date').iterator()
@@ -3104,7 +3123,7 @@ class Route_IMDEANET(models.Model):
                 old_record, new_record = record_pair
                 delta = new_record.diff_against(old_record)
                 for change in delta.changes:
-                    history_records.append(f'El atributo: {change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    history_records.append(f'{change.field} ha cambiado de: {change.old} a: {change.new}.')
         return history_records
 
     def __str__(self):
@@ -3116,13 +3135,19 @@ class Route_IMDEANET(models.Model):
         verbose_name_plural = "Rules IMDEANET"
 
     def save(self, *args, **kwargs):
-        peer_suff = get_peer_tag(self.applier.username)
+        peer_suff = ''
+        if self.applier == None:
+            fd = self.name.find('_')
+            peer_suff = self.name[fd+1:]
+            pass
+        else:
+            peer_suff = get_peer_tag(self.applier.username)
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route_IMDEANET, self).save(*args, **kwargs)
         elif not self.pk:
             name = self.name
             self.name = "%s_%s" % (self.name, peer_suff) 
-        super(Route_IMDEANET, self).save(*args, **kwargs) 
+        super(Route_IMDEANET, self).save(*args, **kwargs)
 
                   
 
@@ -3568,7 +3593,7 @@ class Route(models.Model):
         else:
             return None
 
-    @property
+    
     def check_history_changes(self):
         if self.history:
             iter = self.history.all().order_by('history_date').iterator()
@@ -3577,7 +3602,7 @@ class Route(models.Model):
                 old_record, new_record = record_pair
                 delta = new_record.diff_against(old_record)
                 for change in delta.changes:
-                    history_records.append(f'El atributo: {change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    history_records.append(f'{change.field} ha cambiado de: {change.old} a: {change.new}.')
         return history_records
 
     def __str__(self):
@@ -3589,7 +3614,13 @@ class Route(models.Model):
         verbose_name_plural = "Rules"
 
     def save(self, *args, **kwargs):
-        peer_suff = get_peer_tag(self.applier.username)
+        peer_suff = ''
+        if self.applier == None:
+            fd = self.name.find('_')
+            peer_suff = self.name[fd+1:]
+            pass
+        else:
+            peer_suff = get_peer_tag(self.applier.username)
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route, self).save(*args, **kwargs)
         elif not self.pk:
@@ -4041,7 +4072,7 @@ class Route_UAM(models.Model):
         else:
             return None
 
-    @property
+    
     def check_history_changes(self):
         if self.history:
             iter = self.history.all().order_by('history_date').iterator()
@@ -4050,7 +4081,7 @@ class Route_UAM(models.Model):
                 old_record, new_record = record_pair
                 delta = new_record.diff_against(old_record)
                 for change in delta.changes:
-                    history_records.append(f'El atributo: {change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    history_records.append(f'{change.field} ha cambiado de: {change.old} a: {change.new}.')
         return history_records
 
     def __str__(self):
@@ -4062,7 +4093,13 @@ class Route_UAM(models.Model):
         verbose_name_plural = "Rules UAM"
 
     def save(self, *args, **kwargs):
-        peer_suff = get_peer_tag(self.applier.username)
+        peer_suff = ''
+        if self.applier == None:
+            fd = self.name.find('_')
+            peer_suff = self.name[fd+1:]
+            pass
+        else:
+            peer_suff = get_peer_tag(self.applier.username)
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route_UAM, self).save(*args, **kwargs)
         elif not self.pk:
@@ -4514,7 +4551,7 @@ class Route_UAH(models.Model):
         else:
             return None
 
-    @property
+    
     def check_history_changes(self):
         if self.history:
             iter = self.history.all().order_by('history_date').iterator()
@@ -4523,7 +4560,7 @@ class Route_UAH(models.Model):
                 old_record, new_record = record_pair
                 delta = new_record.diff_against(old_record)
                 for change in delta.changes:
-                    history_records.append(f'El atributo: {change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    history_records.append(f'{change.field} ha cambiado de: {change.old} a: {change.new}.')
         return history_records
 
     def __str__(self):
@@ -4535,7 +4572,13 @@ class Route_UAH(models.Model):
         verbose_name_plural = "Rules UAH"
 
     def save(self, *args, **kwargs):
-        peer_suff = get_peer_tag(self.applier.username)
+        peer_suff = ''
+        if self.applier == None:
+            fd = self.name.find('_')
+            peer_suff = self.name[fd+1:]
+            pass
+        else:
+            peer_suff = get_peer_tag(self.applier.username)
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route_UAH, self).save(*args, **kwargs)
         elif not self.pk:
@@ -4987,7 +5030,7 @@ class Route_UC3M(models.Model):
         else:
             return None
 
-    @property
+    
     def check_history_changes(self):
         if self.history:
             iter = self.history.all().order_by('history_date').iterator()
@@ -4996,7 +5039,7 @@ class Route_UC3M(models.Model):
                 old_record, new_record = record_pair
                 delta = new_record.diff_against(old_record)
                 for change in delta.changes:
-                    history_records.append(f'El atributo: {change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    history_records.append(f'{change.field} ha cambiado de: {change.old} a: {change.new}.')
         return history_records
 
     def __str__(self):
@@ -5008,13 +5051,19 @@ class Route_UC3M(models.Model):
         verbose_name_plural = "Rules UC3M"
 
     def save(self, *args, **kwargs):
-        peer_suff = get_peer_tag(self.applier.username)
+        peer_suff = ''
+        if self.applier == None:
+            fd = self.name.find('_')
+            peer_suff = self.name[fd+1:]
+            pass
+        else:
+            peer_suff = get_peer_tag(self.applier.username)
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route_UC3M, self).save(*args, **kwargs)
         elif not self.pk:
             name = self.name
             self.name = "%s_%s" % (self.name, peer_suff) 
-        super(Route_UC3M, self).save(*args, **kwargs) 
+        super(Route_UC3M, self).save(*args, **kwargs)
 
                   
 
@@ -5460,7 +5509,7 @@ class Route_UCM(models.Model):
         else:
             return None
 
-    @property
+
     def check_history_changes(self):
         if self.history:
             iter = self.history.all().order_by('history_date').iterator()
@@ -5469,9 +5518,13 @@ class Route_UCM(models.Model):
                 old_record, new_record = record_pair
                 delta = new_record.diff_against(old_record)
                 for change in delta.changes:
-                    history_records.append(f'El atributo: {change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    if change.old:
+                        history_records.append(f'{change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    else:
+                        pass
         return history_records
 
+   
     def __str__(self):
         return "%s, %s, %s, %s, %s, %s"%(self.name,self.expires, self.applier, self.status,self.source,self.destination)
 
@@ -5481,15 +5534,19 @@ class Route_UCM(models.Model):
         verbose_name_plural = "Rules UCM"
 
     def save(self, *args, **kwargs):
-        peer_suff = get_peer_tag(self.applier.username)
+        peer_suff = ''
+        if self.applier == None:
+            fd = self.name.find('_')
+            peer_suff = self.name[fd+1:]
+            pass
+        else:
+            peer_suff = get_peer_tag(self.applier.username)
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route_UCM, self).save(*args, **kwargs)
-            self.back_up_route()
         elif not self.pk:
             name = self.name
             self.name = "%s_%s" % (self.name, peer_suff) 
-        super(Route_UCM, self).save(*args, **kwargs)
-        self.back_up_route() 
+        super(Route_UCM, self).save(*args, **kwargs) 
 
     def back_up_route(self):
         from datetime import datetime
@@ -5950,7 +6007,7 @@ class Route_UEM(models.Model):
         else:
             return None
 
-    @property
+  
     def check_history_changes(self):
         if self.history:
             iter = self.history.all().order_by('history_date').iterator()
@@ -5959,7 +6016,10 @@ class Route_UEM(models.Model):
                 old_record, new_record = record_pair
                 delta = new_record.diff_against(old_record)
                 for change in delta.changes:
-                    history_records.append(f'El atributo: {change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    if change.old:
+                        history_records.append(f'{change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    else:
+                        pass
         return history_records
 
     def __str__(self):
@@ -5971,13 +6031,19 @@ class Route_UEM(models.Model):
         verbose_name_plural = "Rules UEM"
 
     def save(self, *args, **kwargs):
-        peer_suff = get_peer_tag(self.applier.username)
+        peer_suff = ''
+        if self.applier == None:
+            fd = self.name.find('_')
+            peer_suff = self.name[fd+1:]
+            pass
+        else:
+            peer_suff = get_peer_tag(self.applier.username)
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route_UEM, self).save(*args, **kwargs)
         elif not self.pk:
             name = self.name
             self.name = "%s_%s" % (self.name, peer_suff) 
-        super(Route_UEM, self).save(*args, **kwargs) 
+        super(Route_UEM, self).save(*args, **kwargs)
 
                   
 
@@ -6423,7 +6489,7 @@ class Route_UNED(models.Model):
         else:
             return None
 
-    @property
+   
     def check_history_changes(self):
         if self.history:
             iter = self.history.all().order_by('history_date').iterator()
@@ -6432,7 +6498,10 @@ class Route_UNED(models.Model):
                 old_record, new_record = record_pair
                 delta = new_record.diff_against(old_record)
                 for change in delta.changes:
-                    history_records.append(f'El atributo: {change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    if change.old:
+                        history_records.append(f'{change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    else:
+                        pass
         return history_records
 
     def __str__(self):
@@ -6444,7 +6513,13 @@ class Route_UNED(models.Model):
         verbose_name_plural = "Rules UNED"
 
     def save(self, *args, **kwargs):
-        peer_suff = get_peer_tag(self.applier.username)
+        peer_suff = ''
+        if self.applier == None:
+            fd = self.name.find('_')
+            peer_suff = self.name[fd+1:]
+            pass
+        else:
+            peer_suff = get_peer_tag(self.applier.username)
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route_UNED, self).save(*args, **kwargs)
         elif not self.pk:
@@ -6896,7 +6971,7 @@ class Route_UPM(models.Model):
         else:
             return None
 
-    @property
+    
     def check_history_changes(self):
         if self.history:
             iter = self.history.all().order_by('history_date').iterator()
@@ -6905,7 +6980,7 @@ class Route_UPM(models.Model):
                 old_record, new_record = record_pair
                 delta = new_record.diff_against(old_record)
                 for change in delta.changes:
-                    history_records.append(f'El atributo: {change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    history_records.append(f'{change.field} ha cambiado de: {change.old} a: {change.new}.')
         return history_records
 
     def __str__(self):
@@ -6917,7 +6992,13 @@ class Route_UPM(models.Model):
         verbose_name_plural = "Rules UPM"
 
     def save(self, *args, **kwargs):
-        peer_suff = get_peer_tag(self.applier.username)
+        peer_suff = ''
+        if self.applier == None:
+            fd = self.name.find('_')
+            peer_suff = self.name[fd+1:]
+            pass
+        else:
+            peer_suff = get_peer_tag(self.applier.username)
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route_UPM, self).save(*args, **kwargs)
         elif not self.pk:
@@ -7369,7 +7450,7 @@ class Route_URJC(models.Model):
         else:
             return None
 
-    @property
+    
     def check_history_changes(self):
         if self.history:
             iter = self.history.all().order_by('history_date').iterator()
@@ -7378,7 +7459,7 @@ class Route_URJC(models.Model):
                 old_record, new_record = record_pair
                 delta = new_record.diff_against(old_record)
                 for change in delta.changes:
-                    history_records.append(f'El atributo: {change.field} ha cambiado de: {change.old} a: {change.new}.')
+                    history_records.append(f'{change.field} ha cambiado de: {change.old} a: {change.new}.')
         return history_records
 
     def __str__(self):
@@ -7390,7 +7471,13 @@ class Route_URJC(models.Model):
         verbose_name_plural = "Rules URJC"
 
     def save(self, *args, **kwargs):
-        peer_suff = get_peer_tag(self.applier.username)
+        peer_suff = ''
+        if self.applier == None:
+            fd = self.name.find('_')
+            peer_suff = self.name[fd+1:]
+            pass
+        else:
+            peer_suff = get_peer_tag(self.applier.username)
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route_URJC, self).save(*args, **kwargs)
         elif not self.pk:

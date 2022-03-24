@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+
+{% block extrahead %}
+{% endblock %}
+{% block title %}{% trans "Actualizaciones del ataque" %}{% endblock %}
+{% block contentplaceholder %}
+{% csrf_token %}
+<div class="container">
+    <div class="row m-2 p-5">
+        <div class="col">
+            <h5 class="text-end fw-light"> Ataque con ID: <span class="text-danger">{{golem.id_name}}</span></h5>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <table class="table table-responsive table-hover ">
+                <thead>
+                    <th>Cambios que ha sufrido el ataque recibido</th>
+                </thead>
+                <tbody>
+                    {% for update in updates %}
+                    <tr>
+                        <td>{{update}}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+</div>
+{% endblock %}

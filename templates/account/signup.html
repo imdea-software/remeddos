@@ -42,13 +42,31 @@
         </div>
         </div>
 
-        <div class="row">
-          <div class="col col-md-6">
-            <label for="id_username" class="col l4 m4 s4 black-text"><b>{% trans "Nombre de usuario:" %}</b></label>
-            {% render_field form.username class+="form-control validate" placeholder="Introduce su nombre de usuario" %}
-          </div>
-          </div>
+        
+          <div class="row">
+            <div class="col col-md-6">
+              <label for="id_username" class="col l4 m4 s4 black-text"><b>{% trans "Nombre:" %}</b></label>
+              {% render_field form.first_name class+="form-control validate" placeholder="Introduce su nombre" %}
+            </div>
+            </div>
 
+            <div class="row">
+              <div class="col col-md-6">
+                <label for="id_firstname" class="col l4 m4 s4 black-text"><b>{% trans "Apellidos:" %}</b></label>
+                {% render_field form.last_name class+="form-control validate" placeholder="Introduce sus apellidos" %}
+              </div>
+              </div>
+              <div class="row">
+                <div class="col col-md-6">
+                  <label for="id_lastname" class="col l4 m4 s4 black-text"><b>{% trans "Nombre de usuario:" %}</b></label>
+                  {% render_field form.username class+="form-control validate" placeholder="Introduce su nombre de usuario" %}
+                </div>
+                </div>
+                <div class="row p-1">
+                  <p class="fw-light"><small>Como nombre de usuario recomendamos utilizar la primera letra del nombre más el primer apellido (Ej. Nombre: Juan Díaz, username: jdiaz) <br>
+                    Tenga en cuenta que con utilizará el <i>username</i> para acceder a la aplicación. </small>
+                  </p>
+                </div>
           <div class="row">
             <div class="col col-md-6">
               <label for="id_password1" class="col l4 m4 s4 black-text"><b>{% trans "Contraseña:" %}</b></label>

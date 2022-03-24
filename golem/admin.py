@@ -5,7 +5,7 @@ from golem.models import GolemAttack
 
 # Register your models here.
 class GolemAdmin(admin.ModelAdmin):
-    list_display = ('id_name','status','ip_src','ip_dest','peer','history')
+    list_display = ('id_name','status','ip_src','ip_dest','received_at','history')
     search_fields = ['id_name']
     history_list_display = ["history"]
     actions = ['delete']

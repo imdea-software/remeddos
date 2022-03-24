@@ -25,9 +25,12 @@ urlpatterns = [
     path('sync_router/', views.sync_router, name="router-sync"),
     path('backup/',views.backup,name="backup"),
     path('restore/',views.restore_backup,name="restore"),
-    path('edit/<slug:route_slug>/',views.routedetails,name="route-details"),
+    path('details/<slug:route_slug>/',views.routedetails,name="route-details"),
     re_path(r'^routestats/(?P<route_slug>[\w-]+)/$', views.routestats, name="routestats"),
     re_path(r'^setup/', views.setup, name='setup'),
     path('ajax_graphs/',views.ajax_graphs, name='ajax-graphs'),
+    path('createdbackup/',views.create_db_backup, name='db-backup'),
+    path('restoredb/',views.restore_complete_db, name='db-restore'),
+    path('route_update/<slug:route_slug>',views.routes_update,name='route-updates')
 ]
 

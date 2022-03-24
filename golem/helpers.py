@@ -1,12 +1,11 @@
 from flowspec.models import *
-#from golem.models import *
-
+from peers.models import *
+import requests
+from urllib3.exceptions import InsecureRequestWarning
+from django.core.exceptions import MultipleObjectsReturned
 
 
 def petition_geni(id_event):
-    import requests
-    from urllib3.exceptions import InsecureRequestWarning
-
     requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
     session = requests.Session()
     session.verify = False
@@ -20,15 +19,13 @@ def petition_geni(id_event):
            'id':json_event['response']['result']['data'][0]['event']['id'],'status':json_event['response']['result']['data'][0]['event']['status'],'severity':json_event['response']['result']['data'][0]['event']['severity']['type'],
             'threshold_value':json_event['response']['result']['data'][0]['event']['severity']['threshold_value'],'max_value':json_event['response']['result']['data'][0]['event']['severity']['max_value'],
             'institution_name': json_event['response']['result']['data'][0]['event']['resource']['name'][0], 'attack_name' : json_event['response']['result']['data'][0]['event']['attack']['name'],
-            'initial_date' : json_event['response']['result']['data'][0]['event']['datetime']['start_time'], 'attack_duration' : json_event['response']['result']['data'][0]['event']['datetime']['duration'], 'ip_attacked' : json_event['response']['result']['data'][0]['event']['resource']['ip']
-            }
+            'initial_date' : json_event['response']['result']['data'][0]['event']['datetime']['start_time'], 'attack_duration' : json_event['response']['result']['data'][0]['event']['datetime']['duration'], 'ip_attacked' : json_event['response']['result']['data'][0]['event']['resource']['ip'],
+            'typeof_attack':json_event['response']['result']['data'][0]['event']['attack']['type'],'typeof_value':json_event['response']['result']['data'][0]['event']['attack']['counter']}
     except requests.exceptions.ConnectionError:
         print(response.status_code)           
     return (response.json(),event_data)
 
 
-def create_route(max_value, th_value, attacktype, sourceaddress):
-    #ip origen, ip destino, protocolo, puerto (que mas trafico tenga), la tcp flag q mas trafico que tenga, 
-    route = Route()
 
-    return route
+
+

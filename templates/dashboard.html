@@ -21,7 +21,7 @@
 <div class="container p-5">
             <div class="row">
                 <div class="col">
-                    <h1 class="text-center fw-light">{% trans "Dashboard" %}</h1>
+                    <h1 class="text-end fw-light">{% trans "Dashboard" %}</h1>
                 </div>
             </div>
 	<div class="row">
@@ -107,9 +107,19 @@
 										</div>
 
 										<div class="row">
+											<div class="col">
+												{% if route.history %}
+												<a href="{% url 'route-updates' route.name %}" class="btn-outline btn-info btn btn-xs btn-info">{% trans "Ver Actualizaciones" %}</a>
+													{% else %}
+													<span>Esta ruta no ha sufrido actualizaciones</span>
+												{% endif %}
+											</div>
+										</div>
+
+										<div class="row">
 										<div class="btn-group d-block gap-2 flex-row-reverse">
 										{% ifequal route.status 'ACTIVE' %}
-											<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-warning" id="edit_button_{{route.pk}}">{% trans "Editar" %}</a>
+											<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-outline btn-xs btn-warning" id="edit_button_{{route.pk}}">{% trans "Editar" %}</a>
 											<a href="{% url 'display-graphs' route.name %}" class="btn-outline btn btn-xs btn-info" id="display_button_{{route.pk}}">{% trans "Mostrar gráfica!" %}</a>
 											<!-- <button class="del_buttonpre btn-outline btn btn-xs btn-warning" id="{{route.name}}" data-routename="{{route.name}}">{% trans "Deactivate" %}</button> -->
 										{% else %}

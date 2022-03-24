@@ -49,22 +49,27 @@
                 <div class="nav_list text-wrap">
                     <a href="{% url 'group-routes' %}" class="nav_link text-white text-decoration-none fw-light text-wrap"> <i class='bi-table nav_icon text-primary' data-bs-toggle="tooltip" data-bs-placement="top" title="Routes"></i> <span class="nav_name">Reglas FW</span></a>  
                     <a href="{% url 'dashboard' %}" class="nav_link text-white text-decoration-none fw-light text-wrap"> <i class='bi-clipboard nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Dashboard"></i> <span class="nav_name">Dashboard</span></a>
+                    {% if user.is_staff%} 
+                    <a href="{% url 'attack-list'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-table nav_icon text-danger' data-bs-toggle="tooltip" data-bs-placement="top" title="Registrador de ataquqes"></i> <span class="nav_name">REM - Golem</span></a> 
+                    {% endif %}
                     <a href="#submenu1" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="subMenu1"> <i class='bi-cloud nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Opciones de almacenamiento"></i> <span class="nav_name">Almacenamiento</span> </a>
                         <div class="collapse" id="submenu1">
                             <a href="#" class="nav_link text-white text-decoration-none fw-light text-wrap" data-bs-toggle="modal" data-bs-target="#confbModal" ><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Crear copia de seguridad"></i><span class="nav_name text-wrap">Crear copia de seguridad</span></a>
                             <a href="#" class="nav_link text-white text-decoration-none fw-light"data-bs-toggle="modal" data-bs-target="#confresfileModal"><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Restaurar a partir de una copia de seguridad"></i><span class="nav_name">Restaurar a partir de una copia de seguridad</span></a>
                             <a href="#" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="modal" data-bs-target="#confresdbModal"><i class="bi-arrow-repeat" data-bs-toggle="tooltip" data-bs-placement="top" title="Sincronizar con la BBDD"></i><span class="nav_name text-wrap">Sincronizar con la BBDD</span></a>
                             <a href="#" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="modal" data-bs-target="#confsrModal"><i class="bi-router" data-bs-toggle="tooltip" data-bs-placement="top" title="Sincronizar reglas con router"></i><span class="nav_name text-wrap" >Sincronizar reglas con router</span></a>
+                            {% if user.is_superuser%}
+                            <a href="{% url 'db-backup'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Copia de la BD"></i> <span class="nav_name">Hacer una copia de la BD</span></a>
+                            <a href="{% url 'db-restore'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Restauracion de la BD"></i> <span class="nav_name">Restaurar BD</span></a> 
+                            {% endif %}
                           </div>
-                          
+            
                           <a href="#" class="nav_link text-white text-decoration-none text-wrap fw-light" data-bs-toggle="modal" data-bs-target="#addRouteM" id="submitButton"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Añadir una regla de FW"></i><span class="nav_name">Añadir una regla de FW</span></a>  
                           <a href="{% url 'user-profile' %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-person nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Mi perfil"></i> <span class="nav_name">Mi perfil</span></a>
                     {% if user.is_superuser%} 
                     <a href="{% url 'admin:index'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Panel de Administrador"></i> <span class="nav_name">Admin</span></a> 
                     {% endif %}
-                    {% if user.is_staff%} 
-                    <a href="{% url 'attack-list'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-table nav_icon text-danger' data-bs-toggle="tooltip" data-bs-placement="top" title="Registrador de ataquqes"></i> <span class="nav_name">Golem</span></a> 
-                    {% endif %}
+                    
                 </div>
             </div>
             <a href="{% url 'account_logout' %}" class="nav_link linklogout text-white text-decoration-none fw-light"> <i class='bi-person-x-fill nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Salir"></i> <span class="nav_name">Salir</span> </a>
@@ -251,8 +256,9 @@
     <!-- Page-Level Scripts  - Use for reference -->
     {% block pagejsbottom %}{% endblock %}
     <script type="text/javascript">
+  
 
-  	function setlang(lang){
+  function setlang(lang){
 		$("#langsel").val(lang);
 		$("#langform").submit();
 	}
@@ -273,7 +279,11 @@
                 console.log(error);
               }
             });
-     })
+     });
+var tooltipTriggerList1 = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList1 = tooltipTriggerList1.map(function (tooltipTriggerEl) {
+  return new bootstrap.Tooltip(tooltipTriggerEl)
+});
      
   $.ajaxSetup({ cache: false });
   $("#routes_table_next").addClass("btn btn-default");

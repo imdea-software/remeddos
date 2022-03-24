@@ -1,25 +1,81 @@
 {% extends "../base.html" %}
-
+{% load static %}
 {% load i18n %}
-
+{% block extrahead %}
+<!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css"> -->
+<link rel="stylesheet" href="{% static 'css/plugins/dataTables/style.css' %}">
+<link rel="stylesheet" href="{% static 'css/plugins/dataTables/style.scss' %}">
+{% endblock %}
 {% block title %}{% trans "Ataques recientes" %}{% endblock %}
 
 {% block contentplaceholder %}
-<div class="container-fluid p-5">
-<div class="row">
-  <div class="col text-end">
-    <h5>{% trans "Ataques recientes" %}</h5>
+<div class="container">
+
+<div class="row rows-cols-4 p-5">
+    <div class="col">
+        <h5 class="fw-light text-end">{% trans "Ataques recibidos" %}</h5>
     </div>
-    </div>
-<div class="row">
-    <div class="col align-middle">
-        {% if attacks %}
-        <table>
-            {{attacks}}
+</div>
+<div class="row pt-3">
+    <div class="col">
+        <table id="golemtable" class="table table-striped table-bordered  table-hover table-responsive cell-border display compact w-100 pretty">
+        <thead class="bg-dark text-white">
+           <tr>
+               <th><small>ID </small></th><th><small>Tipo</small></th><th><small>Inicio</small></th><th><small>Institución</small></th><th><small>Mas información</small></th> <th><small>Estado</small></th> 
+               <th><small>Max Value</small></th> <th><small>Threshold </small></th> <th><small>History</small></th> <th><small>Acciones</small></th>
+            </tr>
+        </thead>
+        <tbody>
+               {% for attack in attacks %}
+            <tr>
+                <td><small><a href="{% url 'golem-routes' attack.id_name %}" class="link-dark">{{attack.id_name}}</a></small></td>
+                {% if attack.typeof_attack %} <td><small> {{attack.typeof_attack}}</small></td> {% else %} <td><small> No se registró el tipo de ataque</small></td> {% endif %}
+                <td><small>{{attack.received_at}}</small></td>
+                <td><small>{{attack.peer}}</small></td>
+                <td><small>
+                    {% if attack.ip_src %} Src Addr: {{attack.ip_src}}<br> {% endif %}
+                    {% if attack.ip_dest %} Dest Addr: {{attack.ip_dest}}<br> {% endif %}
+                    {% if attack.src_port %} Src Port:{{attack.src_port}}<br> {% endif %}
+                    {% if attack.dest_port %} Dest. Port:{{attack.dest_port}}<br> {% endif %}
+                    {% if attack.protocol.all %} Protocol: {% for p in attack.protocol.all %} {{p}} {% endfor %}<br> {% endif %}
+                    {% if attack.tcpflag %} Tcpflag:  {{attack.tcpflag}} {% endif %} <br></small> </td> 
+                    <td><small>{{attack.status}} </small></td>
+                    <td><small>{{attack.max_value}} {{attack.typeof_value}} </small></td>
+                    <td><small>{{attack.threshold_value}} {{attack.typeof_value}} </small></td> 
+                     <td><a href="{% url 'golem-updates' attack.id_name %}" class="btn btn-danger btn-outline">{% trans "Actualizaciones " %}</a></td>
+                    <td>
+                        <a href="{% url 'golem-routes' attack.id_name %}" class="btn btn-outline btn-dark">{% trans "Reglas " %}</a>
+                        
+                    </td>
+            </tr>
+               {% endfor %}
+            </tbody>
         </table>
-        {% endif %}
+    
+    </div>
+
 </div>
 </div>
-</div>
-</div>
+{% endblock %}
+
+{% block pagejsbottom %}
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.5/af-2.3.7/b-2.2.2/datatables.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+    $('#golemtable').DataTable({
+        "order": [[ 3, "asc" ]],
+        "bAutoWidth": true,
+        "aLengthMenu" : [
+            [5, 15, 20, -1],
+            [5, 15, 20, "All"]
+        ],
+        
+        "bProcessing": true, 
+        "iDisplayLength": 5,
+    });
+})
+    </script>
+
+
+
 {% endblock %}

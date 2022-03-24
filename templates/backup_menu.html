@@ -32,7 +32,7 @@
         <form action="{% url 'restore' %}" class="row g-3 align-items-center" method='POST'>
         {% csrf_token %}
         {% load unescape %}
-        <table class="table table-striped">
+        <table class="table table-striped table-responsive">
             <tr><th>Copia de seguridad                    </th></tr>
             {% for file in files %}
             <tr><td>    <div class="col col-2 float-start">
