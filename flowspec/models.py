@@ -2209,7 +2209,7 @@ class Route_CEU(models.Model):
                 raise ValidationError(_('Invalid network address format at Source Field'))
     
     def commit_add(self, *args, **kwargs):
-        peers = self.applier.profile.peers.all()
+        peers = self.applier.profile.peers.all() if self.applier else Peer.objects.all()
         username = None
         for peer in peers:
             if username:
@@ -2235,9 +2235,14 @@ class Route_CEU(models.Model):
             )
             mail_body = render_to_string(
                 'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+            try:
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+            except Exception as e:
+                print('There was an error when trying to send the email confirmation.')
+
+                
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
