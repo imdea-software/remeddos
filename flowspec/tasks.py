@@ -322,48 +322,79 @@ def routes_sync():
 @shared_task
 def create_route(golem_id,route_dic,peer):
     from flowspec.helpers import get_route,find_routes
+    from golem.models import GolemAttack
     #ip origen, ip destino, protocolo, puerto (que mas trafico tenga), la tcp flag q mas trafico que tenga, 
     #el tcp-flag si el protocolo es udp debe ser descartado porque siempre va a ser 0
-    print('golem_id ',golem_id)
+    
     golem_routes = []
     try:
         routes = find_routes(applier=None, peer=peer)
         route = get_route(applier=None,peer=peer)
         for r in routes:
-            fd = r.name('_')
-            if r.name[:fd]==golem_id:
-                print('condicion: ',r.name[:fd],'  ',golem_id)
+            name = r.name
+            fd = name.find('_')
+            if golem_id==name[:fd]:
                 golem_routes.append(r)
-                print('yes, we append', r.name, 'routes: ', golem_routes)
                 #busqueda de todas las reglas, ver si alguna tiene el nombre del ataque
                 #cuantas hay, dependiendo de cuantas crear 1,2,3
         if len(golem_routes)==0:
-            print('entra en el 1º')
-            route.name = route_dic['name']+'_1'
-            route.status = 'OUTOFSYN'
-            route.source,route.destination,route.destinationport, route.sourceport,route.tcpflag = route_dic['ipsrc'],route_dic['ipdest'],route_dic['destport'],route_dic['srcport'],route_dic['tcpflag']
-            route.save() 
-            route.protocol.add(route_dic['protocol'])
-            print('created first route')
-            return route
+            try: 
+                print('entra para crear 1º regla ')
+                route.name = route_dic['name']+'_1'
+                route.status = 'PENDING'
+                route.source,route.destination,route.port,route.tcpflag = route_dic['ipsrc'],route_dic['ipdest'],route_dic['port'],route_dic['tcpflag']
+                route.save() 
+                print(route)
+                route.protocol.add(route_dic['protocol'])
+                g = GolemAttack.objects.get(id_name=golem_id)
+                g.set_route(route)
+                g.save()
+                return route
+            except Exception as e:
+                print('ELL ERROR EXPLOTA EN LE PERIMER IF ', e)
         if len(golem_routes) == 1:
-            print('entra en el 2º')
-            route.name = route_dic['name']+'_2'
-            route.status = 'OUTOFSYN'
-            route.source,route.destination,route.destinationport, route.sourceport,route.tcpflag = route_dic['ipsrc'],route_dic['ipdest'],route_dic['destport'],route_dic['srcport'],route_dic['tcpflag']
-            route.save() 
-            route.protocol.add(route_dic['protocol'])
-            print('created second route')
-            return route
+            try: 
+                print('entra para crear 2º regla')
+                route.name = route_dic['name']+'_2'
+                route.status = 'PENDING'
+                route.source,route.destination,route.port,route.tcpflag = route_dic['ipsrc'],route_dic['ipdest'],route_dic['port'],route_dic['tcpflag']
+                route.save() 
+                route.protocol.add(route_dic['protocol'])
+                print('created second route')
+                g = GolemAttack.objects.get(id_name=golem_id)
+                g.set_route(route)
+                g.save()
+                print('ruta creada y enlazada.')
+                return route
+            except Exception as e:
+                print('ELL ERROR EXPLOTA EN LE ESCONDO IF 2 ', e)
         if len(golem_routes) == 2:
-            print('entra en el 3º')
+            print('entra para crear 3º regla')
             route.name = route_dic['name']+'_3'
-            route.status = 'OUTOFSYN'
-            route.source,route.destination,route.destinationport, route.sourceport,route.tcpflag = route_dic['ipsrc'],route_dic['ipdest'],route_dic['destport'],route_dic['srcport'],route_dic['tcpflag']
+            route.status = 'PENDING'
+            route.source,route.destination,route.port,route.tcpflag = route_dic['ipsrc'],route_dic['ipdest'],route_dic['port'],route_dic['tcpflag']
             route.save() 
             route.protocol.add(route_dic['protocol'])
             print('created third route')
+            g1 = GolemAttack.objects.get(id_name=golem_id)
+            g1.set_route(route)
+            g1.save()
+            print('ruta creada y enlazada.')
             return route
+        if len(golem_routes) >= 3:
+            print('entra para actualizar última regla')
+            g2 = GolemAttack.objects.get(id_name=golem_id)
+            r = get_specific_route(applier=None,peer=peer,route_slug=route_dic['name']+'_3')
+            r.status = 'PENDING'
+            r.source,r.destination,r.destinationport, r.sourceport,r.tcpflag = route_dic['ipsrc'],route_dic['ipdest'],route_dic['destport'],route_dic['srcport'],route_dic['tcpflag']
+            r.save() 
+            r.protocol.add(route_dic['protocol'])
+            print('created third route')
+            
+            g2.set_route(route)
+            g2.save()
+            print('ruta creada y enlazada.')
+            return r 
     except MultipleObjectsReturned:
         print('route has being commited to the router')
         return None
@@ -372,43 +403,30 @@ def create_route(golem_id,route_dic,peer):
 @shared_task
 def post(anomaly_info, id_event):
     from flowspec.models import MatchProtocol
-    from golem.models import GolemAttack
+    from golem.models import GolemAttack; from golem.helpers import petition_geni
     import time
-    import subprocess 
-    from golem.models import GolemAttack
-    from golem.helpers import petition_geni
+    
     print('New webhook message, event status: ', anomaly_info['status'], ' ', anomaly_info['severity'],' ', id_event)
     if not anomaly_info['institution_name'] == 'Non-Home':
         if anomaly_info['status'] == 'Open' or anomaly_info == 'Ongoing':
-            print('something happened , id: ', id_event)
             time.sleep(90)
             event_ticket, event_info = petition_geni(id_event)
             traffic_event = event_ticket['response']['result']['data'][0]['traffic_characteristics']
+            dic_regla = assemble_dic(traffic_event,event_info)
             if not event_info['status'] == 'Recovered' and not event_info['status']=='Burst':
-                id_attack, status, typeofattack, max_value, th_value, attack_name, institution_name, typeofvalue, ip_attacked = event_info['id'], event_info['status'], event_info['typeof_attack'], event_info['max_value'], event_info['threshold_value'] , event_info['attack_name'], event_info['institution_name'], event_info['typeof_value'], event_info['ip_attacked']
-                ip_dest = traffic_event[1]['data'][0][0]
-                ip_src = traffic_event[0]['data'][0][0]
-                source_port = traffic_event[2]['data'][0][0]; fd = source_port.find(':') ; src_port = source_port[fd+1::]
-                destination_port = traffic_event[3]['data'][0][0]; fn = destination_port.find(':'); dest_port = destination_port[fn+1::]
-                p = traffic_event[4]['data'][0][0]
-                tcp_flag = traffic_event[5]['data'][0][0]
-                protocol = get_protocol(p)
-                ip = get_ip_address(ip_attacked)
-                send_message(f"Nuevo ataque a la institución '{institution_name}' de tipo '{attack_name}' contra el recurso '{ip}'. La regla para poder mitigar este ataque que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")  
-                recovered = False
-                peer = find_peer(institution_name)
-                route_dic = {'name':id_attack+'_'+peer.peer_tag,'ipdest':ip_dest,'ipsrc':ip_src,'destport':dest_port,'srcport':src_port,'protocol':protocol.pk,'tcpflag':tcp_flag}
+                #DECLARING VARS 
+                #id_attack, status, typeofattack, max_value, th_value, attack_name, institution_name, typeofvalue, ip_attacked = event_info['id'], event_info['status'], event_info['typeof_attack'], event_info['max_value'], event_info['threshold_value'] , event_info['attack_name'], event_info['institution_name'], event_info['typeof_value'], event_info['ip_attacked']
+                prt = traffic_event[4]['data'][0][0]; protocol = get_protocol(prt)
+                ip = get_ip_address(event_info['ip_attacked'])
+                send_message(f"Nuevo ataque a la institución '{dic_regla['institution_name']}' de tipo '{dic_regla['attack_name']}' contra el recurso '{ip}'. La regla para poder mitigar este ataque que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : Id: {dic_regla['id_attack']}, Status: {dic_regla['status']}, Max Value: {dic_regla['max_value']} Threshold value: {dic_regla['th_value']}.")  
+                peer = find_peer(dic_regla['institution_name'])
+                print('this is peer: ', peer,' this is peer_tag: ', peer.peer_tag)
+                route_dic = {'name':dic_regla['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla['ip_dest'],'ipsrc':dic_regla['ip_src'],'protocol':protocol.pk,'tcpflag':dic_regla['tcp_flag'],'port':dic_regla['port']}
+                print('route_dic : -- ',route_dic)
                 if peer:
-                    "FIRST RULE PROPOSITION"
-                    route_g = create_route(id_attack,route_dic, peer.peer_tag)
-                    try:
-                        regla = get_specific_route(applier=None,peer=peer.peer_tag,route_slug=route_g.name)
-                        geni_attack = GolemAttack(id_name=id_attack, peer=peer, ip_src = ip_src, ip_dest=ip_dest, src_port=src_port, dest_port=dest_port, tcpflag=tcp_flag, status = status, max_value=max_value,threshold_value=th_value, typeof_attack=typeofattack, typeof_value=typeofvalue)
-                        geni_attack.set_route(regla)
-                        geni_attack.save()
-                    except Exception as e: 
-                        geni_attack = GolemAttack(id_name=id_attack, peer=peer, ip_src = ip_src, ip_dest=ip_dest, src_port=src_port, dest_port=dest_port, tcpflag=tcp_flag, status = status, max_value=max_value,threshold_value=th_value, typeof_attack=typeofattack, typeof_value=typeofvalue)
-                        geni_attack.save()
+                    geni_attack = GolemAttack(id_name=dic_regla['id_attack'], peer=peer, ip_src = dic_regla['ip_src'], port=dic_regla['port'], tcpflag=dic_regla['tcp_flag'], status = dic_regla['status'], max_value=dic_regla['max_value'],threshold_value=dic_regla['th_value'], typeof_attack=dic_regla['typeofattack'],typeof_value=dic_regla['typeofvalue'])
+                    geni_attack.save()
+                    create_route(dic_regla['id_attack'],route_dic, peer.peer_tag)
                     if isinstance(protocol,(list)):
                         for p in protocol:
                             fs = p.find('(')
@@ -422,45 +440,35 @@ def post(anomaly_info, id_event):
                     time.sleep(210)
                     print('traza 2 después de esperar 210 sg')
                     event_data, info = petition_geni(id_event)
-                    mv, tv = float(info['max_value']), float(info['threshold_value'])
                     if info['status'] != 'Recovered' and info['status'] !='Burst':
                         tf_char = event_data['response']['result']['data'][0]['traffic_characteristics']
-                        id_att, status, max_v, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']                  
+                        dic_regla2 = assemble_dic(tf_char,info)
+                        #id_att, status, max_v, th_value, name, institution_name = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']                  
                         attack = GolemAttack.objects.get(id_name=id_event)
-                        attack.status, attack.max_value, attack.threshold_value = info['status'], info['max_value'], info['threshold_value']
+                        attack.status, attack.max_value, attack.threshold_value = dic_regla2['status'], dic_regla2['max_value'], dic_regla2['th_value']
                         attack.save()
-                        "SECOND RULE PROPOSITION"
-                        src_p = tf_char[2]['data'][0][0]; fd1 = src_p.find(':') ; sp = source_port[fd1+1::]
-                        dest_p = tf_char[3]['data'][0][0]; fn1 = destination_port.find(':'); dp = dest_p[fn1+1::]
                         p1 = tf_char[4]['data'][0][0]
                         m_protocol = check_protocol(p1)
-                        dic = {'name':id_attack+'_'+peer.peer_tag,'ipdest':tf_char[1]['data'][0][0],'ipsrc':tf_char[0]['data'][0][0],'destport':dp,'srcport':sp,'protocol':m_protocol.pk,'tcpflag':tf_char[5]['data'][0][0]}
-                        print('dictionary ',dic)
-                        print('propose second rule')
-                        route2 = create_route(id_attack,dic,peer.peer_tag)
-                        regla2 = get_specific_route(applier=None,peer=peer.peer_tag,route_slug=route2.name)
-                        ga_update = GolemAttack.objects.get(id_name=id_attack)
-                        ga_update.set_route(regla2)
-                        ga_update.save()
-                        send_message(f'El ataque registrado anteriormente a la institucion {institution_name} con id {id_att} persiste y hemos obtenido nuevos datos del {name}, la regla de firewall que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : id: {id_event}, status: {status},  max_value: {max_v}, threshold value: {th_value}')
-                        # check multi threading in case there are multiple attacks going on 
+                        dic2 = {'name':dic_regla2['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla2['ip_dest'],'ipsrc':dic_regla2['ip_src'],'protocol':m_protocol.pk,'tcpflag':dic_regla2['tcp_flag'],'port':dic_regla2['port']}
+                        create_route(id_event,dic2,peer.peer_tag)
+                        send_message(f"El ataque registrado anteriormente a la institucion {dic_regla2['institution_name']} con id {dic_regla2['id_attack']} persiste y hemos obtenido nuevos datos del {dic_regla2['attack_name']}, la regla de firewall que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : id: {dic_regla2['id_attack']}, status: {dic_regla2['status']},  max_value: {dic_regla2['max_value']}, threshold value: {dic_regla2['th_value']}")
+                        recovered = False 
                         while recovered:
-                            print('inside while loop')
                             time.sleep(300)
                             attack_data, attack_info = petition_geni(id_event)
-                            mv, thv = float(attack_info['max_value']), float(attack_info['threshold_value'])
                             if attack_info['status'] != 'Recovered' and attack_info != 'Burst':
-                                "THIRD RULE PROPOSITION"
-                                id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
+                                print("THIRD RULE PROPOSITION")
+                                traffic_data = attack_data['response']['result']['data'][0]['traffic_characteristics']
+                                dic_regla3 = assemble_dic(traffic_data,attack_info)
+                                #id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
                                 attack = GolemAttack.objects.get(id_name=id_event)
-                                attack.status, attack.max_value, attack.threshold_value = attack_info['status'], attack_info['max_value'], attack_info['threshold_value']
-                                #proponer regla aquí otra vez route = Route.objects.get(name='')
+                                attack.status, attack.max_value, attack.threshold_value = dic_regla3['status'], dic_regla3['max_value'], dic_regla3['th_value']
                                 attack.save()
-                                send_message(f"El ataque registrado anteriormente a la institución {institution_name} persiste {name} y hemos obtenido nuevos datos, la regla de firewall que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")
+                                dic3 = {'name':dic_regla3['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla3['ip_dest'],'ipsrc':dic_regla3['ip_src'],'port':dic_regla3['port'],'protocol':m_protocol.pk,'tcpflag':dic_regla3['tcp_flag']}
+                                create_route(id_event,dic3,peer.peer_tag)
+                                send_message(f"El ataque registrado anteriormente a la institución {dic_regla3['institution_name']} persiste {dic_regla3['attack_name']} y hemos obtenido nuevos datos, la regla de firewall que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : Id: {dic_regla3['id_attack']}, Status: {dic_regla3['status']}, Max Value: {dic_regla3['max_value']}, Threshold value: {dic_regla3['th_value']}.")
                                 recovered = False
                             elif attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':
-                                    print('Attack finished')
-                                # si es recovered coger los datos de inicio y fin del ataque, informar
                                     id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
                                     attack = GolemAttack.objects.get(id_name=id_event)
                                     attack.status, attack.max_value, attack.threshold_value = status, max_value, th_value
@@ -470,8 +478,8 @@ def post(anomaly_info, id_event):
                     else:
                         if info['status'] == 'Recovered' or info['status']=='Burst':
                             attack = GolemAttack.objects.get(id_name=id_event)
-                            id_att, status, max_v, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
-                            send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} y estado {status} ha terminado. Más información sobre el ataque : Id: {id_attack}, Max Value: {max_value}, Threshold value: {th_value}.")                  
+                            id_att, status, max_value, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
+                            send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} y estado {status} ha terminado. Más información sobre el ataque : Id: {id_event}, Max Value: {max_value}, Threshold value: {th_value}.")                  
                     # send message to slack saying the attack has finished
                     # wait 4 min 
                     # rule proposition and send email to user
