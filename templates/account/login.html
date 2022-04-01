@@ -10,7 +10,7 @@
 <div class="container-fluid p-5">
 <div class="row m-2">
   <div class="col m-2 p-2">
-    <h4 class="fw-light">{% trans "Accede a tu perfil" %}</h4>
+    <h4 class="fw-light">{% trans "Log in" %}</h4>
     </div>
     </div>
 
@@ -38,7 +38,7 @@
 {% else %}
 <div class="row">
     <div class="col">
-      <p>{% blocktrans %}Si aún no tiene un perfil registrado porfavor visite el siguiente <a href="{{ signup_url }}">link.</a>{% endblocktrans %}</p>
+      <p>{% blocktrans %}If you don't have a profile registered yet, please visit the next <a href="{{ signup_url }}">link</a>.{% endblocktrans %}</p>
       {% endif %}
     </div>
 </div>
@@ -47,14 +47,14 @@
         {% csrf_token %}
         <div class="row g-3">
         <div class="col col-md-6">
-          <label for="id_name" class="form-label"><b>{% trans "Nombre" %}</b></label>
-          {% render_field form.login class+="form-control" placeholder="Introduce tu nombre de usuario" %}
+          <label for="id_name" class="form-label"><b>{% trans "Name" %}</b></label>
+          {% render_field form.login class+="form-control" placeholder="Introduce your username" %}
         </div>
-        </div>
+      </div>
         <div class="row">
         <div class="col col-6">
-          <label for="id_password" class="form-label"><b>{% trans "Contraseña" %}</b></label>
-          {% render_field form.password class+="form-control" placeholder="Introduce tu contraseña" %}
+          <label for="id_password" class="form-label"><b>{% trans "Password" %}</b></label>
+          {% render_field form.password class+="form-control" placeholder="Introduce your password" %}
         </div>
         </div>    
             {% if redirect_field_value %}
@@ -62,11 +62,11 @@
         {% endif %}
         <div class="row">
         <div class="col col-6">
-        <a class="secondaryAction" href="{% url 'account_reset_password' %}">{% trans "Olvidaste tu contraseña?" %}</a>
+        <a class="secondaryAction" href="{% url 'account_reset_password' %}">{% trans "Did you forget your password?" %}</a>
         </div>
       </div>
       <div class="col col-6">
-      <button type="submit" class="primaryAction btn btn-outline-info">{% trans "Acceder" %}</button>
+      <button type="submit" class="primaryAction btn btn-outline-info">{% trans "Log in" %}</button>
     </div>
   </form>
   

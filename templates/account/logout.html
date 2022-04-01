@@ -13,7 +13,7 @@
     </div>
 <div class="row">
   <div class="col">
-    <p>{% trans '¿Seguro que quiere salir de la sesión?' %}</p>
+    <p>{% trans 'Are you sure you would like to log out?' %}</p>
 </div>
 <div class="row">
     <div class="col align-middle">
@@ -22,7 +22,7 @@
       {% if redirect_field_value %}
       <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}"/>
       {% endif %}
-      <button class="btn btn-outline-info" type="submit">{% trans 'Salir' %}</button>
+      <button class="btn btn-outline-info" type="submit">{% trans 'Log out' %}</button>
     </form>
 </div>
 </div>

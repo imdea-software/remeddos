@@ -16,16 +16,16 @@
         }
     </style>
 {% endblock %}
-{% block title %}{% trans "Mis reglas FW" %}{% endblock %}
+{% block title %}{% trans "User Routes" %}{% endblock %}
 {% block contentplaceholder %}
 {% csrf_token %}
 <div class="container">
     <div class="row rows-cols-4 p-5">
         <div class="col">
-            <h3 class="page-heading text-center fw-light">{% trans "Reglas de Firewall" %} </h3>
+            <h3 class="page-heading text-center fw-light">{% trans "Firewall Routes" %} </h3>
         </div>
         <div class="col">
-            <div class="panel-heading float-end"> <i class="fa fa-shield"></i><span class="text-end">Reglas Firewall</span>
+            <div class="panel-heading float-end"> <i class="fa fa-shield"></i><span class="text-end">Firewall Routes</span>
         </div>
         </div>
     </div>
@@ -34,14 +34,14 @@
                         <thead class="bg-dark text-white">
                     <tr>
                         <th>Id</th>
-                        <th>{% trans "Nombre" %}</th>
-                        <th>{% trans "Información" %}</th>
-                        <th>{% trans "Acción" %}</th>
-                        <th>{% trans "Estado" %}</th>
-                        <th>{% trans "Pertenece a" %}</th>
-                        <th>{% trans "Expira" %}</th>
-                        <th>{% trans "Respuesta" %}</th>
-                        <th>{% trans "Acciones" %}</th>
+                        <th>{% trans "Name" %}</th>
+                        <th>{% trans "Information" %}</th>
+                        <th>{% trans "Then Action" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Belongs to" %}</th>
+                        <th>{% trans "Expires" %}</th>
+                        <th>{% trans "Answer" %}</th>
+                        <th>{% trans "Actions" %}</th>
                     </tr>
                 </thead>
 
@@ -68,14 +68,9 @@ var filterbtns = '<div class="btn-group d-block gap-2">\
     </div>';
 
 
-$.fn.dataTableExt.oApi.fnReloadAjax = function ( oSettings, sNewSource, fnCallback, bStandingRedraw )
-{
-    // DataTables 1.10 compatibility - if 1.10 then versionCheck exists.
-    // 1.10s API has ajax reloading built in, so we use those abilities
-    // directly.
+$.fn.dataTableExt.oApi.fnReloadAjax = function ( oSettings, sNewSource, fnCallback, bStandingRedraw ){
     if ( $.fn.dataTable.versionCheck ) {
         var api = new $.fn.dataTable.Api( oSettings );
-
         if ( sNewSource ) {
             api.ajax.url( sNewSource ).load( fnCallback, !bStandingRedraw );
         }
@@ -84,12 +79,9 @@ $.fn.dataTableExt.oApi.fnReloadAjax = function ( oSettings, sNewSource, fnCallba
         }
         return;
     }
-
     if ( sNewSource !== undefined && sNewSource !== null ) {
         oSettings.sAjaxSource = sNewSource;
     }
-
-    // Server-side processing should just call fnDraw
     if ( oSettings.oFeatures.bServerSide ) {
         this.fnDraw();
         return;
@@ -101,34 +93,21 @@ $.fn.dataTableExt.oApi.fnReloadAjax = function ( oSettings, sNewSource, fnCallba
     var aData = [];
 
     this.oApi._fnServerParams( oSettings, aData );
-
     oSettings.fnServerData.call( oSettings.oInstance, oSettings.sAjaxSource, aData, function(json) {
-        /* Clear the old information from the table */
         that.oApi._fnClearTable( oSettings );
-
-        /* Got the data - add it to the table */
         var aData =  (oSettings.sAjaxDataProp !== "") ?
             that.oApi._fnGetObjectDataFn( oSettings.sAjaxDataProp )( json ) : json;
-
-        for ( var i=0 ; i<aData.length ; i++ )
-        {
+        for (var i=0 ; i<aData.length ; i++){
             that.oApi._fnAddData( oSettings, aData[i] );
         }
-
         oSettings.aiDisplay = oSettings.aiDisplayMaster.slice();
-
         that.fnDraw();
-
-        if ( bStandingRedraw === true )
-        {
+        if ( bStandingRedraw === true ){
             oSettings._iDisplayStart = iStart;
             that.oApi._fnCalculateEnd( oSettings );
             that.fnDraw( false );
         }
-
         that.oApi._fnProcessingDisplay( oSettings, false );
-
-        /* Callback user function - for event handlers etc */
         if ( typeof fnCallback == 'function' && fnCallback !== null )
         {
             fnCallback( oSettings );
@@ -240,7 +219,12 @@ $(document).ready( function(){
                      },
                      {"mData":"applier", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
-                     	return '<small>'+data+' ('+full.peer+')</small>';
+                         if(data==null){
+                            return '<small>Esta regla no pertenece a nadie hasta que no se haga un commit con el router.</small>';
+                         }else{
+                            return '<small>'+data+' ('+full.peer+')</small>';
+                         }
+                     	
                      }
                      },
                      {"mData":"expires", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,

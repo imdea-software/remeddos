@@ -20,13 +20,13 @@
     
   <div class="row">
       <div class="col m-2 p-2">
-      <h4 class="fw-light">{% trans "Registrate" %}</h4>
+      <h4 class="fw-light">{% trans "Register" %}</h4>
       </div>  
     </div>
 
   <div class="row">
         <div class="col">
-      <p>{% blocktrans %} ¿Tienes ya una cuenta? Entonces accede a ella <a href="{{ login_url }}">aquí</a>.{% endblocktrans %}</p>
+      <p>{% blocktrans %} Already have an account? Then log-in through the following <a href="{{ login_url }}">link</a>.{% endblocktrans %}</p>
       </div>
   </div>
 
@@ -38,46 +38,34 @@
       <div class="row g-3">
         <div class="col col-md-6">
           <label for="id_email" class="col l4 m4 s4 black-text"><b>{% trans "Email:" %}</b></label>
-          {% render_field form.email class+="form-control validate" placeholder="Introduce su email" %}
+          {% render_field form.email class+="form-control validate" placeholder="Introduce your email" %}
         </div>
         </div>
 
         
-          <div class="row">
-            <div class="col col-md-6">
-              <label for="id_username" class="col l4 m4 s4 black-text"><b>{% trans "Nombre:" %}</b></label>
-              {% render_field form.first_name class+="form-control validate" placeholder="Introduce su nombre" %}
-            </div>
-            </div>
-
-            <div class="row">
-              <div class="col col-md-6">
-                <label for="id_firstname" class="col l4 m4 s4 black-text"><b>{% trans "Apellidos:" %}</b></label>
-                {% render_field form.last_name class+="form-control validate" placeholder="Introduce sus apellidos" %}
-              </div>
-              </div>
+          
               <div class="row">
                 <div class="col col-md-6">
-                  <label for="id_lastname" class="col l4 m4 s4 black-text"><b>{% trans "Nombre de usuario:" %}</b></label>
-                  {% render_field form.username class+="form-control validate" placeholder="Introduce su nombre de usuario" %}
+                  <label for="id_lastname" class="col l4 m4 s4 black-text"><b>{% trans "Username:" %}</b></label>
+                  {% render_field form.username class+="form-control validate" placeholder="Introduce your username" %}
                 </div>
                 </div>
                 <div class="row p-1">
-                  <p class="fw-light"><small>Como nombre de usuario recomendamos utilizar la primera letra del nombre más el primer apellido (Ej. Nombre: Juan Díaz, username: jdiaz) <br>
-                    Tenga en cuenta que con utilizará el <i>username</i> para acceder a la aplicación. </small>
+                  <p class="fw-light"><small><i>We recommend using the first letter of your name followed by your surname (Ex. Name: Juan Díaz, username: jdiaz) </i><br>
+                    Please keep in mind that you will be using your username for loging into REM-E-DDOS.</small></i></small>
                   </p>
                 </div>
           <div class="row">
             <div class="col col-md-6">
-              <label for="id_password1" class="col l4 m4 s4 black-text"><b>{% trans "Contraseña:" %}</b></label>
-              {% render_field form.password1 class+="form-control validate" placeholder="Porfavor introduce tu contraseña" %}
+              <label for="id_password1" class="col l4 m4 s4 black-text"><b>{% trans "Password:" %}</b></label>
+              {% render_field form.password1 class+="form-control validate" placeholder="Introduce your password" %}
             </div>
             </div>
 
           <div class="row">
             <div class="col col-md-6">
-              <label for="id_password2" class="col l4 m4 s4 black-text"><b>{% trans "Confirme su contraseña:" %}</b></label>	
-              {% render_field form.password2 class+="form-control validate" placeholder="Porfavor vuelva a introducir su contraseña" %}
+              <label for="id_password2" class="col l4 m4 s4 black-text"><b>{% trans "Repeat your password:" %}</b></label>	
+              {% render_field form.password2 class+="form-control validate" placeholder="Introducir your password again" %}
             </div>
             </div>
             {% if redirect_field_value %}
@@ -86,7 +74,7 @@
 
           <div class="row p-2">
             <div class="col col-6">
-                  <button type="submit" class="btn btn-outline-info">{% trans "Registrar perfil" %}</button>
+                  <button type="submit" class="btn btn-outline-info">{% trans "Register profile" %}</button>
             </div>
           </div>
 </form>

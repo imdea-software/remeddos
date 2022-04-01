@@ -5,7 +5,7 @@
 <head>    
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>{{ BRANDING.name }} FoD :: {% block title %}{% endblock %}</title>
+  <title>{{ BRANDING.name }} REM-E-DDOS :: {% block title %}{% endblock %}</title>
 	<META HTTP-EQUIV="Pragma" CONTENT="no-cache">
 	<META HTTP-EQUIV="expires" CONTENT="Wed, 26 Feb 1997 08:21:57 GMT">
 	<link REL="SHORTCUT ICON" HREF="{% static 'favicon.ico' %}">
@@ -36,7 +36,7 @@
         <div class="header_toggle"> <button type="button" class="btn btn-dark white-text" data-bs-toggle="offcanvas" data-bs-target="#nav-bar" aria-controls="nav-bar"><i class='bi-list' id="header-toggle"></i></button> </div>
         <div class=""> <img src="{% static 'redimadrid_negativo.png'%}" alt="RediMadrid logo" class="float-end" style="width: 75px; height: 50px;"> </div>
         {% else %}
-        <div class="col m-2 p-3"> <a href="{% url 'account_login' %}" class="text-end text-white text-decoration-none fw-light"> <i class='bi-person nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Sign In"></i> <span class="nav_name">Acceder</span> </a>  </div>
+        <div class="col m-2 p-3"> <a href="{% url 'account_login' %}" class="text-end text-white text-decoration-none fw-light"> <i class='bi-person nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Sign In"></i> <span class="nav_name">Log in</span> </a>  </div>
         {% endif %}
     </header>
     <!-- END OF TOP NAVBAR -->
@@ -45,37 +45,34 @@
         <nav class="nav">
             <div class=""> 
                 {% if user.is_authenticated %}
-                <a href="{% url 'group-routes' %}" class="nav_logo text-decoration-none text-wrap"> <i class='bi-shield nav_logo-icon text-danger'></i> <span class="nav_logo-name text-danger">F O D</span> </a>
+                <a href="{% url 'group-routes' %}" class="nav_logo text-decoration-none text-wrap"> <i class='bi-shield nav_logo-icon text-danger'></i> <span class="nav_logo-name text-danger fw-light">REM-E-DDOS</span> </a>
                 <div class="nav_list text-wrap">
-                    <a href="{% url 'group-routes' %}" class="nav_link text-white text-decoration-none fw-light text-wrap"> <i class='bi-table nav_icon text-primary' data-bs-toggle="tooltip" data-bs-placement="top" title="Routes"></i> <span class="nav_name">Reglas FW</span></a>  
+                    <a href="{% url 'group-routes' %}" class="nav_link text-white text-decoration-none fw-light text-wrap"> <i class='bi-table nav_icon text-primary' data-bs-toggle="tooltip" data-bs-placement="top" title="Routes"></i> <span class="nav_name">Routes</span></a>  
                     <a href="{% url 'dashboard' %}" class="nav_link text-white text-decoration-none fw-light text-wrap"> <i class='bi-clipboard nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Dashboard"></i> <span class="nav_name">Dashboard</span></a>
+                    <a href="#" class="nav_link text-white text-decoration-none text-wrap fw-light" data-bs-toggle="modal" data-bs-target="#addRouteM" id="submitButton"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Add rule"></i><span class="nav_name">Add rule</span></a> 
                     {% if user.is_staff%} 
                     <a href="{% url 'attack-list'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-table nav_icon text-danger' data-bs-toggle="tooltip" data-bs-placement="top" title="Registrador de ataquqes"></i> <span class="nav_name">REM - Golem</span></a> 
                     {% endif %}
-                    <a href="#submenu1" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="subMenu1"> <i class='bi-cloud nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Opciones de almacenamiento"></i> <span class="nav_name">Almacenamiento</span> </a>
+                    {% if user.is_superuser %}
+                    <a href="#submenu1" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="subMenu1"> <i class='bi-cloud nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Opciones de almacenamiento"></i> <span class="nav_name">Storage</span> </a>
                         <div class="collapse" id="submenu1">
-                            <a href="#" class="nav_link text-white text-decoration-none fw-light text-wrap" data-bs-toggle="modal" data-bs-target="#confbModal" ><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Crear copia de seguridad"></i><span class="nav_name text-wrap">Crear copia de seguridad</span></a>
-                            <a href="#" class="nav_link text-white text-decoration-none fw-light"data-bs-toggle="modal" data-bs-target="#confresfileModal"><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Restaurar a partir de una copia de seguridad"></i><span class="nav_name">Restaurar a partir de una copia de seguridad</span></a>
-                            <a href="#" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="modal" data-bs-target="#confresdbModal"><i class="bi-arrow-repeat" data-bs-toggle="tooltip" data-bs-placement="top" title="Sincronizar con la BBDD"></i><span class="nav_name text-wrap">Sincronizar con la BBDD</span></a>
-                            <a href="#" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="modal" data-bs-target="#confsrModal"><i class="bi-router" data-bs-toggle="tooltip" data-bs-placement="top" title="Sincronizar reglas con router"></i><span class="nav_name text-wrap" >Sincronizar reglas con router</span></a>
-                            {% if user.is_superuser%}
-                            <a href="{% url 'db-backup'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Copia de la BD"></i> <span class="nav_name">Hacer una copia de la BD</span></a>
-                            <a href="{% url 'db-restore'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Restauracion de la BD"></i> <span class="nav_name">Restaurar BD</span></a> 
-                            {% endif %}
-                          </div>
-            
-                          <a href="#" class="nav_link text-white text-decoration-none text-wrap fw-light" data-bs-toggle="modal" data-bs-target="#addRouteM" id="submitButton"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Añadir una regla de FW"></i><span class="nav_name">Añadir una regla de FW</span></a>  
-                          <a href="{% url 'user-profile' %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-person nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Mi perfil"></i> <span class="nav_name">Mi perfil</span></a>
+                            <a href="#" class="nav_link text-white text-decoration-none fw-light text-wrap" data-bs-toggle="modal" data-bs-target="#confbModal" ><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Crear copia de seguridad"></i><span class="nav_name text-wrap">Create back up copy</span></a>
+                            <a href="#" class="nav_link text-white text-decoration-none fw-light"data-bs-toggle="modal" data-bs-target="#confresfileModal"><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Restaurar a partir de una copia de seguridad"></i><span class="nav_name">Restore from a back up copy</span></a>
+                            <a href="#" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="modal" data-bs-target="#confresdbModal"><i class="bi-arrow-repeat" data-bs-toggle="tooltip" data-bs-placement="top" title="Sincronizar con la BBDD"></i><span class="nav_name text-wrap">Syn with DB</span></a>
+                            <a href="#" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="modal" data-bs-target="#confsrModal"><i class="bi-router" data-bs-toggle="tooltip" data-bs-placement="top" title="Sincronizar reglas con router"></i><span class="nav_name text-wrap" >Syn with router</span></a>
+                            <a href="{% url 'db-backup'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Copia de la BD"></i> <span class="nav_name">Copy full DB</span></a>
+                            <a href="{% url 'db-restore'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Restauracion de la BD"></i> <span class="nav_name">Restore full DB</span></a> 
+                          </div> 
+                    {% endif %}
+                          <a href="{% url 'user-profile' %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-person nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Mi perfil"></i> <span class="nav_name">My profile</span></a>
                     {% if user.is_superuser%} 
                     <a href="{% url 'admin:index'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Panel de Administrador"></i> <span class="nav_name">Admin</span></a> 
                     {% endif %}
-                    
+                {% endif %}
                 </div>
             </div>
-            <a href="{% url 'account_logout' %}" class="nav_link linklogout text-white text-decoration-none fw-light"> <i class='bi-person-x-fill nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Salir"></i> <span class="nav_name">Salir</span> </a>
-            {% else %}
-            <!-- <a href="{% url 'account_login' %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-person nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Sign In"></i> <span class="nav_name">Sign In</span> </a> --> 
-            {% endif %}
+            <a href="{% url 'account_logout' %}" class="nav_link linklogout text-white text-decoration-none fw-light"> <i class='bi-person-x-fill nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Salir"></i> <span class="nav_name">Log out</span> </a>
+<!-- <a href="{% url 'account_login' %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-person nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Sign In"></i> <span class="nav_name">Sign In</span> </a> --> 
         </nav>
     </div>
     <!-- ENDOFNAVBAR-->
@@ -99,8 +96,8 @@
                 <div class="modal-body">
                   <div class="row">
                       <div class="col text-wrap">
-                      <p class="lh-base">Te gustaría configurar una nueva regla de firewall?</p>
-                      <p>Introduce el código enviado a su cuenta de slack.</p>  
+                      <p class="lh-base">Would you like to create a new firewall route?</p>
+                      <p>Introduce the code that has been sent to your account.</p>  
                       </div>
                   </div>
                 </div>
@@ -109,13 +106,13 @@
                   <form action="{% url 'add-route' %}" method="POST" id="verify_user_add" class="row gx-3 gy-2 align-items-center">
                     {% csrf_token %}
                     <div class="row">
-                      <label for="id_value" class="col form-label float-start m-2">Código: </label>
+                      <label for="id_value" class="col form-label float-start m-2">Code: </label>
                       <input type="text" id="id_value" name="value" class="col form-control m-2 " aria-describedby="valueHelpBlock">
-                      <button type="submit" class="btn btn-outline-primary btn-sm col float-end m-2">Sí</button>
+                      <button type="submit" class="btn btn-outline-primary btn-sm col float-end m-2">Yess</button>
                     </div>
                   </form>
                     {% else %}
-                    <p>Primero debe identificarse para poder configurar reglas.</p>
+                    <p>You need to identify yourelf first before creating any rules.</p>
                     {% endif %}
         </div>
       </div>
@@ -126,7 +123,7 @@
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
-              <h5 class="modal-title" id="confbModalLabel">Confirmación copia de seguridad.</h5>
+              <h5 class="modal-title" id="confbModalLabel">Back up copy confirmation.</h5>
                   <button type="button" class="btn btn-sm close" data-bs-dismiss="modal" aria-label="Close" id="confbModalClose">
                     <span aria-hidden="true">&times;</span>
                   </button>
@@ -134,18 +131,18 @@
                 <div class="modal-body">
                   <div class="row">
                       <div class="col text-wrap">
-                      <p class="lh-base">Te gustaría crear una copia de seguridad de la actual base de datos?</p>  
+                      <p class="lh-base">Would you like to create a back up copy from the actual database?</p>  
                       </div>
                   </div>
                 </div>
                 <div class="modal-footer m-2">
                   {% if user.is_authenticated %}
-                  <button type="button" class="btn btn-outline secondary" data-bs-dismiss="modal">Cerrar</button>
+                  <button type="button" class="btn btn-outline secondary" data-bs-dismiss="modal">Close</button>
                   <form action="{% url 'backup' %}">
                     <button type="submit" class="btn btn-outline-primary">Sí</button>
                   </form>
                     {% else %}
-                    <p>Primero debe identificarse para poder configurar reglas.</p>
+                    <p>You need to identify yourelf first before performing any further actions.</p>
                     {% endif %}
         </div>
       </div>
@@ -156,7 +153,7 @@
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
-                  <h5 class="modal-title" id="confsrModalLabel">Sincronización de reglas con el router.</h5>
+                  <h5 class="modal-title" id="confsrModalLabel">Sync your routes.</h5>
                       <button type="button" class="btn btn-sm close" data-bs-dismiss="modal" aria-label="Close" >
                         <span aria-hidden="true">&times;</span>
                       </button>
@@ -164,19 +161,18 @@
                     <div class="modal-body">
                       <div class="row">
                           <div class="col text-wrap">
-                          <p class="lh-base">¿Le gustaría sincronizar el router con la aplicación?
-                             Es mejor realizar una copia de la base de datos antes de realizar la sincronización para no perder información.</p>  
+                          <p class="lh-base">Would you like to sync your router with the web app? It is recommended to first create a backup copy from the DB before performing this action.</p>  
                           </div>
                       </div>
                     </div>
                     <div class="modal-footer m-2">
                       {% if user.is_authenticated %}
-                      <button type="button" class="btn btn-outline secondary" data-bs-dismiss="modal">Cerrar</button>
+                      <button type="button" class="btn btn-outline secondary" data-bs-dismiss="modal">Close</button>
                       <form action="{% url 'router-sync' %}">
                         <button type="submit" class="btn btn-outline-primary">Sí</button>
                       </form>
                         {% else %}
-                        <p>Primero debe identificarse para poder configurar reglas.</p>
+                        <p>You need to identify yourelf first before performing any further actions.</p>
                         {% endif %}
             </div>
           </div>
@@ -187,7 +183,7 @@
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
-              <h5 class="modal-title" id="confresdbModalLabel">Sincronización de reglas con la BBDD.</h5>
+              <h5 class="modal-title" id="confresdbModalLabel">Syncronise the DB with your web application.</h5>
                   <button type="button" class="btn btn-sm close" data-bs-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                   </button>
@@ -195,8 +191,7 @@
                 <div class="modal-body">
                   <div class="row">
                       <div class="col text-wrap">
-                      <p class="lh-base">¿Le gustaría sincronizar la base de datos con la aplicación?
-                        Es mejor realizar una copia de la base de datos antes de realizar la sincronización para no perder información.</p>  
+                      <p class="lh-base">Would you like to sync your router with the web app? It is recommended to first create a backup copy from the DB before performing this action.</p>  
                       </div>
                   </div>
                 </div>
@@ -207,7 +202,7 @@
                     <button type="submit" class="btn btn-outline-primary">Sí</button>
                   </form>
                     {% else %}
-                    <p>Primero debe identificarse para poder configurar reglas.</p>
+                    <p>You need to identify yourelf first before performing any further actions.</p>
                     {% endif %}
         </div>
       </div>
@@ -226,18 +221,18 @@
                         <div class="modal-body">
                           <div class="row">
                               <div class="col text-wrap">
-                              <p class="lh-base">¿Te gustaría restaurar la aplicación a partir de un archivo?</p>  
+                              <p class="lh-base">Would you like to restore the application from a back up file?</p>  
                               </div>
                           </div>
                         </div>
                         <div class="modal-footer m-2">
                           {% if user.is_authenticated %}
-                          <button type="button" class="btn btn-outline secondary" data-bs-dismiss="modal">Cerrar</button>
+                          <button type="button" class="btn btn-outline secondary" data-bs-dismiss="modal">Close</button>
                           <form action="{% url 'restore' %}">
                             <button type="submit" class="btn btn-outline-primary">Sí</button>
                           </form>
                             {% else %}
-                            <p>Primero debe identificarse para poder configurar reglas.</p>
+                            <p>You need to identify yourelf first before performing any further actions.</p>
                             {% endif %}
                 </div>
               </div>
