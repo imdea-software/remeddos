@@ -210,6 +210,7 @@ class Validation(models.Model):
 class Route_CV(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"), unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
+    peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=True, null=True)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=True, null=True)
@@ -307,15 +308,24 @@ class Route_CV(models.Model):
                 raise ValidationError(_('Invalid network address format at Source Field'))
     
     def commit_add(self, *args, **kwargs):
-        peers = self.applier.profile.peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
+        if self.applier:
+            peers = self.applier.profile.peers.all()
+            username = None
+            for peer in peers:
+                if username:
+                    break
+                for network in peer.networks.all():
+                    net = IPNetwork(network)
+                    if IPNetwork(self.destination) in net:
+                        username = peer
+                        break
+        else:
+            peers = self.peer
+            username = None
+            for network in peers.networks.all():
                 net = IPNetwork(network)
                 if IPNetwork(self.destination) in net:
-                    username = peer
+                    username = peers
                     break
         if username:
             peer = username.peer_tag
@@ -333,9 +343,12 @@ class Route_CV(models.Model):
             )
             mail_body = render_to_string(
                 'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+            try:
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+            except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
@@ -356,14 +369,17 @@ class Route_CV(models.Model):
             fqdn=Site.objects.get_current().domain
             admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
             mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
-            user_mail='%s' % self.applier.email
-            user_mail=user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL, user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+            try: 
+                user_mail='%s' % self.applier.email
+                user_mail=user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL, user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+            except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
         logger.info('Got edit job id: %s' % response)
             
     def commit_delete(self, *args, **kwargs):
@@ -393,15 +409,18 @@ class Route_CV(models.Model):
             admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
             )
             mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL,
-                user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+            try:
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL,
+                    user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+            except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def has_expired(self):
         today = datetime.date.today()
         if self.expires == None:
@@ -688,6 +707,7 @@ class Route_CV(models.Model):
 class Route_IMDEA(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"), unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
+    peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=True, null=True)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=True, null=True)
@@ -785,15 +805,24 @@ class Route_IMDEA(models.Model):
                 raise ValidationError(_('Invalid network address format at Source Field'))
     
     def commit_add(self, *args, **kwargs):
-        peers = self.applier.profile.peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
+        if self.applier:
+            peers = self.applier.profile.peers.all()
+            username = None
+            for peer in peers:
+                if username:
+                    break
+                for network in peer.networks.all():
+                    net = IPNetwork(network)
+                    if IPNetwork(self.destination) in net:
+                        username = peer
+                        break
+        else:
+            peers = self.peer
+            username = None
+            for network in peers.networks.all():
                 net = IPNetwork(network)
                 if IPNetwork(self.destination) in net:
-                    username = peer
+                    username = peers
                     break
         if username:
             peer = username.peer_tag
@@ -803,18 +832,20 @@ class Route_IMDEA(models.Model):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (
-                fqdn,
-                reverse('edit-route', kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string(
-                'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
-    
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (
+                    fqdn,
+                    reverse('edit-route', kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string(
+                    'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
@@ -831,18 +862,21 @@ class Route_IMDEA(models.Model):
         else:
             peer = None
         response = edit(self)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn=Site.objects.get_current().domain
-            admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
-            mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
-            user_mail='%s' % self.applier.email
-            user_mail=user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL, user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn=Site.objects.get_current().domain
+                admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
+                mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
+                user_mail='%s' % self.applier.email
+                user_mail=user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL, user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
         logger.info('Got edit job id: %s' % response)
             
     def commit_delete(self, *args, **kwargs):
@@ -867,20 +901,23 @@ class Route_IMDEA(models.Model):
             peer = None
         response = delete(self, reason=reason)
         logger.info('Got delete job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL,
-                user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL,
+                    user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def has_expired(self):
         today = datetime.date.today()
         if self.expires == None:
@@ -1168,6 +1205,7 @@ class Route_IMDEA(models.Model):
 class Route_CIB(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"),unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
+    peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=True, null=True)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=True, null=True)
@@ -1266,15 +1304,24 @@ class Route_CIB(models.Model):
                 raise ValidationError(_('Invalid network address format at Source Field'))
     
     def commit_add(self, *args, **kwargs):
-        peers = self.applier.profile.peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
+        if self.applier:
+            peers = self.applier.profile.peers.all()
+            username = None
+            for peer in peers:
+                if username:
+                    break
+                for network in peer.networks.all():
+                    net = IPNetwork(network)
+                    if IPNetwork(self.destination) in net:
+                        username = peer
+                        break
+        else:
+            peers = self.peer
+            username = None
+            for network in peers.networks.all():
                 net = IPNetwork(network)
                 if IPNetwork(self.destination) in net:
-                    username = peer
+                    username = peers
                     break
         if username:
             peer = username.peer_tag
@@ -1284,17 +1331,20 @@ class Route_CIB(models.Model):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (
-                fqdn,
-                reverse('edit-route', kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string(
-                'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (
+                    fqdn,
+                    reverse('edit-route', kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string(
+                    'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
@@ -1311,18 +1361,21 @@ class Route_CIB(models.Model):
         else:
             peer = None
         response = edit(self)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn=Site.objects.get_current().domain
-            admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
-            mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
-            user_mail='%s' % self.applier.email
-            user_mail=user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL, user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn=Site.objects.get_current().domain
+                admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
+                mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
+                user_mail='%s' % self.applier.email
+                user_mail=user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL, user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
         logger.info('Got edit job id: %s' % response)
             
     def commit_delete(self, *args, **kwargs):
@@ -1347,20 +1400,24 @@ class Route_CIB(models.Model):
             peer = None
         response = delete(self, reason=reason)
         logger.info('Got delete job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL,
-                user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL,
+                    user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
+
     def has_expired(self):
         today = datetime.date.today()
         if self.expires == None:
@@ -1647,6 +1704,7 @@ class Route_CIB(models.Model):
 class Route_CSIC(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"),unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
+    peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=True, null=True)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=True, null=True)
@@ -1729,15 +1787,24 @@ class Route_CSIC(models.Model):
 
     
     def commit_add(self, *args, **kwargs):
-        peers = self.applier.profile.peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
+        if self.applier:
+            peers = self.applier.profile.peers.all()
+            username = None
+            for peer in peers:
+                if username:
+                    break
+                for network in peer.networks.all():
+                    net = IPNetwork(network)
+                    if IPNetwork(self.destination) in net:
+                        username = peer
+                        break
+        else:
+            peers = self.peer
+            username = None
+            for network in peers.networks.all():
                 net = IPNetwork(network)
                 if IPNetwork(self.destination) in net:
-                    username = peer
+                    username = peers
                     break
         if username:
             peer = username.peer_tag
@@ -1747,18 +1814,21 @@ class Route_CSIC(models.Model):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (
-                fqdn,
-                reverse('edit-route', kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string(
-                'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
-    
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (
+                    fqdn,
+                    reverse('edit-route', kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string(
+                    'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
+
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
@@ -1775,18 +1845,21 @@ class Route_CSIC(models.Model):
         else:
             peer = None
         response = edit(self)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn=Site.objects.get_current().domain
-            admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
-            mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
-            user_mail='%s' % self.applier.email
-            user_mail=user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL, user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn=Site.objects.get_current().domain
+                admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
+                mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
+                user_mail='%s' % self.applier.email
+                user_mail=user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL, user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
         logger.info('Got edit job id: %s' % response)
             
     def commit_delete(self, *args, **kwargs):
@@ -1811,20 +1884,23 @@ class Route_CSIC(models.Model):
             peer = None
         response = delete(self, reason=reason)
         logger.info('Got delete job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL,
-                user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL,
+                    user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def has_expired(self):
         today = datetime.date.today()
         if self.expires == None:
@@ -2111,6 +2187,7 @@ class Route_CSIC(models.Model):
 class Route_CEU(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"),unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
+    peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=True, null=True)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=True, null=True)
@@ -2209,15 +2286,24 @@ class Route_CEU(models.Model):
                 raise ValidationError(_('Invalid network address format at Source Field'))
     
     def commit_add(self, *args, **kwargs):
-        peers = self.applier.profile.peers.all() if self.applier else Peer.objects.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
+        if self.applier:
+            peers = self.applier.profile.peers.all()
+            username = None
+            for peer in peers:
+                if username:
+                    break
+                for network in peer.networks.all():
+                    net = IPNetwork(network)
+                    if IPNetwork(self.destination) in net:
+                        username = peer
+                        break
+        else:
+            peers = self.peer
+            username = None
+            for network in peers.networks.all():
                 net = IPNetwork(network)
                 if IPNetwork(self.destination) in net:
-                    username = peer
+                    username = peers
                     break
         if username:
             peer = username.peer_tag
@@ -2259,18 +2345,21 @@ class Route_CEU(models.Model):
         else:
             peer = None
         response = edit(self)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn=Site.objects.get_current().domain
-            admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
-            mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
-            user_mail='%s' % self.applier.email
-            user_mail=user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL, user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn=Site.objects.get_current().domain
+                admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
+                mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
+                user_mail='%s' % self.applier.email
+                user_mail=user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL, user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
         logger.info('Got edit job id: %s' % response)
             
     def commit_delete(self, *args, **kwargs):
@@ -2295,20 +2384,23 @@ class Route_CEU(models.Model):
             peer = None
         response = delete(self, reason=reason)
         logger.info('Got delete job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL,
-                user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL,
+                    user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def has_expired(self):
         today = datetime.date.today()
         if self.expires == None:
@@ -2595,6 +2687,7 @@ class Route_CEU(models.Model):
 class Route_CUNEF(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"), unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
+    peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=True, null=True)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=True, null=True)
@@ -2693,15 +2786,24 @@ class Route_CUNEF(models.Model):
                 raise ValidationError(_('Invalid network address format at Source Field'))
     
     def commit_add(self, *args, **kwargs):
-        peers = self.applier.profile.peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
+        if self.applier:
+            peers = self.applier.profile.peers.all()
+            username = None
+            for peer in peers:
+                if username:
+                    break
+                for network in peer.networks.all():
+                    net = IPNetwork(network)
+                    if IPNetwork(self.destination) in net:
+                        username = peer
+                        break
+        else:
+            peers = self.peer
+            username = None
+            for network in peers.networks.all():
                 net = IPNetwork(network)
                 if IPNetwork(self.destination) in net:
-                    username = peer
+                    username = peers
                     break
         if username:
             peer = username.peer_tag
@@ -2711,17 +2813,20 @@ class Route_CUNEF(models.Model):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (
-                fqdn,
-                reverse('edit-route', kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string(
-                'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (
+                    fqdn,
+                    reverse('edit-route', kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string(
+                    'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
@@ -2738,18 +2843,21 @@ class Route_CUNEF(models.Model):
         else:
             peer = None
         response = edit(self)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn=Site.objects.get_current().domain
-            admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
-            mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
-            user_mail='%s' % self.applier.email
-            user_mail=user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL, user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn=Site.objects.get_current().domain
+                admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
+                mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
+                user_mail='%s' % self.applier.email
+                user_mail=user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL, user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
         logger.info('Got edit job id: %s' % response)
             
     def commit_delete(self, *args, **kwargs):
@@ -2774,20 +2882,23 @@ class Route_CUNEF(models.Model):
             peer = None
         response = delete(self, reason=reason)
         logger.info('Got delete job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL,
-                user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL,
+                    user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def has_expired(self):
         today = datetime.date.today()
         if self.expires == None:
@@ -3074,6 +3185,7 @@ class Route_CUNEF(models.Model):
 class Route_IMDEANET(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"), unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
+    peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=True, null=True)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=True, null=True)
@@ -3172,15 +3284,24 @@ class Route_IMDEANET(models.Model):
                 raise ValidationError(_('Invalid network address format at Source Field'))
     
     def commit_add(self, *args, **kwargs):
-        peers = self.applier.profile.peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
+        if self.applier:
+            peers = self.applier.profile.peers.all()
+            username = None
+            for peer in peers:
+                if username:
+                    break
+                for network in peer.networks.all():
+                    net = IPNetwork(network)
+                    if IPNetwork(self.destination) in net:
+                        username = peer
+                        break
+        else:
+            peers = self.peer
+            username = None
+            for network in peers.networks.all():
                 net = IPNetwork(network)
                 if IPNetwork(self.destination) in net:
-                    username = peer
+                    username = peers
                     break
         if username:
             peer = username.peer_tag
@@ -3190,17 +3311,20 @@ class Route_IMDEANET(models.Model):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (
-                fqdn,
-                reverse('edit-route', kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string(
-                'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (
+                    fqdn,
+                    reverse('edit-route', kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string(
+                    'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
@@ -3217,18 +3341,21 @@ class Route_IMDEANET(models.Model):
         else:
             peer = None
         response = edit(self)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn=Site.objects.get_current().domain
-            admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
-            mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
-            user_mail='%s' % self.applier.email
-            user_mail=user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL, user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn=Site.objects.get_current().domain
+                admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
+                mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
+                user_mail='%s' % self.applier.email
+                user_mail=user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL, user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
         logger.info('Got edit job id: %s' % response)
             
     def commit_delete(self, *args, **kwargs):
@@ -3253,20 +3380,23 @@ class Route_IMDEANET(models.Model):
             peer = None
         response = delete(self, reason=reason)
         logger.info('Got delete job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL,
-                user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL,
+                    user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def has_expired(self):
         today = datetime.date.today()
         if self.expires == None:
@@ -3553,6 +3683,7 @@ class Route_IMDEANET(models.Model):
 class Route(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"), unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
+    peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=True, null=True)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=True, null=True)
@@ -3651,15 +3782,24 @@ class Route(models.Model):
                 raise ValidationError(_('Invalid network address format at Source Field'))
     
     def commit_add(self, *args, **kwargs):
-        peers = self.applier.profile.peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
+        if self.applier:
+            peers = self.applier.profile.peers.all()
+            username = None
+            for peer in peers:
+                if username:
+                    break
+                for network in peer.networks.all():
+                    net = IPNetwork(network)
+                    if IPNetwork(self.destination) in net:
+                        username = peer
+                        break
+        else:
+            peers = self.peer
+            username = None
+            for network in peers.networks.all():
                 net = IPNetwork(network)
                 if IPNetwork(self.destination) in net:
-                    username = peer
+                    username = peers
                     break
         if username:
             peer = username.peer_tag
@@ -3669,17 +3809,20 @@ class Route(models.Model):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (
-                fqdn,
-                reverse('edit-route', kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string(
-                'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (
+                    fqdn,
+                    reverse('edit-route', kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string(
+                    'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
@@ -3696,18 +3839,21 @@ class Route(models.Model):
         else:
             peer = None
         response = edit(self)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn=Site.objects.get_current().domain
-            admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
-            mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
-            user_mail='%s' % self.applier.email
-            user_mail=user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL, user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn=Site.objects.get_current().domain
+                admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
+                mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
+                user_mail='%s' % self.applier.email
+                user_mail=user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL, user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
         logger.info('Got edit job id: %s' % response)
             
     def commit_delete(self, *args, **kwargs):
@@ -3732,20 +3878,23 @@ class Route(models.Model):
             peer = None
         response = delete(self, reason=reason)
         logger.info('Got delete job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL,
-                user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL,
+                    user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def has_expired(self):
         today = datetime.date.today()
         if self.expires == None:
@@ -4032,6 +4181,7 @@ class Route(models.Model):
 class Route_UAM(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"),unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
+    peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=True, null=True)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=True, null=True)
@@ -4130,15 +4280,24 @@ class Route_UAM(models.Model):
                 raise ValidationError(_('Invalid network address format at Source Field'))
     
     def commit_add(self, *args, **kwargs):
-        peers = self.applier.profile.peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
+        if self.applier:
+            peers = self.applier.profile.peers.all()
+            username = None
+            for peer in peers:
+                if username:
+                    break
+                for network in peer.networks.all():
+                    net = IPNetwork(network)
+                    if IPNetwork(self.destination) in net:
+                        username = peer
+                        break
+        else:
+            peers = self.peer
+            username = None
+            for network in peers.networks.all():
                 net = IPNetwork(network)
                 if IPNetwork(self.destination) in net:
-                    username = peer
+                    username = peers
                     break
         if username:
             peer = username.peer_tag
@@ -4148,17 +4307,20 @@ class Route_UAM(models.Model):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (
-                fqdn,
-                reverse('edit-route', kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string(
-                'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (
+                    fqdn,
+                    reverse('edit-route', kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string(
+                    'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
@@ -4175,18 +4337,21 @@ class Route_UAM(models.Model):
         else:
             peer = None
         response = edit(self)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn=Site.objects.get_current().domain
-            admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
-            mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
-            user_mail='%s' % self.applier.email
-            user_mail=user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL, user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn=Site.objects.get_current().domain
+                admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
+                mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
+                user_mail='%s' % self.applier.email
+                user_mail=user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL, user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
         logger.info('Got edit job id: %s' % response)
             
     def commit_delete(self, *args, **kwargs):
@@ -4211,20 +4376,23 @@ class Route_UAM(models.Model):
             peer = None
         response = delete(self, reason=reason)
         logger.info('Got delete job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL,
-                user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL,
+                    user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def has_expired(self):
         today = datetime.date.today()
         if self.expires == None:
@@ -4511,6 +4679,7 @@ class Route_UAM(models.Model):
 class Route_UAH(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"),unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
+    peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=True, null=True)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=True, null=True)
@@ -4609,15 +4778,24 @@ class Route_UAH(models.Model):
                 raise ValidationError(_('Invalid network address format at Source Field'))
     
     def commit_add(self, *args, **kwargs):
-        peers = self.applier.profile.peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
+        if self.applier:
+            peers = self.applier.profile.peers.all()
+            username = None
+            for peer in peers:
+                if username:
+                    break
+                for network in peer.networks.all():
+                    net = IPNetwork(network)
+                    if IPNetwork(self.destination) in net:
+                        username = peer
+                        break
+        else:
+            peers = self.peer
+            username = None
+            for network in peers.networks.all():
                 net = IPNetwork(network)
                 if IPNetwork(self.destination) in net:
-                    username = peer
+                    username = peers
                     break
         if username:
             peer = username.peer_tag
@@ -4627,17 +4805,20 @@ class Route_UAH(models.Model):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (
-                fqdn,
-                reverse('edit-route', kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string(
-                'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (
+                    fqdn,
+                    reverse('edit-route', kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string(
+                    'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
@@ -4654,18 +4835,21 @@ class Route_UAH(models.Model):
         else:
             peer = None
         response = edit(self)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn=Site.objects.get_current().domain
-            admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
-            mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
-            user_mail='%s' % self.applier.email
-            user_mail=user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL, user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn=Site.objects.get_current().domain
+                admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
+                mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
+                user_mail='%s' % self.applier.email
+                user_mail=user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL, user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
         logger.info('Got edit job id: %s' % response)
             
     def commit_delete(self, *args, **kwargs):
@@ -4690,20 +4874,23 @@ class Route_UAH(models.Model):
             peer = None
         response = delete(self, reason=reason)
         logger.info('Got delete job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL,
-                user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL,
+                    user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def has_expired(self):
         today = datetime.date.today()
         if self.expires == None:
@@ -4990,6 +5177,7 @@ class Route_UAH(models.Model):
 class Route_UC3M(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"),unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
+    peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=True, null=True)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=True, null=True)
@@ -5088,15 +5276,24 @@ class Route_UC3M(models.Model):
                 raise ValidationError(_('Invalid network address format at Source Field'))
     
     def commit_add(self, *args, **kwargs):
-        peers = self.applier.profile.peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
+        if self.applier:
+            peers = self.applier.profile.peers.all()
+            username = None
+            for peer in peers:
+                if username:
+                    break
+                for network in peer.networks.all():
+                    net = IPNetwork(network)
+                    if IPNetwork(self.destination) in net:
+                        username = peer
+                        break
+        else:
+            peers = self.peer
+            username = None
+            for network in peers.networks.all():
                 net = IPNetwork(network)
                 if IPNetwork(self.destination) in net:
-                    username = peer
+                    username = peers
                     break
         if username:
             peer = username.peer_tag
@@ -5106,17 +5303,20 @@ class Route_UC3M(models.Model):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (
-                fqdn,
-                reverse('edit-route', kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string(
-                'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (
+                    fqdn,
+                    reverse('edit-route', kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string(
+                    'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
@@ -5133,18 +5333,21 @@ class Route_UC3M(models.Model):
         else:
             peer = None
         response = edit(self)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn=Site.objects.get_current().domain
-            admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
-            mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
-            user_mail='%s' % self.applier.email
-            user_mail=user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL, user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn=Site.objects.get_current().domain
+                admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
+                mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
+                user_mail='%s' % self.applier.email
+                user_mail=user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL, user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
         logger.info('Got edit job id: %s' % response)
             
     def commit_delete(self, *args, **kwargs):
@@ -5169,20 +5372,23 @@ class Route_UC3M(models.Model):
             peer = None
         response = delete(self, reason=reason)
         logger.info('Got delete job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL,
-                user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL,
+                    user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def has_expired(self):
         today = datetime.date.today()
         if self.expires == None:
@@ -5469,6 +5675,7 @@ class Route_UC3M(models.Model):
 class Route_UCM(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"),unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
+    peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=True, null=True)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=True, null=True)
@@ -5586,15 +5793,24 @@ class Route_UCM(models.Model):
                 raise ValidationError(_('Invalid network address format at Source Field'))
     
     def commit_add(self, *args, **kwargs):
-        peers = self.applier.profile.peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
+        if self.applier:
+            peers = self.applier.profile.peers.all()
+            username = None
+            for peer in peers:
+                if username:
+                    break
+                for network in peer.networks.all():
+                    net = IPNetwork(network)
+                    if IPNetwork(self.destination) in net:
+                        username = peer
+                        break
+        else:
+            peers = self.peer
+            username = None
+            for network in peers.networks.all():
                 net = IPNetwork(network)
                 if IPNetwork(self.destination) in net:
-                    username = peer
+                    username = peers
                     break
         if username:
             peer = username.peer_tag
@@ -5604,17 +5820,20 @@ class Route_UCM(models.Model):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (
-                fqdn,
-                reverse('edit-route', kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string(
-                'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (
+                    fqdn,
+                    reverse('edit-route', kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string(
+                    'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
@@ -5631,18 +5850,21 @@ class Route_UCM(models.Model):
         else:
             peer = None
         response = edit(self)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn=Site.objects.get_current().domain
-            admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
-            mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
-            user_mail='%s' % self.applier.email
-            user_mail=user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL, user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn=Site.objects.get_current().domain
+                admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
+                mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
+                user_mail='%s' % self.applier.email
+                user_mail=user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL, user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
         logger.info('Got edit job id: %s' % response)
             
     def commit_delete(self, *args, **kwargs):
@@ -5667,20 +5889,23 @@ class Route_UCM(models.Model):
             peer = None
         response = delete(self, reason=reason)
         logger.info('Got delete job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL,
-                user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL,
+                    user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def has_expired(self):
         today = datetime.date.today()
         if self.expires == None:
@@ -5967,6 +6192,7 @@ class Route_UCM(models.Model):
 class Route_UEM(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"), unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
+    peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=True, null=True)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=True, null=True)
@@ -6068,15 +6294,24 @@ class Route_UEM(models.Model):
                 raise ValidationError(_('Invalid network address format at Source Field'))
     
     def commit_add(self, *args, **kwargs):
-        peers = self.applier.profile.peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
+        if self.applier:
+            peers = self.applier.profile.peers.all()
+            username = None
+            for peer in peers:
+                if username:
+                    break
+                for network in peer.networks.all():
+                    net = IPNetwork(network)
+                    if IPNetwork(self.destination) in net:
+                        username = peer
+                        break
+        else:
+            peers = self.peer
+            username = None
+            for network in peers.networks.all():
                 net = IPNetwork(network)
                 if IPNetwork(self.destination) in net:
-                    username = peer
+                    username = peers
                     break
         if username:
             peer = username.peer_tag
@@ -6086,17 +6321,20 @@ class Route_UEM(models.Model):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (
-                fqdn,
-                reverse('edit-route', kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string(
-                'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (
+                    fqdn,
+                    reverse('edit-route', kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string(
+                    'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
@@ -6113,18 +6351,21 @@ class Route_UEM(models.Model):
         else:
             peer = None
         response = edit(self)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn=Site.objects.get_current().domain
-            admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
-            mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
-            user_mail='%s' % self.applier.email
-            user_mail=user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL, user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn=Site.objects.get_current().domain
+                admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
+                mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
+                user_mail='%s' % self.applier.email
+                user_mail=user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL, user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
         logger.info('Got edit job id: %s' % response)
             
     def commit_delete(self, *args, **kwargs):
@@ -6149,20 +6390,23 @@ class Route_UEM(models.Model):
             peer = None
         response = delete(self, reason=reason)
         logger.info('Got delete job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL,
-                user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL,
+                    user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def has_expired(self):
         today = datetime.date.today()
         if self.expires == None:
@@ -6449,6 +6693,7 @@ class Route_UEM(models.Model):
 class Route_UNED(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"), unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
+    peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=True, null=True)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=True, null=True)
@@ -6550,15 +6795,24 @@ class Route_UNED(models.Model):
                 raise ValidationError(_('Invalid network address format at Source Field'))
     
     def commit_add(self, *args, **kwargs):
-        peers = self.applier.profile.peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
+        if self.applier:
+            peers = self.applier.profile.peers.all()
+            username = None
+            for peer in peers:
+                if username:
+                    break
+                for network in peer.networks.all():
+                    net = IPNetwork(network)
+                    if IPNetwork(self.destination) in net:
+                        username = peer
+                        break
+        else:
+            peers = self.peer
+            username = None
+            for network in peers.networks.all():
                 net = IPNetwork(network)
                 if IPNetwork(self.destination) in net:
-                    username = peer
+                    username = peers
                     break
         if username:
             peer = username.peer_tag
@@ -6568,17 +6822,20 @@ class Route_UNED(models.Model):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (
-                fqdn,
-                reverse('edit-route', kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string(
-                'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (
+                    fqdn,
+                    reverse('edit-route', kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string(
+                    'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
@@ -6595,18 +6852,21 @@ class Route_UNED(models.Model):
         else:
             peer = None
         response = edit(self)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn=Site.objects.get_current().domain
-            admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
-            mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
-            user_mail='%s' % self.applier.email
-            user_mail=user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL, user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn=Site.objects.get_current().domain
+                admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
+                mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
+                user_mail='%s' % self.applier.email
+                user_mail=user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL, user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
         logger.info('Got edit job id: %s' % response)
             
     def commit_delete(self, *args, **kwargs):
@@ -6631,20 +6891,23 @@ class Route_UNED(models.Model):
             peer = None
         response = delete(self, reason=reason)
         logger.info('Got delete job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL,
-                user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL,
+                    user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def has_expired(self):
         today = datetime.date.today()
         if self.expires == None:
@@ -6931,6 +7194,7 @@ class Route_UNED(models.Model):
 class Route_UPM(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"), unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
+    peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=True, null=True)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=True, null=True)
@@ -7029,15 +7293,24 @@ class Route_UPM(models.Model):
                 raise ValidationError(_('Invalid network address format at Source Field'))
     
     def commit_add(self, *args, **kwargs):
-        peers = self.applier.profile.peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
+        if self.applier:
+            peers = self.applier.profile.peers.all()
+            username = None
+            for peer in peers:
+                if username:
+                    break
+                for network in peer.networks.all():
+                    net = IPNetwork(network)
+                    if IPNetwork(self.destination) in net:
+                        username = peer
+                        break
+        else:
+            peers = self.peer
+            username = None
+            for network in peers.networks.all():
                 net = IPNetwork(network)
                 if IPNetwork(self.destination) in net:
-                    username = peer
+                    username = peers
                     break
         if username:
             peer = username.peer_tag
@@ -7047,17 +7320,20 @@ class Route_UPM(models.Model):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (
-                fqdn,
-                reverse('edit-route', kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string(
-                'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (
+                    fqdn,
+                    reverse('edit-route', kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string(
+                    'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
@@ -7074,18 +7350,21 @@ class Route_UPM(models.Model):
         else:
             peer = None
         response = edit(self)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn=Site.objects.get_current().domain
-            admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
-            mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
-            user_mail='%s' % self.applier.email
-            user_mail=user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL, user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn=Site.objects.get_current().domain
+                admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
+                mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
+                user_mail='%s' % self.applier.email
+                user_mail=user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL, user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
         logger.info('Got edit job id: %s' % response)
             
     def commit_delete(self, *args, **kwargs):
@@ -7110,20 +7389,23 @@ class Route_UPM(models.Model):
             peer = None
         response = delete(self, reason=reason)
         logger.info('Got delete job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL,
-                user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL,
+                    user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def has_expired(self):
         today = datetime.date.today()
         if self.expires == None:
@@ -7410,6 +7692,7 @@ class Route_UPM(models.Model):
 class Route_URJC(models.Model):    
     name = models.SlugField(max_length=128, verbose_name=_("Name"), unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
+    peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=True, null=True)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=True, null=True)
@@ -7508,15 +7791,24 @@ class Route_URJC(models.Model):
                 raise ValidationError(_('Invalid network address format at Source Field'))
     
     def commit_add(self, *args, **kwargs):
-        peers = self.applier.profile.peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
+        if self.applier:
+            peers = self.applier.profile.peers.all()
+            username = None
+            for peer in peers:
+                if username:
+                    break
+                for network in peer.networks.all():
+                    net = IPNetwork(network)
+                    if IPNetwork(self.destination) in net:
+                        username = peer
+                        break
+        else:
+            peers = self.peer
+            username = None
+            for network in peers.networks.all():
                 net = IPNetwork(network)
                 if IPNetwork(self.destination) in net:
-                    username = peer
+                    username = peers
                     break
         if username:
             peer = username.peer_tag
@@ -7526,17 +7818,20 @@ class Route_URJC(models.Model):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (
-                fqdn,
-                reverse('edit-route', kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string(
-                'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        try: 
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (
+                    fqdn,
+                    reverse('edit-route', kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string(
+                    'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
@@ -7553,18 +7848,21 @@ class Route_URJC(models.Model):
         else:
             peer = None
         response = edit(self)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn=Site.objects.get_current().domain
-            admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
-            mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
-            user_mail='%s' % self.applier.email
-            user_mail=user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL, user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn=Site.objects.get_current().domain
+                admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
+                mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
+                user_mail='%s' % self.applier.email
+                user_mail=user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL, user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
         logger.info('Got edit job id: %s' % response)
             
     def commit_delete(self, *args, **kwargs):
@@ -7589,20 +7887,23 @@ class Route_URJC(models.Model):
             peer = None
         response = delete(self, reason=reason)
         logger.info('Got delete job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
-            fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
-            user_mail = '%s' % self.applier.email
-            user_mail = user_mail.split(';')
-            send_new_mail(
-                settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
-                mail_body,
-                settings.SERVER_EMAIL,
-                user_mail,
-                get_peer_techc_mails(self.applier, username)
-            )
+        try:
+            if not settings.DISABLE_EMAIL_NOTIFICATION:
+                fqdn = Site.objects.get_current().domain
+                admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
+                )
+                mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
+                user_mail = '%s' % self.applier.email
+                user_mail = user_mail.split(';')
+                send_new_mail(
+                    settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
+                    mail_body,
+                    settings.SERVER_EMAIL,
+                    user_mail,
+                    get_peer_techc_mails(self.applier, username)
+                )
+        except Exception as e:
+                print('There was an exception when trying to notify the user via e-mail, ',e)
     def has_expired(self):
         today = datetime.date.today()
         if self.expires == None:
