@@ -21,6 +21,7 @@ class GolemAttack(models.Model):
     ip_dest = models.GenericIPAddressField(default='0.0.0.0')
     src_port = models.CharField(max_length=65535, blank=True, null=True)
     dest_port = models.CharField(max_length=65535, blank=True, null=True)
+    port = models.CharField(max_length=65535, blank=True, null=True)
     protocol = models.ManyToManyField(MatchProtocol, blank=True)
     tcpflag = models.CharField(max_length=100, blank=True, null=True)
     status = models.CharField(max_length=50)
@@ -31,22 +32,22 @@ class GolemAttack(models.Model):
     received_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     typeof_attack = models.CharField(max_length=200, blank=True, null=True)
     # route models
-    route = models.ForeignKey(to=Route,blank=True,on_delete=models.CASCADE,null=True)
-    route_cv = models.ForeignKey(Route_CV,blank=True,on_delete=models.CASCADE,null=True)
-    route_cib = models.ForeignKey(Route_CIB,blank=True,on_delete=models.CASCADE,null=True)
-    route_csic = models.ForeignKey(Route_CSIC,blank=True,on_delete=models.CASCADE,null=True)
-    route_ceu = models.ForeignKey(Route_CEU,blank=True,on_delete=models.CASCADE,null=True)
-    route_cunef = models.ForeignKey(Route_CUNEF,blank=True,on_delete=models.CASCADE,null=True)
-    route_imdeanet = models.ForeignKey(Route_IMDEANET,blank=True,on_delete=models.CASCADE,null=True)
-    route_imdea = models.ForeignKey(Route_IMDEA,blank=True,on_delete=models.CASCADE,null=True)
-    route_uam = models.ForeignKey(Route_UAM,blank=True,on_delete=models.CASCADE,null=True)
-    route_uc3m = models.ForeignKey(Route_UC3M,blank=True,on_delete=models.CASCADE,null=True)
-    route_ucm = models.ForeignKey(Route_UCM,blank=True,on_delete=models.CASCADE,null=True)
-    route_uah = models.ForeignKey(Route_UAH,blank=True,on_delete=models.CASCADE,null=True)
-    route_uem = models.ForeignKey(Route_UEM,blank=True,on_delete=models.CASCADE,null=True)
-    route_uned = models.ForeignKey(Route_UNED,blank=True,on_delete=models.CASCADE,null=True)
-    route_upm = models.ForeignKey(Route_UPM,blank=True,on_delete=models.CASCADE,null=True)
-    route_urjc = models.ForeignKey(Route_URJC,blank=True,on_delete=models.CASCADE,null=True)
+    route = models.ManyToManyField(Route,blank=True)
+    route_cv = models.ManyToManyField(Route_CV,blank=True)
+    route_cib = models.ManyToManyField(Route_CIB,blank=True)
+    route_csic = models.ManyToManyField(Route_CSIC,blank=True)
+    route_ceu = models.ManyToManyField(Route_CEU,blank=True)
+    route_cunef = models.ManyToManyField(Route_CUNEF,blank=True)
+    route_imdeanet = models.ManyToManyField(Route_IMDEANET,blank=True)
+    route_imdea = models.ManyToManyField(Route_IMDEA,blank=True)
+    route_uam = models.ManyToManyField(Route_UAM,blank=True)
+    route_uc3m = models.ManyToManyField(Route_UC3M,blank=True)
+    route_ucm = models.ManyToManyField(Route_UCM,blank=True)
+    route_uah = models.ManyToManyField(Route_UAH,blank=True)
+    route_uem = models.ManyToManyField(Route_UEM,blank=True)
+    route_uned = models.ManyToManyField(Route_UNED,blank=True)
+    route_upm = models.ManyToManyField(Route_UPM,blank=True)
+    route_urjc = models.ManyToManyField(Route_URJC,blank=True)
 
 # test for saving 
 #  Nuevo ataque a la institución 'UAH' de tipo '['Host TCP Traffic']' contra el recurso '193.146.58.180'.
@@ -85,23 +86,24 @@ class GolemAttack(models.Model):
 
     def set_route(self,route):
         peers = Peer.objects.all()
+        print('inside set_route')
         for peer in peers:
-            self.route = route if self.peer.peer_tag == 'Punch' else None
-            self.route_cv = route if self.peer.peer_tag == 'CV' else None
-            self.route_cib = route if self.peer.peer_tag == 'CIB' else None
-            self.route_csic = route if self.peer.peer_tag == 'CSIC' else None
-            self.route_ceu = route if self.peer.peer_tag == 'CEU' else None
-            self.route_cunef = route if self.peer.peer_tag == 'CUNEF' else None
-            self.route_imdeanet = route if self.peer.peer_tag == 'IMDEA_NET' else None
-            self.route_imdea = route if self.peer.peer_tag == 'IMDEA' else None
-            self.route_uam = route if self.peer.peer_tag == 'UAM' else None
-            self.route_uc3m = route if self.peer.peer_tag == 'UC3M' else None
-            self.route_ucm = route if self.peer.peer_tag == 'UCM' else None
-            self.route_uah = route if self.peer.peer_tag == 'UAH' else None
-            self.route_uem = route if self.peer.peer_tag == 'UEM' else None
-            self.route_uned = route if self.peer.peer_tag == 'UNED' else None
-            self.route_upm = route if self.peer.peer_tag == 'UPM' else None
-            self.route_urjc = route if self.peer.peer_tag == 'URJC' else None
+            self.route.add(route) if self.peer.peer_tag == 'Punch' else None
+            self.route_cv.add(route) if self.peer.peer_tag == 'CV' else None
+            self.route_cib.add(route) if self.peer.peer_tag == 'CIB' else None
+            self.route_csic.add(route) if self.peer.peer_tag == 'CSIC' else None
+            self.route_ceu.add(route) if self.peer.peer_tag == 'CEU' else None
+            self.route_cunef.add(route) if self.peer.peer_tag == 'CUNEF' else None
+            self.route_imdeanet.add(route) if self.peer.peer_tag == 'IMDEA_NET' else None
+            self.route_imdea.add(route) if self.peer.peer_tag == 'IMDEA' else None
+            self.route_uam.add(route) if self.peer.peer_tag == 'UAM' else None
+            self.route_uc3m.add(route) if self.peer.peer_tag == 'UC3M' else None
+            self.route_ucm.add(route) if self.peer.peer_tag == 'UCM' else None
+            self.route_uah.add(route) if self.peer.peer_tag == 'UAH' else None
+            self.route_uem.add(route) if self.peer.peer_tag == 'UEM' else None
+            self.route_uned.add(route) if self.peer.peer_tag == 'UNED' else None
+            self.route_upm.add(route) if self.peer.peer_tag == 'UPM' else None
+            self.route_urjc.add(route) if self.peer.peer_tag == 'URJC' else None
 
 
     def commit_add():

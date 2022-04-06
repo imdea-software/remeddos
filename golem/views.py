@@ -28,7 +28,6 @@ class ProcessWebHookView(CsrfExemptMixin, View):
 @never_cache
 def display(request):
     username = request.user.username
-    protocolo = []
     if request.user.is_superuser:
         golem_attacks = GolemAttack.objects.all().order_by('-received_at')
         return render(request,'golem/display.html',{'attacks':golem_attacks})
@@ -42,18 +41,18 @@ def display(request):
 @login_required
 @never_cache
 def display_routes(request,golem_name):
+    print(golem_name,' : golem_name')
     peers = Peer.objects.all()
     golem = GolemAttack.objects.get(id_name=golem_name)
     p = ''
-    routes = []
-    dic = {'Punch': golem.route,'CV':golem.route_cv,'CIB':golem.route_cib,'CSIC':golem.route_csic,'CEU':golem.route_ceu,'CUNEF':golem.route_cunef,'IMDEA_NET':golem.route_imdeanet,
-    'IMDEA':golem.route_imdea,'UAM':golem.route_uam,'UC3M':golem.route_uc3m,'UCM':golem.route_ucm,'UAH':golem.route_uah,'UEM':golem.route_uem,'UNED':golem.route_uned,'UPM':golem.route_upm,
-    'URJC':golem.route_urjc}
+    dic = {'Punch': golem.route.all(),'CV':golem.route_cv.all(),'CIB':golem.route_cib.all(),'CSIC':golem.route_csic.all(),'CEU':golem.route_ceu.all(),'CUNEF':golem.route_cunef.all(),'IMDEA_NET':golem.route_imdeanet.all(),
+    'IMDEA':golem.route_imdea.all(),'UAM':golem.route_uam.all(),'UC3M':golem.route_uc3m.all(),'UCM':golem.route_ucm.all(),'UAH':golem.route_uah.all(),'UEM':golem.route_uem.all(),'UNED':golem.route_uned.all(),'UPM':golem.route_upm.all(),
+    'URJC':golem.route_urjc.all()}
     for peer in peers:
         if peer.peer_tag == golem.peer.peer_tag:
             p = peer.peer_tag
-    routes.append(dic.get(p,'Institución invalida'))
-    return render(request,'golem/user_routes.html',{'routes':routes,'golem_name':golem_name})
+            reglas = dic.get(p,'Institución invalida')
+    return render(request,'golem/user_routes.html',{'routes':reglas,'golem_name':golem_name})
     
 @verified_email_required
 @login_required
@@ -62,3 +61,23 @@ def display_golem_updates(request,golem_id):
     golem_attack = GolemAttack.objects.get(id_name=golem_id)
     updates = golem_attack.check_golem_updates()
     return render(request,'golem/updates.html',{'golem':golem_attack,'updates':updates})
+
+
+@verified_email_required
+@login_required
+@never_cache
+def delete_golem(request,golem_id):
+    username = request.user.username
+    try:
+        golem = GolemAttack.objects.get(id_name=golem_id)
+        golem.delete()
+    except Exception as e:
+        print (e)
+    if request.user.is_superuser:
+        golem_attacks = GolemAttack.objects.all().order_by('-received_at')
+        return render(request,'golem/display.html',{'attacks':golem_attacks})
+    else:
+        peer_name = get_peers(username)
+        peer = Peer.objects.get(peer_name=peer_name)
+        golem_attacks = GolemAttack.objects.filter(peer=peer.pk).all()[::-1]
+        return render(request,'golem/display.html',{'attacks':golem_attacks})

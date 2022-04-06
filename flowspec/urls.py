@@ -31,6 +31,8 @@ urlpatterns = [
     path('ajax_graphs/',views.ajax_graphs, name='ajax-graphs'),
     path('createdbackup/',views.create_db_backup, name='db-backup'),
     path('restoredb/',views.restore_complete_db, name='db-restore'),
-    path('route_update/<slug:route_slug>',views.routes_update,name='route-updates')
+    path('route_update/<slug:route_slug>',views.routes_update,name='route-updates'),
+    path('delete_route/<slug:route_slug>',views.exterminate_route, name="exterminate"),
+    path('commit_route/<slug:route_slug>',views.commit_to_router, name="commit"),
 ]
 

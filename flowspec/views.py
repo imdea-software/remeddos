@@ -130,12 +130,7 @@ def dashboard(request):
     except UserProfile.DoesNotExist:
         error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
         return render(
-            request,
-            'error.html',
-            {
-                'error': error
-            }
-        )
+            request,'error.html',{'error': error})
     if peers:
         if request.user.is_superuser:
             #all_group_routes = Route.objects.all().order_by('-last_updated')[:10]
@@ -154,7 +149,6 @@ def dashboard(request):
     else:
         message = 'You are not associated with a peer.'
         return render(request,'dashboard.html',{'messages': message})
-
     return render(request,'dashboard.html',{'routes': all_group_routes.prefetch_related('applier', 'applier','protocol','dscp',),'messages': message,'file' : '','route_slug':route_name},)
 
 
@@ -164,24 +158,12 @@ def group_routes(request):
     try:
         user = request.user
         routes = find_routes(user.username)
-        """ request.user.profile.peers.all()
-        routes = Route.objects.filter(applier=request.user).values_list('name',flat=True)
-        #rutas = Route.objects.filter() """
-       
     except UserProfile.DoesNotExist:
         error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
-        return render(
-            request,
-            'error.html',
-            {
-                'error': error
-            }
-        )
-    context = {
-        'route_slug' : routes,
-        'file'  : ''
-    }
+        return render(request,'error.html',{'error': error})
+    context = {'route_slug' : routes,'file'  : ''}
     return render(request,'user_routes.html',context)
+
 
 @verified_email_required
 @login_required
@@ -268,20 +250,23 @@ def build_routes_json(groutes, is_superuser):
             rd['applier'] = 'unknown'
             rd['peer'] = ''
         else:
-            peers = r.applier.profile.peers.prefetch_related('networks')
-            username = None
-            for peer in peers:
-                if username:
-                    break
-                for network in peer.networks.all():
-                    net = IPNetwork(network)
-                    if IPNetwork(r.destination) in net:
-                        username = peer.peer_name
-                        break
             try:
-                rd['peer'] = username
-            except UserProfile.DoesNotExist:
-                rd['peer'] = ''
+                peers = r.applier.profile.peers.prefetch_related('networks')
+                username = None
+                for peer in peers:
+                    if username:
+                        break
+                    for network in peer.networks.all():
+                        net = IPNetwork(network)
+                        if IPNetwork(r.destination) in net:
+                            username = peer.peer_name
+                            break
+                try:
+                    rd['peer'] = username
+                except UserProfile.DoesNotExist:
+                    rd['peer'] = ''
+            except Exception as e:
+                print(e)
 
         rd['expires'] = "%s" % r.expires
         rd['response'] = "%s" % r.response
@@ -432,9 +417,12 @@ def verify_edit_user(request,route_slug):
 @login_required
 @never_cache
 def edit_route(request, route_slug):
+    print('inside method edit')
     applier = request.user.pk
     username = request.user.username
-    route_edit = get_object_or_404(get_edit_route(username), name=route_slug)
+    #route_edit = get_object_or_404(get_edit_route(username), name=route_slug)
+    route_edit = get_specific_route(applier=None, peer=None, route_slug=route_slug)
+    print('lets see the route, fff, ', route_edit)
     applier_peer_networks = []
     if request.user.is_superuser:
         applier_peer_networks = PeerRange.objects.all()
@@ -449,13 +437,13 @@ def edit_route(request, route_slug):
             ('Insufficient rights on administrative networks. Cannot add rule. Contact your administrator')
         )
         return HttpResponseRedirect(reverse("group-routes"))    
-    if route_edit.status== 'PENDING':
+    """ if route_edit.status== 'PENDING':
         messages.add_message(
             request,
             messages.WARNING,
             ('Cannot edit a pending rule: %s.') % (route_slug)
         )
-        return HttpResponseRedirect(reverse("group-routes"))
+        return HttpResponseRedirect(reverse("group-routes")) """
     route_original = deepcopy(route_edit)
     if request.POST:
         request_data = request.POST.copy()
@@ -611,6 +599,32 @@ def delete_route(request, route_slug):
         route.save()
         route.commit_delete()
     return HttpResponseRedirect(reverse("group-routes"))
+
+@login_required
+@never_cache
+def commit_to_router(request,route_slug):
+    fd = route_slug.find('_')
+    peer_tag = route_slug[fd+1:-2]
+    route = get_specific_route(applier=None,peer=peer_tag,route_slug=route_slug)
+    route.commit_add()
+    print('route has been commited to the router: ', route)
+    return HttpResponseRedirect(reverse("attack-list"))
+    """ except Exception as e:
+        print('There has been an error when committing the route to the router. Exception: ',e)
+        return HttpResponseRedirect(reverse("dashboard")) """
+
+
+@login_required
+@never_cache
+def exterminate_route(request,route_slug):
+    fd = route_slug.find('_')
+    peer_tag = route_slug[fd+1:-2]
+    route = get_specific_route(applier=None,peer=peer_tag,route_slug=route_slug)
+    route.delete()
+    print('route has been deleted: ', route)
+    return HttpResponseRedirect(reverse("attack-list"))
+
+
 
 @login_required
 @never_cache

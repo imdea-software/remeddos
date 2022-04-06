@@ -202,7 +202,7 @@ INSTALLED_APPS = (
 DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
 BACK_UP_DIR = os.path.join(BASE_DIR,'_backup/')
 """ DBBACKUP_STORAGE_OPTIONS = {'location': BACK_UP_DIR}
-DBBACKUP_FILE_NAME_TEMPLATE='{datetime}-redifod.sql' """
+DBBACKUP_FILE_NAME_TEMPLATE='{datetime}-remeddos.sql' """
 
 #---STATIC 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
@@ -359,8 +359,8 @@ PROTECTED_SUBNETS = ['10.10.0.0/16']
 MAX_RULE_EXPIRE_DAYS = 30
 
 # Add two whois servers in order to be able to get all the subnets for an AS.
-PRIMARY_WHOIS = 'whois.redimadrid.redifod.com'
-ALTERNATE_WHOIS = 'whois.example.net'
+PRIMARY_WHOIS = 'whois.remeddos.com'
+ALTERNATE_WHOIS = 'whois.redimadrid.remeddos.net'
 
 TINYMCE_JS_URL = STATIC_URL +'js/tinymce/tiny_mce.js'
 
@@ -377,9 +377,9 @@ LOG_FILE_LOCATION = "/var/log/fod"
 
 
 BRANDING = {
-    'name': 'Redifod',
-    'url': 'https://example.com',
-    'footer_iframe': 'https://example.com/iframe',
+    'name': 'REM-E-DDOS',
+    'url': 'https://remeddos.com',
+    'footer_iframe': 'https://remeddos.com/iframe',
     'facebook': '//facebook.com/',
     'twitter': '//twitter.com/',
     'phone': '800-example-com',
