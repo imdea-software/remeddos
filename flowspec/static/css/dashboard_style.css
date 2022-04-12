@@ -1,0 +1,67 @@
+ul li a {
+    color: #a9a9a9 !important;
+    font-size: 22px;
+    margin: auto 10px !important;
+}
+
+ul li a:hover{
+    color: #990033 !important;
+}
+
+section {
+    padding-top: 50px;
+    padding-bottom: 50px;
+  }
+  section h5 {
+    text-transform: uppercase;
+    /* font-weight: 900; */
+    text-align: left;
+    margin-bottom: 20px;
+  }
+  section h1{
+    text-transform: uppercase;
+    /* font-weight: 900; */
+    color: #990033;
+    text-align: left;
+    margin-bottom: 20px;
+  }
+  section p {
+    font-size: 16px;
+    font-weight: 300;
+  }
+  #hero .col {
+    justify-content: center; 
+    flex-direction: column;
+    display: flex;
+  }
+  #hero .img-col {
+    justify-content: flex-end; 
+    margin-top: 100px;
+  }
+  #hero img {
+    max-width: 130% !important;
+    width: 130%;
+  }
+  #hero .card {
+    box-shadow: 11px 7px 16px #f9f9f9;
+    border: 0;
+    text-align: center;
+  }
+  #hero .icon {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 20px;
+  }
+  #projects .projects {
+    margin-bottom: 50px;
+  }
+
+  #contact {
+    text-align: center;
+    background-color: #990033;
+    color: white;
+  }
+  #contact h1 {
+    text-align: center;
+    color: white;
+  }

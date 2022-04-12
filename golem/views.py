@@ -41,8 +41,8 @@ def display(request):
 @login_required
 @never_cache
 def display_routes(request,golem_name):
-    print(golem_name,' : golem_name')
     peers = Peer.objects.all()
+    actions = ThenAction.objects.all()
     golem = GolemAttack.objects.get(id_name=golem_name)
     p = ''
     dic = {'Punch': golem.route.all(),'CV':golem.route_cv.all(),'CIB':golem.route_cib.all(),'CSIC':golem.route_csic.all(),'CEU':golem.route_ceu.all(),'CUNEF':golem.route_cunef.all(),'IMDEA_NET':golem.route_imdeanet.all(),
@@ -52,7 +52,7 @@ def display_routes(request,golem_name):
         if peer.peer_tag == golem.peer.peer_tag:
             p = peer.peer_tag
             reglas = dic.get(p,'Institución invalida')
-    return render(request,'golem/user_routes.html',{'routes':reglas,'golem_name':golem_name})
+    return render(request,'golem/user_routes.html',{'routes':reglas,'golem_name':golem_name,'actions':actions})
     
 @verified_email_required
 @login_required

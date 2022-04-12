@@ -358,6 +358,8 @@ def add_route(request):
             if not request.user.is_superuser:
                 route.applier = request.user
             #route.status= "PENDING"
+            peer = Peer.objects.get(pk__in=user_peers)
+            route.peer = peer
             route.response = "Applying"
             route.source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
             route.destination = IPNetwork('%s/%s' % (IPNetwork(route.destination).network.compressed, IPNetwork(route.destination).prefixlen)).compressed
@@ -855,6 +857,7 @@ def ajax_graphs(request):
 @login_required
 @never_cache
 def display_graphs(request,route_slug):
+    print('INSIDE DISPLAY GRAPHS')
     uname = request.user.username
     route = get_object_or_404(get_edit_route(uname), name=route_slug)
     #route = get_object_or_404(Route, name=route_slug)

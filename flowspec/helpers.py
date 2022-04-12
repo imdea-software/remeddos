@@ -160,6 +160,13 @@ def translate_tcpflags(tf):
   tcpflags = tcpflag_dict.get(tf,"Invalid argument")
   return tcpflags
 
+def golem_translate_tcpflag(tf):
+  tcpdict = {'-----F':'1', '----S-':'2', '----SF':'3', '---R--':'4', '---R-F':'5', '---RS-':'6', '---RSF':'7', '--P---':'8', '--P--F':'9', '--P-S-':'10', '--P-SF':'11', '--PR--':'12', '--PR-F':'13', '--PRS-':'14', '--PRSF':'15',
+  '-A----':'16', '-A---F':'17', '-A--S-':'18', '-A--SF':'19', '-A-R--':'20', '-A-R-F':'21', '-A-RS-':'22', '-A-RSF':'23', '-AP---':'24', '-AP--F':'25', '-AP-S-':'26', '-AP-SF':'27', '-APR--':'28', '-APR-F':'29', '-APRS-':'30',
+  '-APRSF':'31'}
+  tcpflags = tcpdict.get(tf,"Invalid Argument")
+  return tcpflags
+
 def check_protocol(protocol):
   from flowspec.models import MatchProtocol
   if isinstance(protocol,(list)):
@@ -172,7 +179,9 @@ def check_protocol(protocol):
     return match_protocol
 
 def assemble_dic(traffic_event,event_info):
-  ip_dest = traffic_event[1]['data'][0][0]; ip_src = traffic_event[0]['data'][0][0] 
+  print('within assemble_dic: ', traffic_event)
+  ip_dest = traffic_event[1]['data'][0][0]; 
+  ip_src = traffic_event[0]['data'][0][0] 
   source_port = traffic_event[2]['data'][0][0]; fd = source_port.find(':') ; src_port = source_port[fd+1::] 
   destination_port = traffic_event[3]['data'][0][0]; fn = destination_port.find(':'); dest_port = destination_port[fn+1::]
   p = traffic_event[4]['data'][0][0]; tcp_flag = traffic_event[5]['data'][0][0]
@@ -194,7 +203,7 @@ def assemble_dic(traffic_event,event_info):
 
 def get_query(routename, dest, src, username):
   from flowspec.models import Route
-  route = get_specific_route(username,routename)
+  route = get_specific_route(applier=username,peer=None,route_slug=routename)
   #route = Route.objects.get(name=routename)
   source = '0/0' if src == '0.0.0.0/0' else src[:-3]
   destination = '0/0' if dest == '0.0.0.0/0' else dest[:-3]
@@ -344,6 +353,15 @@ def get_edit_route(applier):
   user_routes = routes[peer_tag]
   return user_routes
 
+
+def find_all_routes():
+  from peers.models import Peer
+  from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
+  peers = Peer.objects.all()
+  routes = []
+  for peer in peers:
+    routes.append(find_routes(applier=None,peer=peer.peer_tag))
+  return routes
 
 def find_edit_post_route(applier, data, route_edit):
   from flowspec.forms import RouteForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm

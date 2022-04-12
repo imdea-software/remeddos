@@ -4,73 +4,102 @@
 
 {% block title %}{% trans "My profile" %}{% endblock %}
 {% block contentplaceholder %}
-
+<style>
+    section {
+    padding-top: 50px;
+    padding-bottom: 50px;
+  }
+  section h5 {
+    text-transform: uppercase;
+    font-weight: 900;
+    color: #990033;
+    text-align: left;
+    margin-bottom: 20px;
+  }
+  section p {
+    font-size: 16px;
+    font-weight: 300;
+  }
+  .col {
+    justify-content: center; 
+    flex-direction: column;
+    display: flex;
+  }
+  .card {
+    box-shadow: 11px 7px 16px #f9f9f9;
+    border:0;
+  }
+</style>
 
 <div class="container p-5 m-2">
-    <div class="row">
-        <div class="col">
-            <h5 class="text-end">{% trans "Mi perfil" %}</h5>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col">
-                    <h6 class="text-center"> {% trans "" %}</h6>
+    <section>
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col">
+                    <h1>Profile</h1>
+                </div>
             </div>
-                <div class="section">
-                <table class="table table-borderless align-middle p-2">
-                        <thead>
-                            <tr>
-                            <th>{% trans "Organización" %}</th><th>{% trans "Redes" %}</th>
-                            </tr>
-                        </thead>
-                        {% for peer in peers %}
-                        <tr>
-                            <td>{{peer}} </td>
-                            <td>
+            <div class="row cards">
+                <div class="col-md-6">
+                    <!-- Peer card -->
+                    <div class="card">
+                        <h5 class="card-title">
+                            Peer Information
+                        </h5>
+                        <div class="card-body">
+                            {% for peer in peers %}
+                            <p class="card-text">
+                                    {{peer}}
+                                    <br> Networks:
+                            </p>
+                            <p class="card-text">
+                                <small class="text-muted">
                             {% for network in peer.networks.all %}
-                            {{network}}<br>
-                            {% empty %}
-                            <span style="color:red">{% blocktrans %}Ooops! Seems you have no networks associated with your peer. Contact Helpdesk to resolve this issue.{% endblocktrans %}</span>
+                                {{network}}<br>
+                                {% empty %}
+                                <span style="color:red">{% blocktrans %}Ooops! Seems you have no networks associated with your peer. Contact Helpdesk to resolve this issue.{% endblocktrans %}</span>
                             {% endfor %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </table>
-                </div>
-        	
-        
-        </div>
-        <hr>        
-            <div class="row">
-                <div class="col col-6">
-                        <table class="table table-borderless align-middle p-2">
-                                <thead>
-                                    <tr>
-                                    <th class="center">{% trans "" %}</th>
-                                    </tr>
-                                </thead>
-                                <tr>
-                                    <td><span><b>{% trans "Nombre de usuario" %}</b></span>: {{user.username}} </td>
-                                    {% if user.first_name %}
-                                        <td><span><b>{% trans "Nombre" %}</b></span> : {{user.first_name}}</td>
-                                    {% endif %}
-                                    {% if user.last_name %}
-                                    <td><span><b>{% trans "Apellido(s)" %}</b></span> : {{user.last_name}} </td>
-                                    {% endif %}
-                                    {% if user.email %}
-                                        <td><span><b>{% trans "Email" %}</b></span> : {{user.email}} </td>
-                                    {% endif %}
-                                </tr>
-                            </table>  
-                </div>
-                <div class="col col-3">
-                    <a class="btn btn-outline-info align-middle float-end" id="routebutton" href="{% url 'account_change_password' %}">{% trans "Cambiar contraseña" %}</a>
-                    </div> 
-            </div>
-    
+                                </small>
+                            </p>
 
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <!-- End of PeerCard -->
+                <!--User Card -->
+                <div class="col-md-6">
+                <div class="card">
+                    <h5 class="card-title">
+                        User Information
+                    </h5>
+                    <div class="card-body">
+                        {% if user.username %}<p class="card-text">Username: {{user.username}} {% endif %}  </p>
+                        {% if user.first_name %}<p class="card-text">First name: {{user.first_name}}</p> {% endif %}
+                        {% if user.last_name %}<p class="card-text">Last name: {{user.last_name}}</p> {% endif %}
+                        {% if user.email %} <p class="card-text">Email: {{user.email}}</p> {% endif %}
+                        <a class="btn btn-dark btn-sm float-right" id="routebutton" href="{% url 'account_change_password' %}">Change password</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="card">
+                            <h5 class="card-title text-dark">Shortcuts</h5>
+                            <div class="card-body">
+                                <a class="btn btn-info btn-sm float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM">Add Route</a>
+                                <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}">User Routes</a>
+                                <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'user-profile' %}">Profile</a>
+                                <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'dashboard' %}">Dashboard</a>
+                              </div>
+                            </div>
+                    </div>
+                <!-- End of UserCard-->
+            </div>
+        </div>
     </div>
+    </section>
+</div>   
+
 
 {% endblock %}
 

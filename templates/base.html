@@ -15,7 +15,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" crossorigin="anonymous" referrerpolicy="no-referrer">
     
     <!-- bootstrap 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/css/bootstrap.min.css" integrity="sha384-r4NyP46KrjDleawBgD5tp8Y7UzmLA05oM1iAEQ17CSuDqnUK2+k9luXQOfXJCJ4I" crossorigin="anonymous">
+    <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous"> -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script> 
 
     <!-- Font Awesome JS -->
@@ -34,7 +35,7 @@
     <header class="header bg-dark" id="header">
         {% if user.is_authenticated %}
         <div class="header_toggle"> <button type="button" class="btn btn-dark white-text" data-bs-toggle="offcanvas" data-bs-target="#nav-bar" aria-controls="nav-bar"><i class='bi-list' id="header-toggle"></i></button> </div>
-        <div class=""> <img src="{% static 'redimadrid_negativo.png'%}" alt="RediMadrid logo" class="float-end" style="width: 75px; height: 50px;"> </div>
+        <div class=""><img src="{% static 'img/redimadrid_negativo.png'%}" alt="RediMadrid logo" class="float-end d-inline-block"  width="100px" height="50px"></div>
         {% else %}
         <div class="col m-2 p-3"> <a href="{% url 'account_login' %}" class="text-end text-white text-decoration-none fw-light"> <i class='bi-person nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Sign In"></i> <span class="nav_name">Log in</span> </a>  </div>
         {% endif %}
@@ -45,28 +46,29 @@
         <nav class="nav">
             <div class=""> 
                 {% if user.is_authenticated %}
-                <a href="{% url 'group-routes' %}" class="nav_logo text-decoration-none text-wrap"> <i class='bi-shield nav_logo-icon text-danger'></i> <span class="nav_logo-name text-danger fw-light">REM-E-DDOS</span> </a>
+                <a href="{% url 'group-routes' %}" class="nav_logo text-decoration-none text-wrap"> <i class="nav_icon bi bi-shield text-danger"></i></a>
+                <!-- <button type="button" class="btn btn-outline btn-light close" data-bs-dismiss="offcanvas" aria-label="Close"><span aria-hidden="true">&times;</span></button> -->
                 <div class="nav_list text-wrap">
-                    <a href="{% url 'group-routes' %}" class="nav_link text-white text-decoration-none fw-light text-wrap"> <i class='bi-table nav_icon text-primary' data-bs-toggle="tooltip" data-bs-placement="top" title="Routes"></i> <span class="nav_name">Routes</span></a>  
-                    <a href="{% url 'dashboard' %}" class="nav_link text-white text-decoration-none fw-light text-wrap"> <i class='bi-clipboard nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Dashboard"></i> <span class="nav_name">Dashboard</span></a>
-                    <a href="#" class="nav_link text-white text-decoration-none text-wrap fw-light" data-bs-toggle="modal" data-bs-target="#addRouteM" id="submitButton"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Add rule"></i><span class="nav_name">Add rule</span></a> 
+                  <a href="{% url 'dashboard' %}" class="nav_link text-white text-decoration-none font-weight-light text-wrap"> <i class='bi-clipboard nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Dashboard"></i> <span class="nav_name">Dashboard</span></a>
+                    <a href="{% url 'group-routes' %}" class="nav_link text-white text-decoration-none font-weight-light text-wrap"> <i class='bi-table nav_icon text-primary' data-bs-toggle="tooltip" data-bs-placement="top" title="Routes"></i> <span class="nav_name">Routes</span></a>  
+                    <a href="#" class="nav_link text-white text-decoration-none text-wrap font-weight-light" data-bs-toggle="modal" data-bs-target="#addRouteM" id="submitButton"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Add rule"></i><span class="nav_name">Add rule</span></a> 
                     {% if user.is_staff%} 
-                    <a href="{% url 'attack-list'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-table nav_icon text-danger' data-bs-toggle="tooltip" data-bs-placement="top" title="Registrador de ataquqes"></i> <span class="nav_name">REM - Golem</span></a> 
+                    <a href="{% url 'attack-list'  %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-table nav_icon text-danger' data-bs-toggle="tooltip" data-bs-placement="top" title="REM-GOLEM"></i> <span class="nav_name">REM - Golem</span></a> 
                     {% endif %}
                     {% if user.is_superuser %}
-                    <a href="#submenu1" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="subMenu1"> <i class='bi-cloud nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Opciones de almacenamiento"></i> <span class="nav_name">Storage</span> </a>
+                    <a href="#submenu1" class="nav_link text-white text-decoration-none font-weight-light" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="subMenu1"> <i class='bi-cloud nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Storage"></i> <span class="nav_name">Storage</span> </a>
                         <div class="collapse" id="submenu1">
-                            <a href="#" class="nav_link text-white text-decoration-none fw-light text-wrap" data-bs-toggle="modal" data-bs-target="#confbModal" ><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Crear copia de seguridad"></i><span class="nav_name text-wrap">Create back up copy</span></a>
-                            <a href="#" class="nav_link text-white text-decoration-none fw-light"data-bs-toggle="modal" data-bs-target="#confresfileModal"><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Restaurar a partir de una copia de seguridad"></i><span class="nav_name">Restore from a back up copy</span></a>
-                            <a href="#" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="modal" data-bs-target="#confresdbModal"><i class="bi-arrow-repeat" data-bs-toggle="tooltip" data-bs-placement="top" title="Sincronizar con la BBDD"></i><span class="nav_name text-wrap">Syn with DB</span></a>
-                            <a href="#" class="nav_link text-white text-decoration-none fw-light" data-bs-toggle="modal" data-bs-target="#confsrModal"><i class="bi-router" data-bs-toggle="tooltip" data-bs-placement="top" title="Sincronizar reglas con router"></i><span class="nav_name text-wrap" >Syn with router</span></a>
-                            <a href="{% url 'db-backup'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Copia de la BD"></i> <span class="nav_name">Copy full DB</span></a>
-                            <a href="{% url 'db-restore'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Restauracion de la BD"></i> <span class="nav_name">Restore full DB</span></a> 
+                            <a href="#" class="nav_link text-white text-decoration-none font-weight-light text-wrap" data-bs-toggle="modal" data-bs-target="#confbModal" ><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Create back up copy"></i><span class="nav_name text-wrap">Create back up copy</span></a>
+                            <a href="#" class="nav_link text-white text-decoration-none font-weight-light"data-bs-toggle="modal" data-bs-target="#confresfileModal"><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Restore from a back up copy"></i><span class="nav_name">Restore from a back up copy</span></a>
+                            <a href="#" class="nav_link text-white text-decoration-none font-weight-light" data-bs-toggle="modal" data-bs-target="#confresdbModal"><i class="bi-arrow-repeat" data-bs-toggle="tooltip" data-bs-placement="top" title="Sync routes with DB"></i><span class="nav_name text-wrap">Sync routes with DB</span></a>
+                            <a href="#" class="nav_link text-white text-decoration-none font-weight-light" data-bs-toggle="modal" data-bs-target="#confsrModal"><i class="bi-router" data-bs-toggle="tooltip" data-bs-placement="top" title="Sync routes with router"></i><span class="nav_name text-wrap" >Sync routes with router</span></a>
+                            <a href="{% url 'db-backup'  %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Create a back up from your DB"></i> <span class="nav_name">Create a back up from your DB</span></a>
+                            <a href="{% url 'db-restore'  %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Restore DB"></i> <span class="nav_name">Restore DB</span></a> 
                           </div> 
                     {% endif %}
-                          <a href="{% url 'user-profile' %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-person nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Mi perfil"></i> <span class="nav_name">My profile</span></a>
+                          <a href="{% url 'user-profile' %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-person nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Mi perfil"></i> <span class="nav_name">My profile</span></a>
                     {% if user.is_superuser%} 
-                    <a href="{% url 'admin:index'  %}" class="nav_link text-white text-decoration-none fw-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Panel de Administrador"></i> <span class="nav_name">Admin</span></a> 
+                    <a href="{% url 'admin:index'  %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Panel de Administrador"></i> <span class="nav_name">Admin</span></a> 
                     {% endif %}
                 {% endif %}
                 </div>
@@ -88,7 +90,7 @@
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
-              <h5 class="modal-title" id="addRouteMLabel">Añadir una regla FW.</h5>
+              <h5 class="modal-title" id="addRouteMLabel">Add a new roule</h5>
                   <button type="button" class="btn btn-outline btn-info close" data-bs-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                   </button>
@@ -108,7 +110,7 @@
                     <div class="row">
                       <label for="id_value" class="col form-label float-start m-2">Code: </label>
                       <input type="text" id="id_value" name="value" class="col form-control m-2 " aria-describedby="valueHelpBlock">
-                      <button type="submit" class="btn btn-outline-primary btn-sm col float-end m-2">Yess</button>
+                      <button type="submit" class="btn btn-outline-primary btn-sm col float-end m-2">Yes</button>
                     </div>
                   </form>
                     {% else %}

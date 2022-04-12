@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="{% static 'datepicker/plugins/css/style.css' %}">
 <link rel="stylesheet" href="{% static 'datepicker/plugins/css/bootstrap-datetimepicker.min.css' %}">
 
+<link rel="stylesheet" href="{% static 'css/dashboard_style.css' %}">
 
 {% endblock %}
 {% block pagejs%}
@@ -218,12 +219,15 @@ $('document').ready(function(){
   }
 </style>
 <div class="container-fluid p-5 m-2">
-  <div class="row g-3">
-    <div class="col">
-      <h3 class="fw-light text-muted text-center p-3 m-2 text-start">Regla de firewall: {{route.name}} </h3>
+  <section>
+      <div class="row">
+        <div class="col">
+          <h5>More information about <span class="text-info">{{route.name}}</span></h5>
+        </div>
       </div>
-      </div>
-      <form class="d-flex flex-row bd-highlight mb-3 datepickers" method="POST" id="dateForm" name="dateForm">
+  
+  <div class="row">
+      <form class="d-flex flex-row bd-highlight datepickers" method="POST" id="dateForm" name="dateForm">
         {% csrf_token %}
         <input type="hidden" value={{route.name}} id="routename" name="routename">
         <div class='p-2 bd-highlight'>
@@ -248,5 +252,46 @@ $('document').ready(function(){
   
   <canvas id="curve_chart" class="w-100 h-75" name="curve_chart">
 </canvas>
+</section>
+<section>
+  <div class="row align-items-left">
+    <div class="col-sm-6">
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title text-success">{{route.name}}</h5>
+            <p class="card-text"> Status: <span class="badge bg-success">{{route.status}}</span>
+            {% if route.expires != None %}
+            <span class="text-muted"> Expires: {{route.expires}}</span></p>
+          {% endif %}
+            <p class="card-text"><small class="text-muted">Last updated: {{route.last_updated}} by {{route.applier_username_nice}}. 
+            {% if route.expires != None %}  
+            Days to expire: {{route.days_to_expire}} 
+             {% endif %}
+            </small></p>
+            <table class="table table-hover">
+            {{ route.get_table|safe|escape }}
+          </table>
+          <a href="{% url 'edit-route' route.name %}" class="btn btn-info btn-sm btn-warning" id="edit_button_{{route.pk}}">Edit route</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6" id="hero">
+      <div class="card">
+                  <h5 class="card-title">
+          Shortcuts
+                  </h5>
+                  <div class="card-body">
+                      <a class="btn btn-info btn-sm float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM">Add Route</a>
+                      <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}">User Routes</a>
+                      <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'user-profile' %}">Profile</a>
+                      <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'dashboard' %}">Dashboard</a>
+                    </div>
+              </div>
+    </div>
+
+  </div>
+</section>
+</div>
+
   
 {% endblock %}

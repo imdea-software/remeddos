@@ -4,185 +4,129 @@
 
 
 {% block extrahead %}
-<link href="{% static 'theme/css/plugins/morris/morris-0.4.3.min.css' %}" rel="stylesheet"> 
-<link href="{% static 'theme/css/plugins/timeline/timeline.css' %}" rel="stylesheet">
-<style type="text/css">
-	.dl-horizontal dt {
-		font-size: 15px;
-	}
-	.dl-horizontal dd {
-		font-size: 15px;
-	}
-</style>
+<link rel="stylesheet" href="{% static 'css/dashboard_style.css' %}">
 {% endblock %}
 {% block title %}{% trans "Dashboard" %}{% endblock %}
 {% block contentplaceholder %}
 {% csrf_token %}
-<div class="container p-5">
-            <div class="row">
-                <div class="col">
-                    <h1 class="text-end fw-light">{% trans "Dashboard" %}</h1>
-                </div>
-            </div>
-	<div class="row">
-                <div class="col">
-                	<div class="panel panel-default">
-						<div class="panel-body">
-                        <div class="panel-heading">
-                            <i class="bi-clock"></i> {% trans "Timeline" %} - {% trans "Últimos 10" %}
-                        </div>
+
+        <div class="container">
+			<section id="projects">
+				<div class="container">
+				  <!-- INFO -->
+				  <section id="hero">
+					<div class="container">
+					  <div class="row mb-5">
+						<div class="col">
+						  <h1>REM-e-DDOS <br> Dashboard </h1>
+						  <p>Here you can see the routes that you have been configured to protect for your insitution. <br> 
+							For more information about the routes that have been created for the REM-Golem attacks or the events themselves please follow one of the next links:</p>
+						  <div class="col-md-3 align-items-center">
+						  <button href="#" type="button" class="btn btn-dark btn-sm float-left">Pending Routes</button> <a href="{% url 'attack-list' %}" type="button" class="btn btn-dark btn-sm float-right">REM-GOLEM</a>
+						</div>
+						</div>
+					  </div>
+					  <div class="row cards">
+						<div class="col-md-4 d-flex justify-content-center">
+						  <div class="card" style="width: 18rem;">
+							<div class="card-body">
+								<p class="card-text"> Status: <span class="badge bg-success">ACTIVE</span><br>
+							 When a route is active it means that it has been saved on your database and configured in your router.</p>
+							</div>
+						  </div>
+						</div>
+				  
+						<div class="col-md-4 d-flex justify-content-center">
+						  <div class="card" style="width: 18rem;">
+							<div class="card-body">
+								<p class="card-text"> Status: <span class="badge bg-info">PENDING</span><br>
+							 A route will be pending when it was automatically created for a REM-GOLEM event. If you commit the route it will become ACTIVE.</p>
+							</div>
+						  </div>
+						</div>
+						
+						<div class="col-md-4 d-flex justify-content-center">
+							<div class="card" style="width: 18rem;">
+							  <div class="card-body">
+								  <p class="card-text"> Status: <span class="badge bg-danger">ERROR</span><br>
+							   When a route status is error it means that there was an error when trying to configure the route into the router, please talk to your adminsitrator if this is the case.</p>
+							  </div>
+							</div>
+						  </div>
+
+					  </div>
 					</div>
-				</div>
+				  </section>
+				  <!--ENDINFO -->
+				<section id="projects">
+				  <div class="row align-items-left">
+					<div class="col-sm-6">
+				  {% for route in routes %}
+				
 
-                        <!-- /.panel-heading -->
-                <div class="row">
-					<div class="col">        
-                            <div class="panel">{{messages}}</div>
-                            <ul class="timeline">
-                            	{% for route in routes %}
-                                <li class="{% cycle '' 'timeline-inverted' %}">
-                                    	{% if route.status == 'EXPIRED' or route.status == 'ADMININACTIVE' or route.status == 'INACTIVE' or route.status == 'OUTOFSYNC'%}
-											<div class="timeline-badge"><i class="bi-shield"></i></div>
-											{% if route.status == 'EXPIRED' or route.status == 'ADMININACTIVE' or route.status == 'INACTIVE' %}
-												<div class="timeline-badge"><i class="bi-bug"></i></div>
-											{% else %}
-												{% if route.status == 'OUTOFSYNC' %}
-													<div class="timeline-badge danger"><i class="bi bi-bug-fill"></i></div>
-												{% else %}
-													<div class="timeline-badge danger"><i class="bi bi-exclamation"></i></div>
-												{% endif %}
-											{% endif %}
-										{% else %}
-											{% if route.status == 'ACTIVE' %}
-												<div class="timeline-badge success"><i class="bi-shield"></i></div>
-											{% else %}
-												{% if route.status == 'PENDING' %}
-												<div class="timeline-badge info"><i class="bi-spinner"></i></div>
-												{% else %}
-												<div class="timeline-badge warning"><i class="bi-exclamation"></i></div>
-											{% endif %}
-											{% endif %}
-										{% endif %}
-                                    <div class="timeline-panel card">
-                                        <div class="timeline-heading card-title">
-                                            <h4 class="timeline-title" style="color: darkolivegreen;">{{route.name}}</h4>
-                                            <p>
-                                                <small class="text-muted"><i class="bi-pencil"></i> {% trans "Ultima actualización" %}: {{route.last_updated}} {% trans "por" %} {{route.applier_username_nice}}</small>
-                                            </p>
-                                            <p>	{% if route.expires %}
-                                                <small class="text-muted"><i class="bi-clock"></i> {% trans "Expira" %}: {{ route.expires|date:"d M y" }}</small>
-												{% else %}
-												<small class="text-muted"><i class="bi-clock"></i> {% trans "Expira" %}: Never</small>
-												{% endif %}
-                                            </p>
-                                        </div>
-                                        <div class="timeline-body">
-                                        		<p class="fs-6">
-                                        			{% if route.status == 'EXPIRED' or route.status == 'ADMININACTIVE' or route.status == 'INACTIVE' or route.status == 'OUTOFSYNC'%}
-														{% if route.status == 'EXPIRED' or route.status == 'ADMININACTIVE' or route.status == 'INACTIVE' %}
-														<span class="badge pill bg-dark">DESACTIVADA</span>
-														{% else %}
-															{% if route.status == 'OUTOFSYNC' %}
-																<span class="badge pill bg-danger">ERROR</span>
-															{% else %}
-																<span class="badge pill bg-info">{{route.status}}</span>
-															{% endif %}
-														{% endif %}
-													{% else %}
-														{% if route.status == 'ACTIVE' %}
-															<span class="badge pill bg-success">{{route.status}}</span>
-														{% else %}
-															{% if route.status == 'PENDING' %}
-																<span class="badge pill bg-info">{{route.status}}</span>
-															{% else %}
-																<span class="badge pill bg-warning">{{route.status}}</span>
-															{% endif %}
-														{% endif %}
-													{% endif %}
-                                        		</p>
-												<div class="container-fluid card-text">
-												<table class="table table-hover">
-												{{ route.get_table|safe|escape }}
-											</table>
-										</div>
+						{% if route.status == 'ACTIVE' %}
+						<div class="card mb-3">
+						<div class="card-body">
+							<h5 class="card-title text-success">{{route.name}}</h5>
+						  	<p class="card-text"> Status: <span class="badge bg-success">{{route.status}}</span>
+								{% if route.expires != None %}
+								<span class="text-muted"> Expires: {{route.expires}}</span></p>
+							{% endif %}
+						  	<p class="card-text"><small class="text-muted">Last updated: {{route.last_updated}} by {{route.applier_username_nice}}. 
+								{% if route.expires != None %}  
+								Days to expire: {{route.days_to_expire}} 
+							   {% endif %}
+							  </small></p>
+							  <table class="table table-hover">
+								{{ route.get_table|safe|escape }}
+							</table>
+							<a href="{% url 'edit-route' route.name %}" class="btn btn-info btn-sm btn-warning" id="edit_button_{{route.pk}}">Edit route</a>
+							<a href="{% url 'display-graphs' route.name %}" class="btn btn-sm btn-info" id="display_button_{{route.pk}}">Show graph</a>
 
-										<div class="row">
-											<div class="col">
-												{% if route.history %}
-												<a href="{% url 'route-updates' route.name %}" class="btn-outline btn-info btn btn-xs btn-info">{% trans "Ver Actualizaciones" %}</a>
-													{% else %}
-													<span>Esta ruta no ha sufrido actualizaciones</span>
-												{% endif %}
-											</div>
-										</div>
+						</div>
+					</div>
+						{% elif route.status == 'ERROR' %}
+						<div class="card mb-3">
+						<div class="card-body">
+							<h5 class="card-title text-danger">{{route.name}}</h5>
+							<p class="card-text"> Status: <span class="badge bg-danger">{{route.status}}</span></p>
+							<p class="card-text"><small class="text-muted">{{route}}</small></p>
+						</div>
+					</div>
+						{% elif route.status == 'DEACTIVATED' %}
+						<div class="card mb-3">
+						<div class="card-body">
+							<h5 class="card-title text-dark">{{route.name}}</h5>
+							<p class="card-text"> Status: <span class="badge bg-dark">{{route.status}}</span></p>
+							<p class="card-text"><small class="text-muted">{{route}}</small></p>
+						</div>
+					</div>
+						{% endif %}
+						
+				{% endfor %}
 
-										<div class="row">
-										<div class="btn-group d-block gap-2 flex-row-reverse">
-										{% ifequal route.status 'ACTIVE' %}
-											<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-outline btn-xs btn-warning" id="edit_button_{{route.pk}}">{% trans "Editar" %}</a>
-											<a href="{% url 'display-graphs' route.name %}" class="btn-outline btn btn-xs btn-info" id="display_button_{{route.pk}}">{% trans "Mostrar gráfica!" %}</a>
-											<!-- <button class="del_buttonpre btn-outline btn btn-xs btn-warning" id="{{route.name}}" data-routename="{{route.name}}">{% trans "Deactivate" %}</button> -->
-										{% else %}
-											{% if route.status == 'EXPIRED' or route.status == 'ADMININACTIVE' or route.status == 'INACTIVE' %}
-												<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-outline" id="edit_button_{{route.pk}}" type="button">{% trans "Reactivar" %}</a>
-											{% else %}
-												{% ifequal route.status 'OUTOFSYNC' %}
-													<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-outline" id="edit_button_{{route.pk}}">{% trans "Resincronizar" %}</a>
-												{% else %}
-													{% ifequal route.status 'ERROR' %}
-														<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-outline" id="edit_button_{{route.pk}}">{% trans "Arreglar!" %}</a>
-													{% else %}
-													-
-													{% endifequal %}
-												{% endifequal %}
-											{% endif %}
-										{% endifequal %}
-										</div>
-                                        </div>
-                                    </div>
-									</div>
-                                </li>
-
-                                {% endfor %}
-                            </ul>
-                        </div>
+			</div>
+			<div class="col-sm-6" id="hero">
+				<div class="card">
+                    <h5 class="card-title">
+						Shortcuts
+                    </h5>
+                    <div class="card-body">
+                        <a class="btn btn-info btn-sm float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM">Add Route</a>
+						<a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}">User Routes</a>
+						<a class="btn btn-info btn-sm float-left ml-2" href="{% url 'user-profile' %}">Profile</a>
                     </div>
-            </div>
-</div>
-</div>              
+                </div>
+			</div>
+		</div>
+	</section>
+<section>
+
+</section>		
+
+</div>   
 {% endblock %}
 {% block pagejsbottom %}
-<script type="text/javascript" src="{{STATIC_URL}}js/jquery.dataTables.js"></script>
-<script type="text/javascript" src="{{STATIC_URL}}js/datatables_bootstrap.js"></script>
-
-<script>
-		var oldhtml;
-		var last_element = false;
-		var refreshUrl = "{% url 'group-routes-ajax' %}";
-		$(document).ready( function(){
-		$('body').on('click', ".del_buttonpre", function(){
-            	var my = $(this);
-            	if (last_element != false){
-            		last_element.html(oldhtml);
-            	}
-            	oldhtml = my.parent().html();
-            	last_element = my.parent();
-            	var routename = $(this).data("routename");
-				var btn = '<a href="#" data-toggle="tooltip" title="This will deactivate your rule"  data-routename="'+routename+'" class="del_button btn btn-xs btn-warning"> {% trans "Desactivar" %}</a>'
-				var back = '<a href="#" class="revertbutton btn btn-xs btn-info"><i class="fa fa-undo"></i></a>';
-            	my.parent().html(back+" "+btn);
-            	return false;
-            });
-			$('body').on('click', '.revertbutton', function () {
-            	var my = $(this);
-            	my.parent().html(oldhtml);
-            	last_element = false;
-            	return false;
-            });
-			$("body").tooltip({ selector: '[data-toggle="tooltip"]' });
-
-			}); 
-</script>
 
 
 {% endblock %}

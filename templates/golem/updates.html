@@ -11,7 +11,12 @@
 <div class="container">
     <div class="row m-2 p-5">
         <div class="col">
-            <h5 class="text-end fw-light"> Attack with ID: <span class="text-danger">{{golem.id_name}}</span></h5>
+            <h5 class="text-end font-weight-light"> Attack with ID: <span class="text-danger">{{golem.id_name}}</span></h5>
+        </div>
+    </div>
+    <div class="row mb-2">
+        <div class="col">
+            <a href="{% url 'attack-list' %}" class="fw-light text-danger text-start" style="text-decoration: none;"> <i class="bi bi-arrow-left-short"></i> REM-Golem events</a>
         </div>
     </div>
     <div class="row">

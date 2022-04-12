@@ -15,6 +15,11 @@
         <h5 class="fw-light text-end">Rules proposed for the attack <span class="text-danger">{{golem_name}}</span> </h5>
     </div>
 </div>
+<div class="row">
+    <div class="col">
+        <a href="{% url 'attack-list' %}" class="fw-light text-danger text-start" style="text-decoration: none;"> <i class="bi bi-arrow-left-short"></i> REM-Golem events</a>
+    </div>
+</div>
 <div class="row pt-3">
     <div class="col">
         {% if routes != None %}
@@ -40,8 +45,11 @@
                 </td>
                 <td><small>{{route.status}}</small></td>
                 <td>
-                    <small><a href="{% url 'commit' route.name %}" class="btn btn-outline btn-danger" data-bs-toggle="tooltip" data-bs-placement="top" title="Add rule"><i class="bi bi-patch-plus"></i></a></small>
-                    <small><a href="{% url 'edit' route.name  %}" class="btn btn-outline btn-warning" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit rule"><i class="bi bi-pencil"></i></a></small>
+                    {% if not route.status == 'ACTIVE' %}
+                    <a href="{% url 'commit' route.name %}" class="btn btn-outline btn-danger" data-bs-toggle="tooltip" data-bs-placement="top" title="Commit route to router"><i class="bi bi-patch-plus"></i></a>
+                    {% else %}
+                    {% endif %}
+                    <a href="{% url 'edit' route.name  %}" class="btn btn-outline btn-warning" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit rule"><i class="bi bi-pencil"></i></a>
                     <a href="{% url 'exterminate' route.name  %}" class="btn btn-outline btn-dark" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete rule"><i class="bi bi-trash"></i></a>
                 </td>
             </tr>

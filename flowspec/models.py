@@ -349,6 +349,7 @@ class Route_CV(models.Model):
                 send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
             except Exception as e:
                 print('There was an exception when trying to notify the user via e-mail, ',e)
+                
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None
@@ -687,7 +688,7 @@ class Route_CV(models.Model):
 
     @property
     def days_to_expire(self):
-        if self.statenot in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days
@@ -1184,7 +1185,7 @@ class Route_IMDEA(models.Model):
 
     @property
     def days_to_expire(self):
-        if self.statenot in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days
@@ -1684,7 +1685,7 @@ class Route_CIB(models.Model):
 
     @property
     def days_to_expire(self):
-        if self.statenot in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days
@@ -2167,7 +2168,7 @@ class Route_CSIC(models.Model):
 
     @property
     def days_to_expire(self):
-        if self.statenot in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days
@@ -2667,7 +2668,7 @@ class Route_CEU(models.Model):
 
     @property
     def days_to_expire(self):
-        if self.statenot in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days
@@ -3165,7 +3166,7 @@ class Route_CUNEF(models.Model):
 
     @property
     def days_to_expire(self):
-        if self.statenot in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days
@@ -3663,7 +3664,7 @@ class Route_IMDEANET(models.Model):
 
     @property
     def days_to_expire(self):
-        if self.statenot in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days
@@ -4161,7 +4162,7 @@ class Route(models.Model):
 
     @property
     def days_to_expire(self):
-        if self.statenot in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days
@@ -4659,7 +4660,7 @@ class Route_UAM(models.Model):
 
     @property
     def days_to_expire(self):
-        if self.statenot in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days
@@ -5157,7 +5158,7 @@ class Route_UAH(models.Model):
 
     @property
     def days_to_expire(self):
-        if self.statenot in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days
@@ -5655,7 +5656,7 @@ class Route_UC3M(models.Model):
 
     @property
     def days_to_expire(self):
-        if self.statenot in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days
@@ -6172,7 +6173,7 @@ class Route_UCM(models.Model):
 
     @property
     def days_to_expire(self):
-        if self.statenot in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days
@@ -6673,7 +6674,7 @@ class Route_UEM(models.Model):
 
     @property
     def days_to_expire(self):
-        if self.statenot in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days
@@ -7174,7 +7175,7 @@ class Route_UNED(models.Model):
 
     @property
     def days_to_expire(self):
-        if self.statenot in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days
@@ -7672,7 +7673,7 @@ class Route_UPM(models.Model):
 
     @property
     def days_to_expire(self):
-        if self.statenot in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days
@@ -8170,7 +8171,7 @@ class Route_URJC(models.Model):
 
     @property
     def days_to_expire(self):
-        if self.statenot in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days
