@@ -86,7 +86,6 @@ class GolemAttack(models.Model):
 
     def set_route(self,route):
         peers = Peer.objects.all()
-        print('inside set_route')
         for peer in peers:
             self.route.add(route) if self.peer.peer_tag == 'Punch' else None
             self.route_cv.add(route) if self.peer.peer_tag == 'CV' else None

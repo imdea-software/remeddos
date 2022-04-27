@@ -4,6 +4,7 @@
 {% block extrahead %}
 <link rel="stylesheet" href="{% static 'css/plugins/dataTables/style.css' %}">
 <link rel="stylesheet" href="{% static 'css/plugins/dataTables/style.scss' %}">
+<link rel="stylesheet" href="{% static 'css/section_style.css' %}">
 {% endblock %}
 {% block title %}{% trans "Ataques recientes" %}{% endblock %}
 
@@ -45,12 +46,14 @@
                 </td>
                 <td><small>{{route.status}}</small></td>
                 <td>
+                    <div class="col-2 btn-group d-inline">
                     {% if not route.status == 'ACTIVE' %}
-                    <a href="{% url 'commit' route.name %}" class="btn btn-outline btn-danger" data-bs-toggle="tooltip" data-bs-placement="top" title="Commit route to router"><i class="bi bi-patch-plus"></i></a>
+                    <a href="{% url 'commit' route.name %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Commit route to router" class="btn btn-outline btn-dark m-1"><i class="bi bi-patch-plus text-danger"></i></a>
                     {% else %}
                     {% endif %}
-                    <a href="{% url 'edit' route.name  %}" class="btn btn-outline btn-warning" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit rule"><i class="bi bi-pencil"></i></a>
-                    <a href="{% url 'exterminate' route.name  %}" class="btn btn-outline btn-dark" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete rule"><i class="bi bi-trash"></i></a>
+                    <a href="{% url 'edit' route.name  %}"  data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit rule" class="btn btn-outline btn-dark m-1"><i class="bi bi-pencil text-warning"></i></a>
+                    <a href="{% url 'exterminate' route.name  %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete rule" class="btn btn-outline btn-dark m-1"><i class="bi bi-trash text-dark"></i></a>
+                </div>
                 </td>
             </tr>
                {% endfor %}
@@ -60,7 +63,19 @@
         <p class="fw-light">No hay reglas asociadas a este ataque todavía. Porfavor contacte con RediMadrid en caso de que no se proponga ninguna regla antes de que finalice el ataque.</p>
         {% endif %}
     </div>
-
+</div>
+<div class="col-sm-6" id="section">
+    <div class="card">
+        <h5 class="card-title">
+            Shortcuts
+        </h5>
+        <div class="card-body btn-group">
+            <a class="btn btn-info btn-sm float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus"></i> Add Route</a>
+            <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table"></i> User Routes</a>
+            <a href="{% url 'pending-routes' %}" type="button" class="btn btn-info btn-sm float-left ml-2"> <i class="bi-clipboard"></i> Proposed Routes</a>
+            <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard"></i> Dashboard</a>
+        </div>
+    </div>
 </div>
 </div>
 {% endblock %}
@@ -68,7 +83,19 @@
 {% block pagejsbottom %}
 <script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.5/af-2.3.7/b-2.2.2/datatables.min.js"></script>
 <script type="text/javascript">
-    
+    $('#routebutton').click(function(){
+      $.ajax({
+              url: "{% url 'add-route' %}",
+              type: "GET",
+              dataType: "json",
+              success: (data) => {
+                console.log('it worked');
+              },
+              error: (error) => {
+                console.log(error);
+              }
+            });
+     });
     $(document).ready(function(){
         $('#golemtable').DataTable({
             "bAutoWidth": true,

@@ -12,6 +12,8 @@ RUN sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-
 RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 RUN apt-get update && apt-get -y install postgresql
 RUN apt-get install -y libxml2-dev libxslt-dev gcc python-dev dnsutils
+RUN apt-get -y install openssh-server 
+
 RUN cd ~ && \
     git clone https://github.com/leopoul/ncclient.git && \
     cd ncclient && \
@@ -20,7 +22,6 @@ RUN cd ~ && \
     git clone https://code.grnet.gr/git/nxpy 
 
 RUN cd /srv/redifod/ && \
-    python3.6 - m pip install paramiko && \
     python3.6 -m pip install -r requirements.txt 
 
 RUN mkdir -p /var/log/fod && \
@@ -34,4 +35,5 @@ RUN mkdir -p /var/log/fod && \
 
 RUN export PATH=$PATH:/usr/lib/postgresql/13/bin/psql
 
+EXPOSE 22
 EXPOSE 8000

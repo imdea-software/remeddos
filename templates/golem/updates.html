@@ -4,6 +4,9 @@
 
 
 {% block extrahead %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.3/datatables.min.css"/>
+<link rel="stylesheet" href="{% static 'css/table_style.css' %}">
+<link rel="stylesheet" href="{% static 'css/section_style.css' %}">
 {% endblock %}
 {% block title %}{% trans "Attack's updates" %}{% endblock %}
 {% block contentplaceholder %}
@@ -19,23 +22,66 @@
             <a href="{% url 'attack-list' %}" class="fw-light text-danger text-start" style="text-decoration: none;"> <i class="bi bi-arrow-left-short"></i> REM-Golem events</a>
         </div>
     </div>
-    <div class="row">
-        <div class="col">
-            <table class="table table-responsive table-hover ">
-                <thead>
-                    <th>Updates</th>
-                </thead>
-                <tbody>
-                    {% for update in updates %}
-                    <tr>
-                        <td>{{update}}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+
+    <div class="row mt-5">
+        {% if updates %}
+        {% for update in updates %}
+        <div class="col-sm-3 font-weight-bold">Update</div>
+        <div class="col-sm-9 text-truncate">{{update}}</div>
+        {% endfor %}
+        {% else %}
+        <p class="text-center text-sm-left">There are no updates right now, please wait a few minutes for any updates.</p>
+        {% endif %}
     </div>
 
+    <div class="col-sm-6 mt-5" id="section">
+    <section>
+            <div class="card">
+                        <h5 class="card-title float-left">
+                Shortcuts
+                        </h5>
+                        <div class="card-body btn-group">
+                            <a class="btn btn-info btn-sm float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus"></i> Add Route</a>
+                            <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table"></i> User Routes</a>
+                            <a href="{% url 'pending-routes' %}" type="button" class="btn btn-info btn-sm float-left ml-2"> <i class="bi-clipboard"></i> Proposed Routes</a>
+                            <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard"></i> Dashboard</a>
+                        </div>
+                    </div>
+        </section>
+    
 
 </div>
+{% endblock %}
+
+{% block pagejsbottom %}
+<!-- <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.11.5/datatables.min.js"></script> -->
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.5/af-2.3.7/b-2.2.2/datatables.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+    $('#updates_table').DataTable({
+        "order": [[ 1, "asc" ]],
+        "AutoWidth": true,
+        "aLengthMenu" : [
+            [5, 15, 20, -1],
+            [5, 15, 20, "All"]
+        ],
+        
+        "Processing": true, 
+        "DisplayLength": 5,
+    });
+})
+$('#routebutton').click(function(){
+      $.ajax({
+              url: "{% url 'add-route' %}",
+              type: "GET",
+              dataType: "json",
+              success: (data) => {
+                console.log('it worked');
+              },
+              error: (error) => {
+                console.log(error);
+              }
+            });
+     });
+    </script>
 {% endblock %}

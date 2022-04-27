@@ -4,6 +4,7 @@
 {% block extrahead %}
    <!--  <link href="{% static 'theme/css/plugins/dataTables/dataTables.bootstrap.css' %}" rel="stylesheet"> -->
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.3/datatables.min.css"/>
+    <link rel="stylesheet" href="{% static 'css/section_style.css' %}">
     
     <style>
         body{
@@ -57,18 +58,47 @@
                 </tbody>
             </table>
             </div>
-         </div>
-    </div>
+
+            <div class="col-sm-6 mt-5 float-end" id="section">
+                <div class="card">
+                    <h5 class="card-title text-left">
+                        Shortcuts
+                    </h5>
+                    <div class="card-body btn-group">
+                        <a class="btn btn-info btn-sm float-left" id="addbutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus"></i> Add Route</a>
+						<a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table"></i> User Routes</a>
+						<a href="{% url 'pending-routes' %}" type="button" class="btn btn-info btn-sm float-left ml-2"> <i class="bi-clipboard"></i> Proposed Routes</a>
+						<a class="btn btn-info btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard"></i> Dashboard</a>
+                    </div>
+                </div>
+            </div>
+
+
+</div>
 
 
 
 {% endblock %}
 
 {% block pagejsbottom %} 
-    <script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.3/datatables.min.js"></script>
 
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.3/datatables.min.js"></script>
 <script type="text/javascript">
-var filterbtns = '<div class="btn-group d-block gap-2">\
+$('#addbutton').click(function(){
+      $.ajax({
+              url: "{% url 'add-route' %}",
+              type: "GET",
+              dataType: "json",
+              success: (data) => {
+                console.log('it worked');
+              },
+              error: (error) => {
+                console.log(error);
+              }
+            });
+     });
+
+var filterbtns = '<div class="btn-group d-block gap-4">\
     <button type="button" class="btn btn-outline btn-sm btn-success" name="status_filter" value="ACTIVE" id="show_active">ACTIVE</button>\
     <button type="button" class="btn btn-outline btn-sm btn-info" name="status_filter" value="PENDING" id="show_pending">PENDING</button>\
     <button type="button" class="btn btn-outline btn-sm btn-warning" name="status_filter" value="ERROR" id="show_error">ERROR</button>\
@@ -177,7 +207,10 @@ $(document).ready( function(){
                             if (!full.comments.trim()) {
                                return '<small>' + data + '</small>';
                             }
-                            return '<a rel="tooltip" href="#" data-bs-toggle="tooltip" data-bs-placement="top" title='+full.comments+'><small>'+data+'</small>'
+                            displayurl = "{% url 'edit-route' route_slug='routename'  %}".replace('routename', full.name.toString());
+                            console.log('   is this working?')
+                            console.log('diSPLAY URL : '+displayurl)
+                            return '<a rel="tooltip" href="'+displayurl+'" data-bs-toggle="tooltip" data-bs-placement="top" title='+full.comments+'><small>'+data+'</small>'
                         } else {
                             return 'No comments'
                         }

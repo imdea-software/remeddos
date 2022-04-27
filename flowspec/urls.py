@@ -3,11 +3,12 @@ from flowspec import views
 from django.conf import settings
 from django.conf.urls.static import static
 
-urlpatterns = [ 
-    path('',views.group_routes, name="group-routes"),
+urlpatterns = [
+    path('', views.dashboard, name="dashboard"),
+    path('group_routes/',views.group_routes, name="group-routes"),
+    path('pending_routes/',views.pending_routes, name="pending-routes"),
     re_path(r'^routes_ajax/?$', views.group_routes_ajax, name="group-routes-ajax"),
-    re_path(r'^overview_ajax/?$', views.overview_routes_ajax, name="overview-ajax"),
-    re_path(r'^dashboard/$', views.dashboard, name="dashboard"),
+    re_path(r'^overview_ajax/?$', views.overview_routes_ajax, name="overview-ajax"),    
     re_path(r'^profile/?$', views.user_profile, name="user-profile"),
     re_path(r'^add/?$', views.verify_add_user, name="add-route"),
     path('addroute',views.add_route,name="add"),

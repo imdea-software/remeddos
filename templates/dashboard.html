@@ -5,6 +5,7 @@
 
 {% block extrahead %}
 <link rel="stylesheet" href="{% static 'css/dashboard_style.css' %}">
+<link rel="stylesheet" href="{% static 'css/section_style.css' %}">
 {% endblock %}
 {% block title %}{% trans "Dashboard" %}{% endblock %}
 {% block contentplaceholder %}
@@ -21,8 +22,9 @@
 						  <h1>REM-e-DDOS <br> Dashboard </h1>
 						  <p>Here you can see the routes that you have been configured to protect for your insitution. <br> 
 							For more information about the routes that have been created for the REM-Golem attacks or the events themselves please follow one of the next links:</p>
-						  <div class="col-md-3 align-items-center">
-						  <button href="#" type="button" class="btn btn-dark btn-sm float-left">Pending Routes</button> <a href="{% url 'attack-list' %}" type="button" class="btn btn-dark btn-sm float-right">REM-GOLEM</a>
+						  <div class="col-md-3  align-items-center" style="display:inline-block;">
+						  <a href="{% url 'pending-routes' %}" type="button" class="btn btn-dark btn-sm float-left">Proposed Routes</a>
+						  <a href="{% url 'attack-list' %}" type="button" class="btn btn-dark btn-sm float-right">REM-GOLEM</a>
 						</div>
 						</div>
 					  </div>
@@ -62,8 +64,6 @@
 				  <div class="row align-items-left">
 					<div class="col-sm-6">
 				  {% for route in routes %}
-				
-
 						{% if route.status == 'ACTIVE' %}
 						<div class="card mb-3">
 						<div class="card-body">
@@ -77,11 +77,11 @@
 								Days to expire: {{route.days_to_expire}} 
 							   {% endif %}
 							  </small></p>
-							  <table class="table table-hover">
+							  <small><table class="table table-hover">
 								{{ route.get_table|safe|escape }}
-							</table>
+							</table></small>
 							<a href="{% url 'edit-route' route.name %}" class="btn btn-info btn-sm btn-warning" id="edit_button_{{route.pk}}">Edit route</a>
-							<a href="{% url 'display-graphs' route.name %}" class="btn btn-sm btn-info" id="display_button_{{route.pk}}">Show graph</a>
+							<a href="{% url 'display-graphs' route.name %}" class="btn btn-sm btn-info" id="display_button_{{route.pk}}">More information</a>
 
 						</div>
 					</div>
@@ -90,15 +90,15 @@
 						<div class="card-body">
 							<h5 class="card-title text-danger">{{route.name}}</h5>
 							<p class="card-text"> Status: <span class="badge bg-danger">{{route.status}}</span></p>
-							<p class="card-text"><small class="text-muted">{{route}}</small></p>
+							<small><table class="table table-hover">{{route.get_table | safe | escape}} </table> </small>
 						</div>
 					</div>
-						{% elif route.status == 'DEACTIVATED' %}
+						{% elif route.status == 'EXPIRED' %}
 						<div class="card mb-3">
 						<div class="card-body">
 							<h5 class="card-title text-dark">{{route.name}}</h5>
 							<p class="card-text"> Status: <span class="badge bg-dark">{{route.status}}</span></p>
-							<p class="card-text"><small class="text-muted">{{route}}</small></p>
+							<small><table class="table table-hover">{{route.get_table | safe | escape}} </table> </small>
 						</div>
 					</div>
 						{% endif %}
@@ -106,15 +106,14 @@
 				{% endfor %}
 
 			</div>
-			<div class="col-sm-6" id="hero">
+			<div class="col-sm-6" id="hero" style="display:block">
 				<div class="card">
-                    <h5 class="card-title">
-						Shortcuts
-                    </h5>
-                    <div class="card-body">
-                        <a class="btn btn-info btn-sm float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM">Add Route</a>
-						<a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}">User Routes</a>
-						<a class="btn btn-info btn-sm float-left ml-2" href="{% url 'user-profile' %}">Profile</a>
+                    <h5 class="card-title">Shortcuts</h5>
+                    <div class="card-body btn-group">
+                        <a class="btn btn-info btn-sm float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus"></i> Add Route</a>
+						<a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table"></i> User Routes</a>
+						<a href="{% url 'pending-routes' %}" type="button" class="btn btn-info btn-sm float-left ml-2"> <i class="bi-clipboard"></i> Proposed Routes</a>
+						<a class="btn btn-info btn-sm float-left ml-2" href="{% url 'user-profile' %}"> <i class="bi-person"></i> Profile</a>
                     </div>
                 </div>
 			</div>
@@ -127,6 +126,20 @@
 </div>   
 {% endblock %}
 {% block pagejsbottom %}
-
+<script>
+	$('#routebutton').click(function(){
+      $.ajax({
+              url: "{% url 'add-route' %}",
+              type: "GET",
+              dataType: "json",
+              success: (data) => {
+                console.log('it worked');
+              },
+              error: (error) => {
+                console.log(error);
+              }
+            });
+     });
+</script>
 
 {% endblock %}

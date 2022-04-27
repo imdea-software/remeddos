@@ -96,7 +96,12 @@ def get_code():
 def user_routes(request):
     #user_routes = Route.objects.filter(applier=request.user)
     user = request.user
-    user_routes = find_routes(user.username)
+    routes = find_routes(user.username)
+    user_routes = []
+    for route in routes:
+        if route.applier != None:
+            print(route)
+            user_routes.append(route)
     return render(
         request,
         'user_routes.html',
@@ -169,6 +174,7 @@ def group_routes(request):
 @login_required
 @never_cache
 def group_routes_ajax(request):
+    print('PENDING 1')
     all_group_routes = []
     applier = request.user
     user = User.objects.get(username=applier)
@@ -222,68 +228,71 @@ def build_routes_json(groutes, is_superuser):
             'protocol',
             'dscp',
     ):
-        rd = {}
-        rd['id'] = r.pk
-        rd['port'] = r.port
-        rd['sourceport'] = r.sourceport
-        rd['destinationport'] = r.destinationport
-        # name with link to rule details
-        rd['name'] = r.name
-        rd['details'] = '<a href="%s">%s</a>' % (r.get_absolute_url(), r.name)
-        if not r.comments:
-            rd['comments'] = 'Not Any'
-        else:
-            rd['comments'] = r.comments
-        rd['match'] = r.get_match()
-        rd['then'] = r.get_then()
-        rd['status'] = r.status
-        # in case there is no applier (this should not occur)
-        try:
-            #rd['applier'] = r.applier.username
-            userinfo = r.applier_username_nice
-            #if is_superuser:
-            #  applier_username = r.applier.username
-            #  if applier_username != userinfo:
-            #    userinfo += " ("+applier_username+")"
-            rd['applier'] = userinfo
-        except:
-            rd['applier'] = 'unknown'
-            rd['peer'] = ''
-        else:
+        if r.applier != None: 
+            rd = {}
+            rd['id'] = r.pk
+            rd['port'] = r.port
+            rd['sourceport'] = r.sourceport
+            rd['destinationport'] = r.destinationport
+            # name with link to rule details
+            rd['name'] = r.name
+            rd['details'] = '<a href="%s">%s</a>' % (r.get_absolute_url(), r.name)
+            if not r.comments:
+                rd['comments'] = 'Not Any'
+            else:
+                rd['comments'] = r.comments
+            rd['match'] = r.get_match()
+            rd['then'] = r.get_then()
+            rd['status'] = r.status
+            # in case there is no applier (this should not occur)
             try:
-                peers = r.applier.profile.peers.prefetch_related('networks')
-                username = None
-                for peer in peers:
-                    if username:
-                        break
-                    for network in peer.networks.all():
-                        net = IPNetwork(network)
-                        if IPNetwork(r.destination) in net:
-                            username = peer.peer_name
-                            break
+                #rd['applier'] = r.applier.username
+                userinfo = r.applier_username_nice
+                #if is_superuser:
+                #  applier_username = r.applier.username
+                #  if applier_username != userinfo:
+                #    userinfo += " ("+applier_username+")"
+                rd['applier'] = userinfo
+            except:
+                rd['applier'] = 'unknown'
+                rd['peer'] = ''
+            else:
                 try:
-                    rd['peer'] = username
-                except UserProfile.DoesNotExist:
-                    rd['peer'] = ''
-            except Exception as e:
-                print(e)
+                    peers = r.applier.profile.peers.prefetch_related('networks')
+                    username = None
+                    for peer in peers:
+                        if username:
+                            break
+                        for network in peer.networks.all():
+                            net = IPNetwork(network)
+                            if IPNetwork(r.destination) in net:
+                                username = peer.peer_name
+                                break
+                    try:
+                        rd['peer'] = username
+                    except UserProfile.DoesNotExist:
+                        rd['peer'] = ''
+                except Exception as e:
+                    print(e)
 
-        rd['expires'] = "%s" % r.expires
-        rd['response'] = "%s" % r.response
-        routes.append(rd)
+            rd['expires'] = "%s" % r.expires
+            rd['response'] = "%s" % r.response
+            routes.append(rd)
     return routes
 
 @verified_email_required
 @login_required
 def verify_add_user(request):
     if request.is_ajax and request.method == "GET":
-        num = get_code()
-        user = request.user
-        msg = "El usuario {user} ha solicitado un codigo de seguridad para añadir una nueva regla. Código: '{code}'.".format(user=user,code=num)
-        code = Validation(value=num,user=request.user)
-        code.save()
-        send_message(msg)
-        return JsonResponse({"valid":True}, status = 200)     
+        if request.session.get('token') != Validation.objects.latest('id'):
+            num = get_code()
+            user = request.user
+            msg = "El usuario {user} ha solicitado un codigo de seguridad para añadir una nueva regla. Código: '{code}'.".format(user=user,code=num)
+            code = Validation(value=num,user=request.user)
+            code.save()
+            request.session['token'] = num
+            send_message(msg)
+            return JsonResponse({"valid":True}, status = 200)     
     if request.method=='POST':
         form = ValidationForm(request.POST)
         if form.is_valid():
@@ -423,7 +432,7 @@ def edit_route(request, route_slug):
     applier = request.user.pk
     username = request.user.username
     #route_edit = get_object_or_404(get_edit_route(username), name=route_slug)
-    route_edit = get_specific_route(applier=None, peer=None, route_slug=route_slug)
+    route_edit = get_specific_route(applier=request.user.username, peer=None, route_slug=route_slug)
     print('lets see the route, fff, ', route_edit)
     applier_peer_networks = []
     if request.user.is_superuser:
@@ -504,6 +513,7 @@ def edit_route(request, route_slug):
                 }
             )
     else:
+        print('route_edit within edit, ', route_edit)
         routename = route_edit.name
         if (not route_original.status== 'ACTIVE'):
             route_edit.expires = datetime.date.today() + datetime.timedelta(days=settings.EXPIRATION_DAYS_OFFSET-1)
@@ -828,7 +838,6 @@ def ajax_graphs(request):
             }
         return JsonResponse(data,status=200)
     if request.method == "POST":
-        print('inside ajax_graphs')
         from_time = request.POST.get('from')
         till_time = request.POST.get('till')
         routename = request.POST.get('routename')
@@ -857,7 +866,6 @@ def ajax_graphs(request):
 @login_required
 @never_cache
 def display_graphs(request,route_slug):
-    print('INSIDE DISPLAY GRAPHS')
     uname = request.user.username
     route = get_object_or_404(get_edit_route(uname), name=route_slug)
     #route = get_object_or_404(Route, name=route_slug)
@@ -876,6 +884,25 @@ def get_routes_router():
     for flow_nodes in flow:
         routes = flow_nodes   
     return routes
+""" PENDING ROUTES """
+@verified_email_required
+@login_required
+@never_cache
+def pending_routes(request):
+    print('pending_routes  1')
+    try:
+        user = request.user
+        routes = find_routes(user.username)
+    except UserProfile.DoesNotExist:
+        error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
+        return render(request,'error.html',{'error': error})
+    all_routes = []
+    for r in routes:
+        if r.applier == None:
+            all_routes.append(r)    
+    return render(request,'pending_routes.html',{'routes':all_routes})
+
+
 
 @verified_email_required
 @login_required

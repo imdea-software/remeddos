@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="{% static 'datepicker/plugins/css/style.css' %}">
 <link rel="stylesheet" href="{% static 'datepicker/plugins/css/bootstrap-datetimepicker.min.css' %}">
 
-<link rel="stylesheet" href="{% static 'css/dashboard_style.css' %}">
+<link rel="stylesheet" href="{% static 'css/section_style.css' %}">
 
 {% endblock %}
 {% block pagejs%}
@@ -28,6 +28,20 @@
 {% block pagejsbottom %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
 <script>
+$('#addRuleButton').click(function(){
+      $.ajax({
+              url: "{% url 'add-route' %}",
+              type: "GET",
+              dataType: "json",
+              success: (data) => {
+                console.log('it worked');
+              },
+              error: (error) => {
+                console.log(error);
+              }
+            });
+     });
+
 function sameOrigin(url) {
     // test that a given url is a same-origin URL
     // url could be relative or scheme relative or absolute
@@ -219,7 +233,7 @@ $('document').ready(function(){
   }
 </style>
 <div class="container-fluid p-5 m-2">
-  <section>
+  <section id="section">
       <div class="row">
         <div class="col">
           <h5>More information about <span class="text-info">{{route.name}}</span></h5>
@@ -253,7 +267,7 @@ $('document').ready(function(){
   <canvas id="curve_chart" class="w-100 h-75" name="curve_chart">
 </canvas>
 </section>
-<section>
+<section id="section">
   <div class="row align-items-left">
     <div class="col-sm-6">
       <div class="card mb-3">
@@ -268,7 +282,7 @@ $('document').ready(function(){
             Days to expire: {{route.days_to_expire}} 
              {% endif %}
             </small></p>
-            <table class="table table-hover">
+            <table class="table table-hover table-responsive">
             {{ route.get_table|safe|escape }}
           </table>
           <a href="{% url 'edit-route' route.name %}" class="btn btn-info btn-sm btn-warning" id="edit_button_{{route.pk}}">Edit route</a>
@@ -280,11 +294,11 @@ $('document').ready(function(){
                   <h5 class="card-title">
           Shortcuts
                   </h5>
-                  <div class="card-body">
-                      <a class="btn btn-info btn-sm float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM">Add Route</a>
-                      <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}">User Routes</a>
-                      <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'user-profile' %}">Profile</a>
-                      <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'dashboard' %}">Dashboard</a>
+                  <div class="card-body btn-group">
+                      <a class="btn btn-info btn-sm float-left" id="addRuleButton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus"></i> Add Route</a>
+                      <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table"></i> User Routes</a>
+                      <a href="{% url 'pending-routes' %}" type="button" class="btn btn-info btn-sm float-left ml-2"> <i class="bi-clipboard"></i> Proposed Routes</a>
+                      <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard"></i> Dashboard</a>
                     </div>
               </div>
     </div>
@@ -295,3 +309,4 @@ $('document').ready(function(){
 
   
 {% endblock %}
+

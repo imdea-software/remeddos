@@ -72,7 +72,7 @@ def get_link(id_golem):
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(hostname='logs.redimadrid.es', port=22)
     try:
-        stdin, stdout, stderr = ssh.exec_command(f'grep {id_golem[1:]} /var/log/remote/193.145.15.26/`date +%Y-%m-%d`.log')
+        stdin, stdout, stderr = ssh.exec_command(f'grep {id_golem} /var/log/remote/193.145.15.26/`date +%Y-%m-%d`.log')
         res,err = stdout.read(),stderr.read()
         result = res if res else err
         resultado = result.decode()
@@ -462,6 +462,7 @@ def get_instance_form(applier, route):
 def get_specific_route(applier,peer, route_slug):
   from peers.models import Peer
   from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
+  print('inside get specific route')
   check = True
   peers = Peer.objects.all()
   if not applier == None:
@@ -471,120 +472,104 @@ def get_specific_route(applier,peer, route_slug):
   if peer == None and applier == None:
     fd = route_slug.find('_')
     peer_tag = route_slug[fd+1:-2]
-  while check:
-    for r in peers:
-      if peer_tag == 'IMDEA': 
-        try:
-          route = Route_IMDEA.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'CV':
-        try:
-          route = Route_CV.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'CIB':
-        try:
-          route = Route_CIB.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'CSIC':
-        try:
-          route = Route_CSIC.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'CEU':
-        try:
-          route = Route_CEU.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'CUNEF':
-        try:
-          route = Route_CUNEF.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'IMDEA_NET':
-        try:
-          route = Route_IMDEANET.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'UAM':
-        try:
-          route = Route_UAM.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'UC3M':
-        try:
-          route = Route_UC3M.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'UCM':
-        try:
-          route = Route_UCM.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'UAH':
-        try:
-          route = Route_UAH.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'UEM':
-        try:
-          route = Route_UEM.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'UNED':
-        try:
-          route = Route_UNED.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'UPM':
-        try:
-          route = Route_UPM.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'URJC':
-        try:
-          route = Route_URJC.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
-      elif peer_tag == 'Punch':
-        try:
-          route = Route.objects.get(name=route_slug)
-          check = False
-          return route
-        except ObjectDoesNotExist:
-          check = True
+  for r in peers:
+    if peer_tag == 'IMDEA': 
+      try:
+        route = Route_IMDEA.objects.get(name=route_slug)
+        return route
+      except ObjectDoesNotExist:
+          print('There has been an error')
+    elif peer_tag == 'CV':
+      try:
+        route = Route_CV.objects.get(name=route_slug)
+        return route
+      except ObjectDoesNotExist:
+        print('There has been an error')
+    elif peer_tag == 'CIB':
+      try:
+        route = Route_CIB.objects.get(name=route_slug)
+        return route
+      except ObjectDoesNotExist:
+        print('There has been an error')
+    elif peer_tag == 'CSIC':
+      try:
+        route = Route_CSIC.objects.get(name=route_slug)
+        return route
+      except ObjectDoesNotExist:
+        print('There has been an error')
+    elif peer_tag == 'CEU':
+      try:
+        route = Route_CEU.objects.get(name=route_slug)
+        return route
+      except ObjectDoesNotExist:
+        print('There has been an error')
+    elif peer_tag == 'CUNEF':
+      try:
+        route = Route_CUNEF.objects.get(name=route_slug)
+        return route
+      except ObjectDoesNotExist:
+        print('There has been an error')
+    elif peer_tag == 'IMDEA_NET':
+      try:
+        route = Route_IMDEANET.objects.get(name=route_slug)
+        return route
+      except ObjectDoesNotExist:
+        print('There has been an error')
+    elif peer_tag == 'UAM':
+      try:
+        route = Route_UAM.objects.get(name=route_slug)
+        return route
+      except ObjectDoesNotExist:
+        print('There has been an error')
+    elif peer_tag == 'UC3M':
+      try:
+        route = Route_UC3M.objects.get(name=route_slug)
+        return route
+      except ObjectDoesNotExist:
+        print('There has been an error')
+    elif peer_tag == 'UCM':
+      try:
+        route = Route_UCM.objects.get(name=route_slug)
+        return route
+      except ObjectDoesNotExist:
+        print('There has been an error')
+    elif peer_tag == 'UAH':
+      try:
+        route = Route_UAH.objects.get(name=route_slug)
+        return route
+      except ObjectDoesNotExist:
+        print('There has been an error')
+    elif peer_tag == 'UEM':
+      try:
+        route = Route_UEM.objects.get(name=route_slug)
+        return route
+      except ObjectDoesNotExist:
+        print('There has been an error')
+    elif peer_tag == 'UNED':
+      try:
+        route = Route_UNED.objects.get(name=route_slug)
+        return route
+      except ObjectDoesNotExist:
+        print('There has been an error')
+    elif peer_tag == 'UPM':
+      try:
+        route = Route_UPM.objects.get(name=route_slug)
+        return route
+      except ObjectDoesNotExist:
+        print('There has been an error')
+    elif peer_tag == 'URJC':
+      try:
+        route = Route_URJC.objects.get(name=route_slug)
+        return route
+      except ObjectDoesNotExist:
+        print('There has been an error')
+    elif peer_tag == 'Punch':
+      try:
+        route = Route.objects.get(name=route_slug)
+        return route
+      except ObjectDoesNotExist:
+        print('There has been an error')
+
   
 
 def get_specific_route_pk(username, pk):

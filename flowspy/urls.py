@@ -34,7 +34,7 @@ router.register(r'matchdscp', MatchDscpViewSet)
 
 
 urlpatterns = [
-    path('',flowspec.views.group_routes,name="index"),
+    path('',flowspec.views.dashboard,name="index"),
     path('service-desc',flowspec.views.service_desc,name="service-description"),
     re_path(r'^poll/', include('poller.urls')),
     re_path(r'^flowspec/', include('flowspec.urls')),

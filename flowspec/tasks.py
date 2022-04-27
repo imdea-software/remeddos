@@ -300,21 +300,36 @@ def routes_sync():
                 names.append(child.text)
             else:
                 pass  
-    routenames = [x.name for x in routes]
+    routenames = []
+    for x in routes:
+        for route in x:
+            if route.applier != None:
+                print(route.name)
+                routenames.append(route.name)
     diff = set(routenames).difference(names)
     notsynced_routes = list(diff)
     if notsynced_routes:
         for route in notsynced_routes:
-            route = Route.objects.get(name=route)
-            if (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):
-                route.commit_add()
-                message = ('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
-                send_message(message)
-            else:
-                if (route.has_expired()==True) or (route.status == 'EXPIRED' or route.status != 'ADMININACTIVE' or route.status != 'INACTIVE'):
-                    message = ('Route: %s route status: %s'%(route.status, route.name))
+            pt = route.find('_')
+            peer_tag = route[pt+1::]
+            route = get_specific_route(applier=None,peer=peer_tag,route_slug=route)
+            try:
+                if (route.status == 'PENDING' or route.status == 'DEACTIVATED' or route.status == 'OUTOFSYNC') and route.applier == None:
+                    print(route)
+                    route.status = 'PENDING'
+                    route.save()
+                    
+                if (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):
+                    route.commit_add()
+                    message = ('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
                     send_message(message)
-                    route.check_sync()             
+                else:
+                    if (route.has_expired()==True) or (route.status == 'EXPIRED' or route.status != 'ADMININACTIVE' or route.status != 'INACTIVE'):
+                        message = ('Route: %s route status: %s'%(route.status, route.name))
+                        send_message(message)
+                        route.check_sync()  
+            except Exception as e:
+                print('There was an exception when trying to sync the routes, route: ',route,' error: ', e)           
     else:
         message = ('There are no routes out of sync')
         send_message(message)

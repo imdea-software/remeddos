@@ -46,7 +46,7 @@ multidict==5.1.0
 ncclient==0.6.10
 nxpy==0.4.0
 oauthlib==3.1.0
-paramiko==2.7.2
+paramiko==2.9.1
 phonenumbers==8.12.22
 ply==3.11
 prompt-toolkit==3.0.18

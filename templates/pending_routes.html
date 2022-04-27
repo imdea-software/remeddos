@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+{% block extrahead %}
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.3/datatables.min.css"/> 
+  <link rel="stylesheet" href="{% static 'css/table_style.css' %}">
+  <link rel="stylesheet" href="{% static 'css/section_style.css' %}">
+{% endblock %}
+{% block title %}{% trans "Pending routes" %}{% endblock %}
+{% block contentplaceholder %}
+{% csrf_token %}
+
+<div class="container">
+      <div class="row rows-cols-4 p-5">
+        <div class="col">
+            <h5 class="font-weight-light text-right">Pending routes</h5>
+        </div>
+    </div>
+    <div class="row pt-3">
+      <div class="panel-body table-responsive">
+            <table class="table table-hover table-bordered table-responsive align-middle" id="pending_table">
+              <thead class="bg-dark text-white">
+                <tr><th><small>ID</small></th><th><small>Proposed</small></th><th><small>Dest Addr</small></th><th><small>Src Addr</small></th><th><small>More information</small></th><th><small>Status</small></th><th><small>Actions</small></th></tr>
+             </thead>
+             <tbody>
+                    {% for route in routes %}
+                 <tr>
+                     <td><small>{{route.name}}</small></td>
+                     <td><small>{{route.filed}}</small></td>
+                     <td><small>{% if route.destination %} {{route.destination}}</small><br> {% endif %}</td>
+                     <td><small> {% if route.source %} {{route.source}} <br> {% endif %}</small> </td>
+                     <td> <small>
+                         {% if route.protocol %} Protocolo: {% for p in route.protocol.all %} {{p}} {% endfor %}<br> {% endif %} 
+                         {% if route.port %} Port: {{route.port}} <br> {% endif %}
+                         {% if route.tcpflag %} Tcpflag: {{route.tcpflag}}<br> {% endif %}
+                         {% if route.icmptype %} Icmptype: {{route.icmptype} <br> {% endif %}
+                         {% if route.icmpcode %} Icmpcode: {{route.icmpcode}} <br></small> {% endif %}
+                     </td>
+                     <td><small>{{route.status}}</small></td>
+                     <td>
+                         {% if not route.status == 'ACTIVE' %}
+                         <a href="{% url 'commit' route.name %}" class="ml-3" data-bs-toggle="tooltip" data-bs-placement="top" title="Commit route to router"><i class="bi bi-patch-plus text-danger"></i></a>
+                         {% else %}
+                         {% endif %}
+                         <a href="{% url 'edit' route.name  %}" class="" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit rule"><i class="bi bi-pencil text-warning"></i></a>
+                         <a href="{% url 'exterminate' route.name  %}" class="" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete rule"><i class="bi bi-trash text-dark"></i></a>
+                     </td>
+                 </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            </div>
+    
+    
+<div class="col-sm-6 mt-5" id="section">
+      <div class="card">
+                  <h5 class="card-title text-left text-info">Shortcuts</h5>
+                  <div class="card-body">
+                      <a class="btn btn-dark btn-sm float-left" id="routebutton1" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus"></i> Add Route</a>
+                      <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table"></i> User Routes</a>
+                      <a href="{% url 'pending-routes' %}" class="btn btn-info btn-sm float-left ml-2" type="button"> <i class="bi-clipboard"></i> Proposed Routes</a>
+                      <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard"></i> Dashboard</a>
+                  </div>
+              </div>
+        </div>
+</div>
+
+{% endblock %}
+{% block pagejsbottom %}
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.5/af-2.3.7/b-2.2.2/datatables.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+    $('#pending_table').DataTable({
+        "order": [[ 1, "asc" ]],
+        "AutoWidth": true,
+        "aLengthMenu" : [
+            [5, 15, 20, -1],
+            [5, 15, 20, "All"]
+        ],
+        
+        "Processing": true, 
+        "DisplayLength": 5,
+    });
+
+    $('#routebutton1').click(function(){
+      $.ajax({
+              url: "{% url 'add-route' %}",
+              type: "GET",
+              dataType: "json",
+              success: (data) => {
+                console.log('it worked');
+              },
+              error: (error) => {
+                console.log(error);
+              }
+            });
+     });
+    })
+
+    </script>
+
+
+
+{% endblock %}

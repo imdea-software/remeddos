@@ -2,37 +2,18 @@
 {% load i18n %}
 {% load static %}
 
+{% block extrahead %}
+<link rel="stylesheet" href="{% static 'css/profile_style.css' %}">
+{% endblock %}
+
 {% block title %}{% trans "My profile" %}{% endblock %}
 {% block contentplaceholder %}
 <style>
-    section {
-    padding-top: 50px;
-    padding-bottom: 50px;
-  }
-  section h5 {
-    text-transform: uppercase;
-    font-weight: 900;
-    color: #990033;
-    text-align: left;
-    margin-bottom: 20px;
-  }
-  section p {
-    font-size: 16px;
-    font-weight: 300;
-  }
-  .col {
-    justify-content: center; 
-    flex-direction: column;
-    display: flex;
-  }
-  .card {
-    box-shadow: 11px 7px 16px #f9f9f9;
-    border:0;
-  }
+   
 </style>
 
 <div class="container p-5 m-2">
-    <section>
+    <section id="section">
         <div class="container">
             <div class="row mb-5">
                 <div class="col">
@@ -43,7 +24,7 @@
                 <div class="col-md-6">
                     <!-- Peer card -->
                     <div class="card">
-                        <h5 class="card-title">
+                        <h5 class="card-title pb-2">
                             Peer Information
                         </h5>
                         <div class="card-body">
@@ -70,7 +51,7 @@
                 <!--User Card -->
                 <div class="col-md-6">
                 <div class="card">
-                    <h5 class="card-title">
+                    <h5 class="card- mb-3">
                         User Information
                     </h5>
                     <div class="card-body">
