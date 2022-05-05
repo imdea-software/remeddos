@@ -371,7 +371,6 @@ def create_route(golem_id,route_dic,peer):
             except Exception as e:
                 print('An exception happened: ',e)
         else:
-            print('golem_routes, inside else: ',golem_routes)
             golem_routes.sort()
             last_element = golem_routes[-1]
             n = last_element.name[-1]

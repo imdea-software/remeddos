@@ -65,7 +65,7 @@ here = lambda x: os.path.join(os.path.abspath(os.path.dirname(__file__)), x)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
-ALLOWED_HOSTS = ['redidock.redimadrid.es','127.0.0.1','localhost','193.145.15.172','10.10.4.90','db']
+ALLOWED_HOSTS = ['redidock.redimadrid.es','127.0.0.1','localhost','193.145.15.172','10.10.4.90','db','logs.redimadrid.es']
 SITE_ID = 1
 
 # Place a sequence of random chars here

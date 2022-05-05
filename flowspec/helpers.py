@@ -66,11 +66,11 @@ def greet(message):
 
 def get_link(id_golem):
   import paramiko
-  #careful id must be withouth the inital 'A' ej 381879 instead of A381879
+  from flowspy import settings
+  
   try:
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(hostname='logs.redimadrid.es', port=22)
+    ssh = paramiko.SSHClient();ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy());path = "/home/remedios/.ssh/id_rsa";k = paramiko.RSAKey.from_private_key_file(path)
+    ssh.connect(hostname="logs.redimadrid.es", port=22, pkey=k, username="alicia.cardenosa")
     try:
         stdin, stdout, stderr = ssh.exec_command(f'grep {id_golem} /var/log/remote/193.145.15.26/`date +%Y-%m-%d`.log')
         res,err = stdout.read(),stderr.read()
@@ -78,7 +78,7 @@ def get_link(id_golem):
         resultado = result.decode()
         fs = resultado.find('<'); fe = resultado.find('>'); fc = resultado.find('=')
         enlace = resultado[fs:fe+1]
-        link = resultado[fc+1:fe]
+        link = resultado[fc+1:fe] 
         return link
     except Exception as e:
         print('Ha habido un error cuando se intentaba leer el fichero de configuración., ',e)
@@ -819,3 +819,23 @@ def get_default_graph(routename, username):
   beats_values = dict(zip(beats_hour,beat_value))
   return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
 
+
+#============== back up code
+
+def create_db_backup():
+  from django.core.management import call_command
+  now = datetime.datetime.now()
+  current_time = now.strftime("%H:%M")
+  current_date = now.strftime("%d-%B-%Y")
+  call_command('dumpdata', format='json',output=f'_backup/FOD/FOD_backup_{current_date}_{current_time}.json')
+    #call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
+  message = 'Copia de seguridad creada con éxito.'
+  print(message)
+    #send_message(message)
+    
+def restore_db_backup():
+  from django.core.management import call_command
+  now = datetime.datetime.now()
+  call_command('dumpdata', output_filename=("_backup/FOD/FOD_backup_08-March-2022_16:39.json"))
+  message = 'Succesfull restore.'
+  print(message)
