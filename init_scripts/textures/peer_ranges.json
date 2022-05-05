@@ -1,0 +1,19 @@
+[
+    {
+        "model":"peers.PeerRange",
+        "pk":1,
+        "fields":{
+            "network":"1.1.1.1/32"
+            
+        }
+    },
+    {
+        "model":"peers.PeerRange",
+        "pk":2,
+        "fields":{
+            "network":"2.2.2.2/32"
+            
+        }
+    }
+
+]

@@ -1,0 +1,163 @@
+[
+    {
+        "model":"peers.Peer",
+        "pk":1,
+        "fields":{
+            "peer_name":"CEU",
+            "peer_tag":"CEU",
+            "networks":[1,2]
+            
+        }
+    },
+    {
+        "model":"peers.Peer",
+        "pk":2,
+        "fields":{
+            "peer_name":"CIB",
+            "peer_tag":"CIB",
+            "networks":[1,2]
+            
+        }
+    },
+    {
+        "model":"peers.Peer",
+        "pk":3,
+        "fields":{
+            "peer_name":"CSIC",
+            "peer_tag":"CSIC",
+            "networks":[1,2]
+            
+        }
+    },
+    {
+        "model":"peers.Peer",
+        "pk":4,
+        "fields":{
+            "peer_name":"CUNEF",
+            "peer_tag":"CUNEF",
+            "networks":[1,2]
+            
+        }
+    },
+    {
+        "model":"peers.Peer",
+        "pk":5,
+        "fields":{
+            "peer_name":"CUNEF",
+            "peer_tag":"CUNEF",
+            "networks":[1,2]
+            
+        }
+    },
+    {
+        "model":"peers.Peer",
+        "pk":6,
+        "fields":{
+            "peer_name":"CV",
+            "peer_tag":"CV",
+            "networks":[1,2]
+            
+        }
+    },
+    {
+        "model":"peers.Peer",
+        "pk":7,
+        "fields":{
+            "peer_name":"IMDEA",
+            "peer_tag":"IMDEA",
+            "networks":[1,2]
+            
+        }
+    },
+    {
+        "model":"peers.Peer",
+        "pk":8,
+        "fields":{
+            "peer_name":"IMDEA Networks",
+            "peer_tag":"IMDEANET",
+            "networks":[1,2]
+            
+        }
+    },
+    {
+        "model":"peers.Peer",
+        "pk":9,
+        "fields":{
+            "peer_name":"UAH",
+            "peer_tag":"UAH",
+            "networks":[1,2]
+            
+        }
+    },
+    {
+        "model":"peers.Peer",
+        "pk":10,
+        "fields":{
+            "peer_name":"UAM",
+            "peer_tag":"UAM",
+            "networks":[1,2]
+            
+        }
+    },
+    {
+        "model":"peers.Peer",
+        "pk":11,
+        "fields":{
+            "peer_name":"UC3M",
+            "peer_tag":"UC3M",
+            "networks":[1,2]
+            
+        }
+    },
+    {
+        "model":"peers.Peer",
+        "pk":12,
+        "fields":{
+            "peer_name":"UCM",
+            "peer_tag":"UCM",
+            "networks":[1,2]
+            
+        }
+    },
+    {
+        "model":"peers.Peer",
+        "pk":13,
+        "fields":{
+            "peer_name":"UEM",
+            "peer_tag":"UEM",
+            "networks":[1,2]
+            
+        }
+    },
+    {
+        "model":"peers.Peer",
+        "pk":14,
+        "fields":{
+            "peer_name":"UNED",
+            "peer_tag":"UNED",
+            "networks":[1,2]
+            
+        }
+    },
+    {
+        "model":"peers.Peer",
+        "pk":15,
+        "fields":{
+            "peer_name":"UPM",
+            "peer_tag":"UPM",
+            "networks":[1,2]
+            
+        }
+    },
+    {
+        "model":"peers.Peer",
+        "pk":16,
+        "fields":{
+            "peer_name":"URJC",
+            "peer_tag":"URJC",
+            "networks":[1,2]
+            
+        }
+    }
+    
+]
