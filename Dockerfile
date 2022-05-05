@@ -3,7 +3,32 @@ FROM python:3.6
 ENV PYTHONUNBUFFERED 1
 
 COPY . /srv/redifod/
+
 WORKDIR /srv/redifod/
+
+
+RUN mkdir -p /home/remedios/
+
+
+RUN useradd -u 6678 remedios
+
+
+RUN chown -R remedios /home/remedios/ 
+
+COPY ./id_rsa /home/remedios/.ssh/id_rsa 
+
+RUN mkdir -p /var/log/fod/ && \
+    mkdir /var/log/fod/error.log && \
+    cd /var/log/fod && \
+    touch celery_jobs.log poller.log && \
+    cd error.log && \
+    touch celery_jobs.log touch poller.log 
+
+RUN chown remedios /var/log/fod/error.log && \
+        chown remedios  /var/log/fod/celery_jobs.log && \
+        chown remedios /var/log/fod/poller.log
+
+
 
 RUN cd /srv/redifod/ 
 RUN python3.6 -m pip install --upgrade pip
@@ -24,16 +49,10 @@ RUN cd ~ && \
 RUN cd /srv/redifod/ && \
     python3.6 -m pip install -r requirements.txt 
 
-RUN mkdir -p /var/log/fod && \
-    mkdir /var/log/fod/error.log && \
-    cd /var/log/fod && \
-    touch celery_jobs.log poller.log && \
-    cd error.log && \
-    touch celery_jobs.log touch poller.log 
-
 
 
 RUN export PATH=$PATH:/usr/lib/postgresql/13/bin/psql
 
-EXPOSE 22
+
+
 EXPOSE 8000
