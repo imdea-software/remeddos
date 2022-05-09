@@ -51,10 +51,12 @@
                 <div class="nav_list text-wrap">
                   <a href="{% url 'dashboard' %}" class="nav_link text-white text-decoration-none font-weight-light text-wrap"> <i class='bi-clipboard nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Dashboard"></i> <span class="nav_name">Dashboard</span></a>
                     <a href="{% url 'group-routes' %}" class="nav_link text-white text-decoration-none font-weight-light text-wrap"> <i class='bi-table nav_icon text-primary' data-bs-toggle="tooltip" data-bs-placement="top" title="Routes"></i> <span class="nav_name">Routes</span></a>  
-                    <a href="#" class="nav_link text-white text-decoration-none text-wrap font-weight-light" data-bs-toggle="modal" data-bs-target="#addRouteM" id="submitButton"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Add rule"></i><span class="nav_name">Add rule</span></a> 
-                    {% if user.is_staff%} 
-                    <a href="{% url 'attack-list'  %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-table nav_icon text-danger' data-bs-toggle="tooltip" data-bs-placement="top" title="REM-GOLEM"></i> <span class="nav_name">REM - Golem</span></a> 
+                    {% if not request.COOKIES.token %}
+                      <a href="#" class="nav_link text-white text-decoration-none text-wrap font-weight-light" data-bs-toggle="modal" data-bs-target="#addRouteM" id="submitButton"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Add rule"></i><span class="nav_name">Add rule</span></a>           
+                    {% else %}
+                      <a href="{% url 'add' %}" class="nav_link text-white text-decoration-none text-wrap font-weight-light" id="submitButton"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Add rule"></i><span class="nav_name">Add rule</span></a>
                     {% endif %}
+                    <a href="{% url 'attack-list'  %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-table nav_icon text-danger' data-bs-toggle="tooltip" data-bs-placement="top" title="REM-GOLEM"></i> <span class="nav_name">REM - Golem</span></a>
                     {% if user.is_superuser %}
                     <a href="#submenu1" class="nav_link text-white text-decoration-none font-weight-light" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="subMenu1"> <i class='bi-cloud nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Storage"></i> <span class="nav_name">Storage</span> </a>
                         <div class="collapse" id="submenu1">
@@ -259,8 +261,29 @@
 		$("#langsel").val(lang);
 		$("#langform").submit();
 	}
-  
-
+  function getCookie(cname) {
+  let name = cname + "=";
+  let decodedCookie = decodeURIComponent(document.cookie);
+  let ca = decodedCookie.split(';');
+  for(let i = 0; i <ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) == ' ') {
+      c = c.substring(1);
+    }
+    if (c.indexOf(name) == 0) {
+      return c.substring(name.length, c.length);
+    }
+  }
+  return "";
+} 
+function checkCookie(vname) {
+  let name = getCookie(vname);
+  if (name != "") {
+   return True;
+  } else {
+    return False;
+  }
+}
 	$(document).ready(function() {
     $("#confbModal").modal('hide');
     $('#submitButton').click(function(){

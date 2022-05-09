@@ -42,7 +42,11 @@
                          <a href="{% url 'commit' route.name %}" class="ml-3" data-bs-toggle="tooltip" data-bs-placement="top" title="Commit route to router"><i class="bi bi-patch-plus text-danger"></i></a>
                          {% else %}
                          {% endif %}
+                         {% if not request.COOKIES.token %}
+                         <a href="{% url 'edit-route' route.name  %}" class="" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit rule"><i class="bi bi-pencil text-warning"></i></a>
+                         {% else%}
                          <a href="{% url 'edit' route.name  %}" class="" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit rule"><i class="bi bi-pencil text-warning"></i></a>
+                         {% endif %}
                          <a href="{% url 'exterminate' route.name  %}" class="" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete rule"><i class="bi bi-trash text-dark"></i></a>
                      </td>
                  </tr>
@@ -57,9 +61,12 @@
       <div class="card">
                   <h5 class="card-title text-left text-info">Shortcuts</h5>
                   <div class="card-body">
-                      <a class="btn btn-dark btn-sm float-left" id="routebutton1" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus"></i> Add Route</a>
+                    {% if not request.COOKIES.token %}
+                      <a class="btn btn-info btn-sm float-left" id="routebutton1" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus"></i> Add Route</a>
+                    {% else %}
+                      <a class="btn btn-info btn-sm float-left" id="routebutton1" href="{% url 'add' %}"><i class="bi bi-shield-plus"></i> Add Route</a>
+                    {% endif %}
                       <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table"></i> User Routes</a>
-                      <a href="{% url 'pending-routes' %}" class="btn btn-info btn-sm float-left ml-2" type="button"> <i class="bi-clipboard"></i> Proposed Routes</a>
                       <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard"></i> Dashboard</a>
                   </div>
               </div>

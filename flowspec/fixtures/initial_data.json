@@ -51,41 +51,6 @@
         "fields": {
             "protocol": "udp"
         }
-    },
-    {
-        "pk": 1,
-        "model": "flowspec.fragmenttype",
-        "fields": {
-            "fragmenttype": "is-fragment"
-        }
-    },
-    {
-        "pk": 2,
-        "model": "flowspec.fragmenttype",
-        "fields": {
-            "fragmenttype": "dont-fragment"
-        }
-    },
-    {
-        "pk": 3,
-        "model": "flowspec.fragmenttype",
-        "fields": {
-            "fragmenttype": "first-fragment"
-        }
-    },
-    {
-        "pk": 4,
-        "model": "flowspec.fragmenttype",
-        "fields": {
-            "fragmenttype": "last-fragment"
-        }
-    },
-    {
-        "pk": 5,
-        "model": "flowspec.fragmenttype",
-        "fields": {
-            "fragmenttype": "not-a-fragment"
-        }
     }
 
 ]

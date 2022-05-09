@@ -252,7 +252,7 @@ def get_ip_address(ip):
 def find_route_pk(applier, pk):
   from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   route = {
-    'route': Route.objects.get(id=pk),
+    'Punch': Route.objects.get(id=pk),
     'IMDEA': Route_IMDEA.objects.get(id=pk),
     'CV': Route_CV.objects.get(id=pk),
     'CIB' : Route_CIB.objects.get(id=pk),
@@ -332,7 +332,7 @@ def get_route(applier,peer):
 def get_edit_route(applier):
   from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   routes = {
-    'route': Route,
+    'Punch': Route,
     'IMDEA': Route_IMDEA,
     'CV': Route_CV,
     'CIB' : Route_CIB,
@@ -366,7 +366,7 @@ def find_all_routes():
 def find_edit_post_route(applier, data, route_edit):
   from flowspec.forms import RouteForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm
   route_forms = {
-    'route': RouteForm(data, instance=route_edit),
+    'Punch': RouteForm(data, instance=route_edit),
     'IMDEA': Route_IMDEAForm(data, instance=route_edit),
     'CV': Route_CVForm(data, instance=route_edit),
     'CIB' : Route_CIBForm(data, instance=route_edit),
@@ -390,7 +390,7 @@ def find_edit_post_route(applier, data, route_edit):
 def find_get_form(applier):
   from flowspec.forms import RouteForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm
   route_forms = {
-    'route': RouteForm(),
+    'Punch': RouteForm(),
     'IMDEA': Route_IMDEAForm(),
     'CV': Route_CVForm(),
     'CIB' : Route_CIBForm(),
@@ -414,7 +414,7 @@ def find_get_form(applier):
 def find_post_form(applier, data):
   from flowspec.forms import RouteForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm
   route_forms = {
-    'route': RouteForm(data),
+    'Punch': RouteForm(data),
     'IMDEA': Route_IMDEAForm(data),
     'CV': Route_CVForm(data),
     'CIB' : Route_CIBForm(data),
@@ -439,7 +439,7 @@ def get_instance_form(applier, route):
   from flowspec.forms import RouteForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm
   peer_tag = get_peer_tag(applier)
   route_form = {
-    'route' : RouteForm(instance = route),
+    'Punch' : RouteForm(instance = route),
     'IMDEA' : Route_IMDEAForm(instance = route),
     'CV': Route_CVForm(instance=route),
     'CIB' : Route_CIBForm(instance=route),
@@ -709,7 +709,7 @@ def find_peer(peer_name):
       return Peer.objects.get(peer_name='IMDEA NETWORKS')
     elif peer_name == 'REDIMADRID':
       return Peer.objects.get(peer_name='REM_IMDEA')
-    elif peer_name == 'CEU(2)':
+    elif peer_name == 'CEU(2)' or peer_name == 'CEU':
       return Peer.objects.get(peer_name='CEU')
     elif peer_name == 'UEM':
       return Peer.objects.get(peer_tag='UEM')

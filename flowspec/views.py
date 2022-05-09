@@ -283,38 +283,48 @@ def build_routes_json(groutes, is_superuser):
 @verified_email_required
 @login_required
 def verify_add_user(request):
-    if request.is_ajax and request.method == "GET":
-        if request.session.get('token') != Validation.objects.latest('id'):
-            num = get_code()
-            user = request.user
-            msg = "El usuario {user} ha solicitado un codigo de seguridad para añadir una nueva regla. Código: '{code}'.".format(user=user,code=num)
-            code = Validation(value=num,user=request.user)
-            code.save()
-            request.session['token'] = num
-            send_message(msg)
-            return JsonResponse({"valid":True}, status = 200)     
-    if request.method=='POST':
-        form = ValidationForm(request.POST)
-        if form.is_valid():
-            code = form.cleaned_data.get('value')
-            value = Validation.objects.latest('id')
-            try:
-                if str(value) == str(code):
-                    url = reverse('add')
-                    return HttpResponseRedirect(url)
-                else:
+    if 'token' in request.COOKIES:
+        url = reverse('add')
+        response = HttpResponseRedirect(url)
+        return response 
+    else:
+        if request.is_ajax and request.method == "GET":
+            if not 'token' in request.COOKIES:
+                num = get_code()
+                user = request.user
+                msg = "El usuario {user} ha solicitado un codigo de seguridad para añadir una nueva regla. Código: '{code}'.".format(user=user,code=num)
+                code = Validation(value=num,user=request.user)
+                code.save()
+                send_message(msg)
+                response = JsonResponse({"valid":True}, status = 200)
+                try:
+                    response.set_cookie('token',value=num,max_age=900) 
+                except Exception as e:
+                    print('There was an exception when trying to assign the token, ',e)
+                return response      
+        if request.method=='POST':
+            form = ValidationForm(request.POST)
+            if form.is_valid():
+                code = form.cleaned_data.get('value')
+                value = Validation.objects.latest('id')
+                try:
+                    if str(value) == str(code):
+                        url = reverse('add')
+                        response = HttpResponseRedirect(url) 
+                        return response
+                    else:
+                        form = ValidationForm(request.GET)
+                        message = "El código introducido es erróneo porfavor introduzca el último código enviado."
+                        return render(request,'values/add_value.html', {'form': form, 'message':message})
+                
+                except Exception as e:
                     form = ValidationForm(request.GET)
                     message = "El código introducido es erróneo porfavor introduzca el último código enviado."
                     return render(request,'values/add_value.html', {'form': form, 'message':message})
-            
-            except Exception as e:
+            else:
                 form = ValidationForm(request.GET)
                 message = "El código introducido es erróneo porfavor introduzca el último código enviado."
                 return render(request,'values/add_value.html', {'form': form, 'message':message})
-        else:
-            form = ValidationForm(request.GET)
-            message = "El código introducido es erróneo porfavor introduzca el último código enviado."
-            return render(request,'values/add_value.html', {'form': form, 'message':message})
 
 
 @verified_email_required
@@ -392,48 +402,56 @@ def add_route(request):
 @verified_email_required
 @login_required             
 def verify_edit_user(request,route_slug):
-    if request.method =='GET':
-        num = get_code()
-        user= request.user.username
-        print('trace1')
-        route = get_specific_route(applier=user,peer=None, route_slug=route_slug)
-        msg = "El usuario {user} ha solicitado el siguiente código para editar la regla: {route_slug}. Código:  '{code}'.".format(user=user,code=num,route_slug=route_slug)
-        code = Validation(value=num,user=request.user)
-        code.save()
-        send_message(msg)
-        form = ValidationForm(request.GET)
-        message = ""
-        return render(request,'values/add_value.html', {'form': form, 'message':message,'status':'edit', 'route':route})
-        
-    if request.method=='POST':
-        form = ValidationForm(request.POST)
-        if form.is_valid():
-            code = form.cleaned_data.get('value')
-            value = Validation.objects.latest('id')
+    if 'token' in request.COOKIES:
+        url = reverse('edit', kwargs={'route_slug':route_slug})
+        response = HttpResponseRedirect(url)
+        return response
+    else:     
+        if request.method =='GET' and not 'token' in request.COOKIES: 
+            num = get_code()
+            user= request.user.username
+            print('trace1')
+            route = get_specific_route(applier=user,peer=None, route_slug=route_slug)
+            msg = "El usuario {user} ha solicitado el siguiente código para editar la regla: {route_slug}. Código:  '{code}'.".format(user=user,code=num,route_slug=route_slug)
+            code = Validation(value=num,user=request.user)
+            code.save()
+            send_message(msg)
+            form = ValidationForm(request.GET)
+            message = ""
+            response = render(request,'values/add_value.html', {'form': form, 'message':message,'status':'edit', 'route':route})
             try:
-                if str(value) == str(code):
-                    url = reverse('edit', kwargs={'route_slug': route_slug})
-                    return HttpResponseRedirect(url)
-                else:
-                    form = ValidationForm(request.GET)
-                    message = "El código introducido es erróneo porfavor introduzca el último código enviado."
-                    return render(request,'values/add_value.html', {'form': form, 'message':message})
-
+                response.set_cookie('token',value=num,max_age=900) 
             except Exception as e:
-                form = ValidationForm(request.GET)
-                message = "Ha sucedido un error, porfavor introduzca el último código enviado.", e
-                return render(request,'values/add_value.html', {'form': form, 'message':message})
+                print('There was an exception when trying to assign the token, ',e)
+            return response
+            
+        if request.method=='POST':
+            form = ValidationForm(request.POST)
+            if form.is_valid():
+                code = form.cleaned_data.get('value')
+                value = Validation.objects.latest('id')
+                try:
+                    if str(value) == str(code):
+                        url = reverse('edit', kwargs={'route_slug': route_slug})
+                        return HttpResponseRedirect(url)
+                    else:
+                        form = ValidationForm(request.GET)
+                        message = "El código introducido es erróneo porfavor introduzca el último código enviado."
+                        return render(request,'values/add_value.html', {'form': form, 'message':message})
+
+                except Exception as e:
+                    form = ValidationForm(request.GET)
+                    message = "Ha sucedido un error, porfavor introduzca el último código enviado.", e
+                    return render(request,'values/add_value.html', {'form': form, 'message':message})
 
 @verified_email_required
 @login_required
 @never_cache
 def edit_route(request, route_slug):
-    print('inside method edit')
     applier = request.user.pk
     username = request.user.username
     #route_edit = get_object_or_404(get_edit_route(username), name=route_slug)
     route_edit = get_specific_route(applier=request.user.username, peer=None, route_slug=route_slug)
-    print('lets see the route, fff, ', route_edit)
     applier_peer_networks = []
     if request.user.is_superuser:
         applier_peer_networks = PeerRange.objects.all()
@@ -448,13 +466,6 @@ def edit_route(request, route_slug):
             ('Insufficient rights on administrative networks. Cannot add rule. Contact your administrator')
         )
         return HttpResponseRedirect(reverse("group-routes"))    
-    """ if route_edit.status== 'PENDING':
-        messages.add_message(
-            request,
-            messages.WARNING,
-            ('Cannot edit a pending rule: %s.') % (route_slug)
-        )
-        return HttpResponseRedirect(reverse("group-routes")) """
     route_original = deepcopy(route_edit)
     if request.POST:
         request_data = request.POST.copy()
@@ -466,7 +477,6 @@ def edit_route(request, route_slug):
                 del request_data['issuperuser']
             except:
                 pass
-        #form = RouteForm(request_data,instance=route_edit)
         form = find_edit_post_route(username, request_data, route_edit)
         
         critical_changed_values = ['source', 'destination', 'sourceport', 'destinationport', 'port', 'protocol', 'then', 'packetlenght','tcpflags']
@@ -534,37 +544,46 @@ def edit_route(request, route_slug):
 @login_required
 @never_cache
 def verify_delete_user(request, route_slug):
-    if request.method =='GET':
-        num = get_code()
-        user = request.user
-        username = request.user.username
-        msg = "El usuario: {user} ha solicitado un código para poder eliminar una regla. Código: '{code}'.".format(user=user,code=num)
-        code = Validation(value=num,user=request.user)
-        code.save()
-        send_message(msg)
-        form = ValidationForm(request.GET)
-        route = get_specific_route(applier=username,peer=None,route_slug=route_slug)
-        #route = Route.objects.get(name=route_slug)
-        message = f"CUIDADO. Seguro que quiere eliminar la siguiente regla {route_slug}?"
-        return render(request,'values/add_value.html', {'form': form, 'message':message,'status':'delete', 'route':route})
-            
-    if request.method=='POST':
-        form = ValidationForm(request.POST)
-        if form.is_valid():
-            code = form.cleaned_data.get('value')
-            value = Validation.objects.latest('id')
+    if not 'token' in request.COOKIES:
+        if request.method =='GET':
+            num = get_code()
+            user = request.user
+            username = request.user.username
+            msg = "El usuario: {user} ha solicitado un código para poder eliminar una regla. Código: '{code}'.".format(user=user,code=num)
+            code = Validation(value=num,user=request.user)
+            code.save()
+            send_message(msg)
+            form = ValidationForm(request.GET)
+            route = get_specific_route(applier=username,peer=None,route_slug=route_slug)
+            message = f"CUIDADO. Seguro que quiere eliminar la siguiente regla {route_slug}?"
+            response = render(request,'values/add_value.html', {'form': form, 'message':message,'status':'delete', 'route':route}) 
             try:
-                if str(value) == str(code):
-                    url = reverse('delete', kwargs={'route_slug': route_slug})
-                    return HttpResponseRedirect(url)
-                else:
-                    form = ValidationForm(request.GET)
-                    message = "The code introduced does not match the one that has been sent, please try again."
-                    return render(request,'values/add_value.html', {'form': form, 'message':message}) 
+                response.set_cookie('token',value=num,max_age=900) 
             except Exception as e:
-                form = ValidationForm(request.GET)
-                message = "The code used is not valid. Please introduce it again."
-                return render(request,'values/add_value.html', {'form': form, 'message':message})
+                print('There was an exception when trying to assign the token, ',e)
+            return response
+                
+        if request.method=='POST':
+            form = ValidationForm(request.POST)
+            if form.is_valid():
+                code = form.cleaned_data.get('value')
+                value = Validation.objects.latest('id')
+                try:
+                    if str(value) == str(code):
+                        url = reverse('delete', kwargs={'route_slug': route_slug})
+                        return HttpResponseRedirect(url)
+                    else:
+                        form = ValidationForm(request.GET)
+                        message = "The code introduced does not match the one that has been sent, please try again."
+                        return render(request,'values/add_value.html', {'form': form, 'message':message}) 
+                except Exception as e:
+                    form = ValidationForm(request.GET)
+                    message = "The code used is not valid. Please introduce it again."
+                    return render(request,'values/add_value.html', {'form': form, 'message':message})
+    else:
+        url = reverse('delete', kwargs={'route_slug': route_slug})
+        response = HttpResponseRedirect(url)
+        return response 
 
 
 @verified_email_required

@@ -201,8 +201,6 @@ INSTALLED_APPS = (
 #---DBBACKUP 
 DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
 BACK_UP_DIR = os.path.join(BASE_DIR,'_backup/')
-""" DBBACKUP_STORAGE_OPTIONS = {'location': BACK_UP_DIR}
-DBBACKUP_FILE_NAME_TEMPLATE='{datetime}-remeddos.sql' """
 
 #---STATIC 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
@@ -214,6 +212,12 @@ MEDIA_URL = '/media/'
 
 #GRAPHS_API_URL = 'graphs'
 GRAPHS_API_URL = 'http://127.0.0.1:8080/api/routes/'
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_WHITELIST = (
+    'redidock.redimadrid.es:8000',
+    '127.0.0.1:8000'
+)
 
 DEFAULT_AUTO_FIELD='django.db.models.AutoField'
 
@@ -256,15 +260,6 @@ ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS =1
 
-
-
-
-# CACHES = {
-#     'default': {
-#         'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
-#         'LOCATION': '127.0.0.1:11211',
-#     }
-# }
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.dummy.DummyCache',

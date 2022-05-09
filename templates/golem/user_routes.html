@@ -48,10 +48,14 @@
                 <td>
                     <div class="col-2 btn-group d-inline">
                     {% if not route.status == 'ACTIVE' %}
-                    <a href="{% url 'commit' route.name %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Commit route to router" class="btn btn-outline btn-dark m-1"><i class="bi bi-patch-plus text-danger"></i></a>
+                    <a href="{% url 'commit' route.name %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Commit route to router" class="btn btn-outline btn-dark m-1"><i class="bi bi-patch-plus text-dark"></i></a>
                     {% else %}
                     {% endif %}
-                    <a href="{% url 'edit' route.name  %}"  data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit rule" class="btn btn-outline btn-dark m-1"><i class="bi bi-pencil text-warning"></i></a>
+                    {% if not request.COOKIES.token %}
+                    <a href="{% url 'edit-route' route.name  %}"  data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit rule" class="btn btn-outline btn-dark m-1"><i class="bi bi-pencil text-dark"></i></a>
+                    {% else %}
+                    <a href="{% url 'edit' route.name  %}"  data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit rule" class="btn btn-outline btn-dark m-1"><i class="bi bi-pencil text-dark"></i></a>
+                    {% endif %}
                     <a href="{% url 'exterminate' route.name  %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete rule" class="btn btn-outline btn-dark m-1"><i class="bi bi-trash text-dark"></i></a>
                 </div>
                 </td>
@@ -70,7 +74,11 @@
             Shortcuts
         </h5>
         <div class="card-body btn-group">
+            {% if request.COOKIES.token %}
             <a class="btn btn-info btn-sm float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus"></i> Add Route</a>
+            {% else %}
+            <a href="{% url 'add' %}" class="btn btn-info btn-sm float-left" id="routebutton"><i class="bi bi-shield-plus"></i> Add Route</a>
+            {% endif %}
             <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table"></i> User Routes</a>
             <a href="{% url 'pending-routes' %}" type="button" class="btn btn-info btn-sm float-left ml-2"> <i class="bi-clipboard"></i> Proposed Routes</a>
             <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard"></i> Dashboard</a>
@@ -78,6 +86,45 @@
     </div>
 </div>
 </div>
+
+
+
+  <!-- COMMIT TO ROUTER - Modal -->
+  <div class="modal" id="commitRoute" tabindex="-1" role="dialog" aria-labelledby="addRouteMLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+              <h5 class="modal-title" id="addRouteMLabel">Commit route to router</h5>
+                  <button type="button" class="btn btn-outline btn-info close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <div class="modal-body">
+                  <div class="row">
+                      <div class="col text-wrap">
+                      <p class="lh-base">Would you like to commit the following route to the router?</p>
+                      <p>Please introduce the code that has been sent to your account.</p>  
+                      </div>
+                  </div>
+                </div>
+                <div class="modal-footer m-2">
+                  {% if user.is_authenticated %}
+                  <form action="{% url 'add-route' %}" method="POST" id="verify_user_add" class="row gx-3 gy-2 align-items-center">
+                    {% csrf_token %}
+                    <div class="row">
+                      <label for="id_value" class="col form-label float-start m-2">Code: </label>
+                      <input type="text" id="id_value" name="value" class="col form-control m-2 " aria-describedby="valueHelpBlock">
+                      <button type="submit" class="btn btn-outline-primary btn-sm col float-end m-2">Yes</button>
+                    </div>
+                  </form>
+                    {% else %}
+                    <p>You need to identify yourelf first before creating any rules.</p>
+                    {% endif %}
+        </div>
+      </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block pagejsbottom %}

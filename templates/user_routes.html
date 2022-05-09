@@ -65,7 +65,11 @@
                         Shortcuts
                     </h5>
                     <div class="card-body btn-group">
-                        <a class="btn btn-info btn-sm float-left" id="addbutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus"></i> Add Route</a>
+                    {% if not request.COOKIES.token %}
+						<a class="btn btn-info btn-sm float-left" id="addbutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus"></i> Add Route</a>
+                    {% else %}
+                      <a href="{% url 'add' %}"  class="btn btn-info btn-sm float-left" id="addButton"><i class="bi bi-shield-plus"></i> Add Route</a> 
+                    {% endif %}
 						<a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table"></i> User Routes</a>
 						<a href="{% url 'pending-routes' %}" type="button" class="btn btn-info btn-sm float-left ml-2"> <i class="bi-clipboard"></i> Proposed Routes</a>
 						<a class="btn btn-info btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard"></i> Dashboard</a>
@@ -158,6 +162,8 @@ var end;
 var oldhtml;
 var last_element = false;
 var refreshUrl = "{% url 'group-routes-ajax' %}";
+
+
 $(document).ready( function(){
 
 
@@ -207,9 +213,12 @@ $(document).ready( function(){
                             if (!full.comments.trim()) {
                                return '<small>' + data + '</small>';
                             }
+                            
+                            {% if request.COOKIES.token %}
                             displayurl = "{% url 'edit-route' route_slug='routename'  %}".replace('routename', full.name.toString());
-                            console.log('   is this working?')
-                            console.log('diSPLAY URL : '+displayurl)
+                            {% else %}
+                            displayurl = "{% url 'edit' route_slug='routename'  %}".replace('routename', full.name.toString());
+                            {% endif %}
                             return '<a rel="tooltip" href="'+displayurl+'" data-bs-toggle="tooltip" data-bs-placement="top" title='+full.comments+'><small>'+data+'</small>'
                         } else {
                             return 'No comments'
@@ -310,8 +319,18 @@ $(document).ready( function(){
                       "mRender": function (data, type, full) {
                      status = full.status;
                      btn = '';
-                     editurl = "{% url 'edit-route' route_slug='routename'  %}".replace('routename', full.name.toString());
-                     deleteurl = "{% url 'delete-route' route_slug='routename'  %}".replace('routename', full.name.toString());
+                    {% if not request.COOKIES.token %}
+                        editurl = "{% url 'edit-route' route_slug='routename'  %}".replace('routename', full.name.toString());
+                        console.log('no token');
+                    {% else %}
+                        editurl = "{% url 'edit' route_slug='routename'  %}".replace('routename', full.name.toString());
+                        console.log('si token');
+                    {% endif %}
+                    {% if not request.COOKIES.token %}
+                        deleteurl = "{% url 'delete-route' route_slug='routename'  %}".replace('routename', full.name.toString());
+                    {% else %}
+                        deleteurl = "{% url 'delete' route_slug='routename'  %}".replace('routename', full.name.toString());
+                    {% endif %}
                      graphsurl = "{% url 'display-graphs' route_slug='routename'  %}".replace('routename', full.name.toString());
                      if (status == "ACTIVE" ){
                      	btn = '<div class="row"><div class="col col-2 btn-group d-inline"><a href="'+editurl+'" class="btn btn-outline-dark m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Editar" %}"><i class="bi-pencil"></i></a>';

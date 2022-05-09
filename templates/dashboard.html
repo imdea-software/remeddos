@@ -30,7 +30,7 @@
 					  </div>
 					  <div class="row cards">
 						<div class="col-md-4 d-flex justify-content-center">
-						  <div class="card" style="width: 18rem;">
+						  <div class="card" style="width: 18rem; border:None;">
 							<div class="card-body">
 								<p class="card-text"> Status: <span class="badge bg-success">ACTIVE</span><br>
 							 When a route is active it means that it has been saved on your database and configured in your router.</p>
@@ -39,7 +39,7 @@
 						</div>
 				  
 						<div class="col-md-4 d-flex justify-content-center">
-						  <div class="card" style="width: 18rem;">
+						  <div class="card" style="width: 18rem;border:None;">
 							<div class="card-body">
 								<p class="card-text"> Status: <span class="badge bg-info">PENDING</span><br>
 							 A route will be pending when it was automatically created for a REM-GOLEM event. If you commit the route it will become ACTIVE.</p>
@@ -48,7 +48,7 @@
 						</div>
 						
 						<div class="col-md-4 d-flex justify-content-center">
-							<div class="card" style="width: 18rem;">
+							<div class="card" style="width: 18rem;border:None;">
 							  <div class="card-body">
 								  <p class="card-text"> Status: <span class="badge bg-danger">ERROR</span><br>
 							   When a route status is error it means that there was an error when trying to configure the route into the router, please talk to your adminsitrator if this is the case.</p>
@@ -80,7 +80,11 @@
 							  <small><table class="table table-hover">
 								{{ route.get_table|safe|escape }}
 							</table></small>
+							{% if not request.COOKIES.token %}
 							<a href="{% url 'edit-route' route.name %}" class="btn btn-info btn-sm btn-warning" id="edit_button_{{route.pk}}">Edit route</a>
+							{% else %}
+							<a href="{% url 'edit' route.name%}"class="btn btn-info btn-sm btn-warning" id="edit_button_{{route.pk}}">Edit route</a>
+							{% endif %}
 							<a href="{% url 'display-graphs' route.name %}" class="btn btn-sm btn-info" id="display_button_{{route.pk}}">More information</a>
 
 						</div>
@@ -106,11 +110,15 @@
 				{% endfor %}
 
 			</div>
-			<div class="col-sm-6" id="hero" style="display:block">
-				<div class="card">
+			<div class="col-sm-6" id="hero" style="display:block;">
+				<div class="card" style="border:None;">
                     <h5 class="card-title">Shortcuts</h5>
                     <div class="card-body btn-group">
-                        <a class="btn btn-info btn-sm float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus"></i> Add Route</a>
+					{% if not request.COOKIES.token %}
+						<a class="btn btn-info btn-sm float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus"></i> Add Route</a>           
+                    {% else %}
+                      <a href="{% url 'add' %}"  class="btn btn-info btn-sm float-left" id="routebutton"><i class="bi bi-shield-plus"></i> Add Route</a> 
+                    {% endif %}
 						<a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table"></i> User Routes</a>
 						<a href="{% url 'pending-routes' %}" type="button" class="btn btn-info btn-sm float-left ml-2"> <i class="bi-clipboard"></i> Proposed Routes</a>
 						<a class="btn btn-info btn-sm float-left ml-2" href="{% url 'user-profile' %}"> <i class="bi-person"></i> Profile</a>

@@ -41,7 +41,11 @@
                 Shortcuts
                         </h5>
                         <div class="card-body btn-group">
+                            {% if request.COOKIES.token%}
                             <a class="btn btn-info btn-sm float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus"></i> Add Route</a>
+                            {% else %}
+                            <a class="btn btn-info btn-sm float-left" id="routebutton" href="{% url 'add' %}"><i class="bi bi-shield-plus"></i> Add Route</a>
+                            {% endif %}
                             <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table"></i> User Routes</a>
                             <a href="{% url 'pending-routes' %}" type="button" class="btn btn-info btn-sm float-left ml-2"> <i class="bi-clipboard"></i> Proposed Routes</a>
                             <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard"></i> Dashboard</a>

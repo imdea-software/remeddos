@@ -43,8 +43,8 @@ section {
     width: 130%;
   }
   #hero .card {
-    box-shadow: 11px 7px 16px #f9f9f9;
-    border: 0;
+    /* box-shadow: 11px 7px 16px #f9f9f9;
+    border: 0; */
     text-align: center;
   }
   #hero .icon {

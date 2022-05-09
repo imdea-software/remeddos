@@ -14,6 +14,12 @@
             "network":"2.2.2.2/32"
             
         }
+    },
+    {
+        "model":"peers.PeerRange",
+        "pk":2,
+        "fields":{
+            "network":"193.145.15.29/32"
+        }
     }
-
 ]
