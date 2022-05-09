@@ -397,7 +397,8 @@ def create_route(golem_id,route_dic,peer):
 @shared_task
 def post(anomaly_info, id_event):
     from flowspec.models import MatchProtocol
-    from golem.models import GolemAttack; from golem.helpers import petition_geni
+    from golem.models import GolemAttack
+    from golem.helpers import petition_geni
     import time
     
     print('New webhook message, event status: ', anomaly_info['status'], ' ', anomaly_info['severity'],' ', id_event)
@@ -410,7 +411,8 @@ def post(anomaly_info, id_event):
             if not event_info['status'] == 'Recovered' and not event_info['status']=='Burst':
                 prt = traffic_event[4]['data'][0][0]; protocol = get_protocol(prt)
                 ip = get_ip_address(event_info['ip_attacked'])
-                send_message(f"Nuevo ataque a la institución '{dic_regla['institution_name']}' de tipo '{dic_regla['attack_name']}' contra el recurso '{ip}'. La regla para poder mitigar este ataque que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : Id: {dic_regla['id_attack']}, Status: {dic_regla['status']}, Max Value: {dic_regla['max_value']} Threshold value: {dic_regla['th_value']}.")  
+                link = get_link(dic_regla['id_attack'])
+                send_message(f"Nuevo ataque a la institución '{dic_regla['institution_name']}' de tipo '{dic_regla['attack_name']}' contra el recurso '{ip}'. Algunos datos sobre el ataque son: Id: {dic_regla['id_attack']}, Status: {dic_regla['status']}, Max Value: {dic_regla['max_value']} Threshold value: {dic_regla['th_value']}. Para más información sobre el ataque consulte el siguiente link: {link}.")  
                 peer = find_peer(dic_regla['institution_name'])
                 route_dic = {'name':dic_regla['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla['ip_dest'],'ipsrc':dic_regla['ip_src'],'protocol':protocol.pk,'tcpflag':dic_regla['tcp_flag'],'port':dic_regla['port']}
                 if peer:
@@ -439,13 +441,14 @@ def post(anomaly_info, id_event):
                         m_protocol = check_protocol(p1)
                         dic2 = {'name':dic_regla2['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla2['ip_dest'],'ipsrc':dic_regla2['ip_src'],'protocol':m_protocol.pk,'tcpflag':dic_regla2['tcp_flag'],'port':dic_regla2['port']}
                         create_route(id_event,dic2,peer.peer_tag)
-                        send_message(f"El ataque registrado anteriormente a la institucion {dic_regla2['institution_name']} con id {dic_regla2['id_attack']} persiste y hemos obtenido nuevos datos del {dic_regla2['attack_name']}, la regla de firewall que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : id: {dic_regla2['id_attack']}, status: {dic_regla2['status']},  max_value: {dic_regla2['max_value']}, threshold value: {dic_regla2['th_value']}")
+                        link1 = get_link(id_event)
+                        send_message(f"El ataque registrado anteriormente a la institucion {dic_regla2['institution_name']} con id {dic_regla2['id_attack']} persiste y hemos obtenido nuevos datos del {dic_regla2['attack_name']} id: {dic_regla2['id_attack']}, status: {dic_regla2['status']},  max_value: {dic_regla2['max_value']}, threshold value: {dic_regla2['th_value']}. Para más información sobre el ataque siga el siguiente link: {link1}. Consulte nuestra web para ver las reglas que le hemos propuesto.")
                         recovered = False 
                         while recovered:
                             time.sleep(300)
                             attack_data, attack_info = petition_geni(id_event)
                             if attack_info['status'] != 'Recovered' and attack_info != 'Burst':
-                                print("THIRD RULE PROPOSITION")
+                                 # "THIRD RULE PROPOSITION"
                                 traffic_data = attack_data['response']['result']['data'][0]['traffic_characteristics']
                                 dic_regla3 = assemble_dic(traffic_data,attack_info)
                                 attack = GolemAttack.objects.get(id_name=id_event)
@@ -453,7 +456,8 @@ def post(anomaly_info, id_event):
                                 attack.save()
                                 dic3 = {'name':dic_regla3['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla3['ip_dest'],'ipsrc':dic_regla3['ip_src'],'port':dic_regla3['port'],'protocol':m_protocol.pk,'tcpflag':dic_regla3['tcp_flag']}
                                 create_route(id_event,dic3,peer.peer_tag)
-                                send_message(f"El ataque registrado anteriormente a la institución {dic_regla3['institution_name']} persiste {dic_regla3['attack_name']} y hemos obtenido nuevos datos, la regla de firewall que te proponemos desde RediMadrid es [ ... ]. Más información sobre el ataque : Id: {dic_regla3['id_attack']}, Status: {dic_regla3['status']}, Max Value: {dic_regla3['max_value']}, Threshold value: {dic_regla3['th_value']}.")
+                                link2 = get_link(id_event)
+                                send_message(f"El ataque registrado anteriormente a la institución {dic_regla3['institution_name']} persiste {dic_regla3['attack_name']} y hemos obtenido nuevos datos: Id: {dic_regla3['id_attack']}, Status: {dic_regla3['status']}, Max Value: {dic_regla3['max_value']}, Threshold value: {dic_regla3['th_value']}.")
                                 recovered = False
                             elif attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':
                                     id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
