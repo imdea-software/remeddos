@@ -3,6 +3,7 @@ from peers.models import *
 import requests
 from urllib3.exceptions import InsecureRequestWarning
 from django.core.exceptions import MultipleObjectsReturned
+from flowspy import settings
 
 
 def petition_geni(id_event):
@@ -13,7 +14,7 @@ def petition_geni(id_event):
     response = ''
     try:
         # this is the petition that needs to go through:  curl --user Alicia:ali54* --insecure --data 'request={"display_data":"yes"}' https://193.145.15.26/api/anomalyevent/application/A376135
-        response = requests.get(f'https://193.145.15.26/api/anomalyevent/application/{id_event}', data=data, verify=False, auth=('Alicia', 'ali54*'))
+        response = requests.get(f'https://193.145.15.26/api/anomalyevent/application/{id_event}', data=data, verify=False, auth=(settings.GOLEM_USER, settings.GOLEM_PWD))
         json_event = response.json()
         event_data = {
            'id':json_event['response']['result']['data'][0]['event']['id'],'status':json_event['response']['result']['data'][0]['event']['status'],'severity':json_event['response']['result']['data'][0]['event']['severity']['type'],

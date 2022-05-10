@@ -69,21 +69,25 @@ def get_link(id_golem):
   from flowspy import settings
   
   try:
-    ssh = paramiko.SSHClient();ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy());path = "/home/remedios/.ssh/id_rsa";k = paramiko.RSAKey.from_private_key_file(path)
+    ssh = paramiko.SSHClient();ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    path = "/home/remedios/.ssh/id_rsa"
+    k = paramiko.RSAKey.from_private_key_file(path)
     ssh.connect(hostname="logs.redimadrid.es", port=22, pkey=k, username="alicia.cardenosa")
     try:
         stdin, stdout, stderr = ssh.exec_command(f'grep {id_golem} /var/log/remote/193.145.15.26/`date +%Y-%m-%d`.log')
         res,err = stdout.read(),stderr.read()
         result = res if res else err
-        resultado = result.decode()
-        fs = resultado.find('<'); fe = resultado.find('>'); fc = resultado.find('=')
-        enlace = resultado[fs:fe+1]
-        link = resultado[fc+1:fe] 
+        decode_result = result.decode()
+        fs = decode_result.find('<')
+        fe = decode_result.find('>') 
+        fc = decode_result.find('=')
+        html_link = decode_result[fs:fe+1]
+        link = decode_result[fc+1:fe]
         return link
     except Exception as e:
-        print('Ha habido un error cuando se intentaba leer el fichero de configuración., ',e)
+        print('There was an error when trying to read the configuration file: ',e)
   except Exception as e:
-      print('Ha habido un error cuando se ha intentado establecer la conexión: ',e)
+      print('There was an error when trying to connect via ssh: ',e)
     
 
 

@@ -412,11 +412,11 @@ def post(anomaly_info, id_event):
                 prt = traffic_event[4]['data'][0][0]; protocol = get_protocol(prt)
                 ip = get_ip_address(event_info['ip_attacked'])
                 link = get_link(dic_regla['id_attack'])
-                send_message(f"Nuevo ataque a la institución '{dic_regla['institution_name']}' de tipo '{dic_regla['attack_name']}' contra el recurso '{ip}'. Algunos datos sobre el ataque son: Id: {dic_regla['id_attack']}, Status: {dic_regla['status']}, Max Value: {dic_regla['max_value']} Threshold value: {dic_regla['th_value']}. Para más información sobre el ataque consulte el siguiente link: {link}.")  
+                send_message(f"Nuevo ataque a la institución '{dic_regla['institution_name']}' de tipo '{dic_regla['attack_name']}' contra el recurso '{ip}', datos sobre el ataque son: Id: {dic_regla['id_attack']}, Status: {dic_regla['status']}, Max Value: {dic_regla['max_value']} Threshold value: {dic_regla['th_value']}. Para más información sobre el ataque consulte el siguiente link: {link}.")  
                 peer = find_peer(dic_regla['institution_name'])
                 route_dic = {'name':dic_regla['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla['ip_dest'],'ipsrc':dic_regla['ip_src'],'protocol':protocol.pk,'tcpflag':dic_regla['tcp_flag'],'port':dic_regla['port']}
                 if peer:
-                    geni_attack = GolemAttack(id_name=dic_regla['id_attack'], peer=peer, ip_src = dic_regla['ip_src'], port=dic_regla['port'], tcpflag=dic_regla['tcp_flag'], status = dic_regla['status'], max_value=dic_regla['max_value'],threshold_value=dic_regla['th_value'], typeof_attack=dic_regla['typeofattack'],typeof_value=dic_regla['typeofvalue'])
+                    geni_attack = GolemAttack(id_name=dic_regla['id_attack'], peer=peer, ip_src = dic_regla['ip_src'], port=dic_regla['port'], tcpflag=dic_regla['tcp_flag'], status = dic_regla['status'], max_value=dic_regla['max_value'],threshold_value=dic_regla['th_value'], typeof_attack=dic_regla['typeofattack'],typeof_value=dic_regla['typeofvalue'],link=link)
                     geni_attack.save()
                     create_route(dic_regla['id_attack'],route_dic, peer.peer_tag)
                     if isinstance(protocol,(list)):
@@ -434,15 +434,15 @@ def post(anomaly_info, id_event):
                     if info['status'] != 'Recovered' and info['status'] !='Burst':
                         tf_char = event_data['response']['result']['data'][0]['traffic_characteristics']
                         dic_regla2 = assemble_dic(tf_char,info)
+                        link1 = get_link(id_event)
                         attack = GolemAttack.objects.get(id_name=id_event)
-                        attack.status, attack.max_value, attack.threshold_value = dic_regla2['status'], dic_regla2['max_value'], dic_regla2['th_value']
+                        attack.status, attack.max_value, attack.threshold_value,attack.link = dic_regla2['status'], dic_regla2['max_value'], dic_regla2['th_value'], link1
                         attack.save()
                         p1 = tf_char[4]['data'][0][0]
                         m_protocol = check_protocol(p1)
                         dic2 = {'name':dic_regla2['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla2['ip_dest'],'ipsrc':dic_regla2['ip_src'],'protocol':m_protocol.pk,'tcpflag':dic_regla2['tcp_flag'],'port':dic_regla2['port']}
                         create_route(id_event,dic2,peer.peer_tag)
-                        link1 = get_link(id_event)
-                        send_message(f"El ataque registrado anteriormente a la institucion {dic_regla2['institution_name']} con id {dic_regla2['id_attack']} persiste y hemos obtenido nuevos datos del {dic_regla2['attack_name']} id: {dic_regla2['id_attack']}, status: {dic_regla2['status']},  max_value: {dic_regla2['max_value']}, threshold value: {dic_regla2['th_value']}. Para más información sobre el ataque siga el siguiente link: {link1}. Consulte nuestra web para ver las reglas que le hemos propuesto.")
+                        send_message(f"El ataque registrado anteriormente a la institucion {dic_regla2['institution_name']} con id {dic_regla2['id_attack']} persiste y hemos obtenido nuevos datos del {dic_regla2['attack_name']} id: {dic_regla2['id_attack']}, status: {dic_regla2['status']},  max_value: {dic_regla2['max_value']}, threshold value: {dic_regla2['th_value']}.  Consulte nuestra web para ver las reglas que le hemos propuesto y para más información sobre el ataque visite el siguiente link: {link1}.")
                         recovered = False 
                         while recovered:
                             time.sleep(300)
@@ -451,12 +451,12 @@ def post(anomaly_info, id_event):
                                  # "THIRD RULE PROPOSITION"
                                 traffic_data = attack_data['response']['result']['data'][0]['traffic_characteristics']
                                 dic_regla3 = assemble_dic(traffic_data,attack_info)
+                                link2 = get_link(id_event)
                                 attack = GolemAttack.objects.get(id_name=id_event)
-                                attack.status, attack.max_value, attack.threshold_value = dic_regla3['status'], dic_regla3['max_value'], dic_regla3['th_value']
+                                attack.status, attack.max_value, attack.threshold_value,attack.link = dic_regla3['status'], dic_regla3['max_value'], dic_regla3['th_value'], link2
                                 attack.save()
                                 dic3 = {'name':dic_regla3['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla3['ip_dest'],'ipsrc':dic_regla3['ip_src'],'port':dic_regla3['port'],'protocol':m_protocol.pk,'tcpflag':dic_regla3['tcp_flag']}
                                 create_route(id_event,dic3,peer.peer_tag)
-                                link2 = get_link(id_event)
                                 send_message(f"El ataque registrado anteriormente a la institución {dic_regla3['institution_name']} persiste {dic_regla3['attack_name']} y hemos obtenido nuevos datos: Id: {dic_regla3['id_attack']}, Status: {dic_regla3['status']}, Max Value: {dic_regla3['max_value']}, Threshold value: {dic_regla3['th_value']}. Si desea más información sobre el ataque visite el siguiente link: {link2}.")
                                 recovered = False
                             elif attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':

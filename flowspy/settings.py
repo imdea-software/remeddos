@@ -44,6 +44,9 @@ ZABBIX_USER = os.environ.get('ZABBIX_USER')
 ZABBIX_PWD =  os.environ.get('ZABBIX_PWD')
 ZABBIX_SOURCE =  os.environ.get('ZABBIX_SOURCE')
 
+GOLEM_USER = os.environ.get('GOLEM_USER')
+GOLEM_PWD = os.environ.get('GOLEM_PWD')
+
 NETCONF_DEVICE=os.environ.get('NETCONF_DEVICE')
 NETCONF_USER=os.environ.get('NETCONF_USER')
 NETCONF_PASS=os.environ.get('NETCONF_PASS')
