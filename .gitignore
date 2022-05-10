@@ -1,3 +1,6 @@
 .env
 init.sql
 id_rsa
+_backup
+media
+flowspec/static
