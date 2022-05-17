@@ -27,6 +27,11 @@ bot = telebot.TeleBot(API_KEY)  """
 
 from itertools import tee
 
+def get_code():
+  from django.utils.crypto import get_random_string
+  n = get_random_string(length=6)
+  return n
+
 def iter_for_delta_changes(iterable):
     a,b = tee(iterable)
     next(b,None)
@@ -466,7 +471,7 @@ def get_instance_form(applier, route):
 def get_specific_route(applier,peer, route_slug):
   from peers.models import Peer
   from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
-  print('inside get specific route')
+  print('inside get specific route, route_slug: ', route_slug)
   check = True
   peers = Peer.objects.all()
   if not applier == None:

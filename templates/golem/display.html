@@ -13,7 +13,7 @@
 
 <div class="container">
 <div class="row rows-cols-4 p-5">
-    <div class="col">
+    <div class="mb-2">
         <h5 class="font-weight-light text-right">Attacks recieved by <span class="text-danger">REM-GOLEM</span></h5>
     </div>
 </div>
@@ -22,33 +22,41 @@
         <table id="golemtable" class="table table-hover table-responsive compact w-100">
         <thead class="bg-dark text-white">
            <tr>
-               <th><small>ID </small></th><th><small>Type</small></th><th><small>Starts</small></th><th><small>Peer</small></th><th><small>More information</small></th> <th><small>Status</small></th> 
-               <th><small>Max Value</small></th> <th><small>Threshold </small></th> <th><small>Actions</small></th>
+               <th><small>ID </small></th><th><small>Type</small></th><th><small>Recieved at</small></th><th><small>Institution</small></th><th><small>Important Data</small></th> <th><small>Status</small></th> 
+               <th><small>Max Value</small></th> <th><small>Threshold </small></th><th><small>More Information</small></th> <th><small>Actions</small></th>
             </tr>
         </thead>
         <tbody>
                {% for attack in attacks %}
             <tr>
-                <td><small><a href="{% url 'golem-routes' attack.id_name %}" class="link-dark">{{attack.id_name}}</a></small></td>
+                <td><small>
+                    <a href="{% url 'golem-routes' attack.id_name %}" class="fw-bold text-danger" style="text-decoration:None;">{{attack.id_name}}</a>
+                </small></td>
                 {% if attack.typeof_attack %} <td><small> {{attack.typeof_attack}}</small></td> {% else %} <td><small> No se registró el tipo de ataque</small></td> {% endif %}
-                <td><small>{{attack.received_at}}</small></td>
+                <td><small> {{attack.received_at|time:"H:i"}}, {{attack.received_at|date:"d M Y" }}</small></td>
                 <td><small>{{attack.peer}}</small></td>
                 <td><small>
-                    {% if attack.ip_src %} Src Addr: {{attack.ip_src}}<br> {% endif %}
-                    {% if attack.ip_dest %} Dest Addr: {{attack.ip_dest}}<br> {% endif %}
-                    {% if attack.src_port %} Src Port: {{attack.src_port}}<br> {% endif %}
-                    {% if attack.port %} Port: {{attack.port}}<br> {% endif %}
-                    {% if attack.dest_port %} Dest. Port:{{attack.dest_port}}<br> {% endif %}
-                    {% if attack.protocol.all %} Protocol: {% for p in attack.protocol.all %} {{p}} {% endfor %}<br> {% endif %}
-                    {% if attack.tcpflag %} Tcpflag:  {{attack.tcpflag}} {% endif %} <br></small> </td> 
+                    {% if attack.ip_src %} <b>Src Addr</b> {{attack.ip_src}}<br> {% endif %}
+                    {% if attack.ip_dest %} <b>Dest Addr</b> {{attack.ip_dest}}<br> {% endif %}
+                    {% if attack.src_port %} <b>Src Port</b> {{attack.src_port}}<br> {% endif %}
+                    {% if attack.port %} <b>Port</b> {{attack.port}}<br> {% endif %}
+                    {% if attack.dest_port %}<b>Dest Port</b>{{attack.dest_port}}<br> {% endif %}
+                    {% if attack.protocol.all %}<b>Protocol</b> {% for p in attack.protocol.all %} {{p}} {% endfor %}<br> {% endif %}
+                    {% if attack.tcpflag %} <b>Tcpflag</b>  {{attack.tcpflag}} {% endif %}
+                    <br></small> </td> 
                     <td><small>{{attack.status}} </small></td>
                     <td><small>{{attack.max_value|floatformat}}/{{attack.typeof_value|title}} </small></td>
                     <td><small>{{attack.threshold_value|floatformat}}/{{attack.typeof_value|title}} </small></td> 
+                    {% if attack.link %}
+                    <td><small><a href="{{attack.link}}" target="_blank" data-bs-toggle="tooltip" data-bs-placement="top" title="More information" class="link-danger" style="text-decoration: None;">REM-GOLEM</a></small></td>
+                    {% else %}
+                    <td><small>There is no more information available at the moment, we apologize for any inconvenience.</small></td>
+                    {% endif %}
                     <td>
                     <div class="row">
                         <div clas="col col-2 btn-group d-inline">
                             <a href="{% url 'golem-routes' attack.id_name %}"  data-bs-toggle="tooltip" data-bs-placement="top" title="View rules" class="btn btn-sm btn-outline btn-dark m-1"><i class="bi bi-bookmark-plus"></i></a>
-                            <a href="{% url 'golem-updates' attack.id_name %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Updates" class="btn btn-outline btn-sm btn-dark m-1"><i class="bi bi-gear-fill"></i></a>
+                            <!-- <a href="{% url 'golem-updates' attack.id_name %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Updates" class="btn btn-outline btn-sm btn-dark m-1"><i class="bi bi-gear-fill"></i></a> -->
                             <a href="{% url 'golem-delete' attack.id_name %}"  data-bs-toggle="tooltip" data-bs-placement="top" title="Delete golem event" class="btn btn-outline btn-sm btn-dark m-1"><i class="bi bi-trash"></i></a>
                         </div>    
                     </div>
@@ -90,7 +98,7 @@
 <script type="text/javascript">
 $(document).ready(function(){
     $('#golemtable').DataTable({
-        "order": [[ 1, "asc" ]],
+        "order": [[ 0, "desc" ]],
         "AutoWidth": true,
         "aLengthMenu" : [
             [5, 15, 20, -1],

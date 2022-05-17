@@ -8,4 +8,6 @@ urlpatterns = [
     path('routes/<str:golem_name>',views.display_routes,name="golem-routes"),
     path('updates/<str:golem_id>',views.display_golem_updates,name="golem-updates"),
     path('delete_golem/<str:golem_id>',views.delete_golem, name="golem-delete"),
+    path('vcommit/',views.verify_commit_route, name="vcommit"),
+    path('commit_route/<slug:route_slug>',views.commit_to_router, name="commit"),
 ]

@@ -1,4 +1,5 @@
-from __future__ import absolute_import, unicode_literals
+from flowspy.celery import app
+#from __future__ import absolute_import, unicode_literals
 from socket import IP_TOS
 from tabnanny import check
 
@@ -18,6 +19,7 @@ from flowspec.helpers import *
 from django.http import HttpResponse
 from flowspec.models import *
 from golem.helpers import *
+
 
 LOG_FILENAME = os.path.join(settings.LOG_FILE_LOCATION, 'celery_jobs.log')
 
@@ -186,7 +188,6 @@ def batch_delete(routes, **kwargs):
 
 @shared_task
 def check_sync(route_name=None, selected_routes=[]):
-    from flowspec.models import Route, MatchPort, MatchDscp, ThenAction
     peers = ['CV', 'CIB', 'CSIC', 'CEU', 'CUNEF', 'IMDEA_NET', 'IMDEA', 'UAM', 'UC3M', 'UCM', 'UAH', 'UEM', 'UNED', 'UPM', 'URJC']
     for peer in peers:
         if not selected_routes:
@@ -194,6 +195,7 @@ def check_sync(route_name=None, selected_routes=[]):
         else:
             routes = selected_routes
         if route_name:
+            print('this is route name' , routes)
             routes = routes.filter(name=route_name)
         for route in routes:
             if route.has_expired() and (route.status != 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE'):
@@ -218,11 +220,11 @@ def check_sync(route_name=None, selected_routes=[]):
                 
 @shared_task(ignore_result=True)
 def notify_expired():
-    from flowspec.models import Route
     import datetime
     from django.contrib.sites.models import Site
     from django.core.mail import send_mail
     from django.template.loader import render_to_string
+
     peers = ['CV', 'CIB', 'CSIC', 'CEU', 'CUNEF', 'IMDEA_NET', 'IMDEA', 'UAM', 'UC3M', 'UCM', 'UAH', 'UEM', 'UNED', 'UPM', 'URJC']
     message = ('Initializing expiration notification')
     #send_message(message)
@@ -231,7 +233,6 @@ def notify_expired():
         routes = find_routes(applier=None, peer=peer)
         today = datetime.date.today()
         for route in routes:
-            print('routes: ', route)
             if route.expires != None:
                 if route.status not in ['EXPIRED', 'ADMININACTIVE', 'INACTIVE', 'ERROR']:
                     expiration_days = (route.expires - today).days
@@ -336,6 +337,20 @@ def routes_sync():
 
 
 @shared_task
+def check_golem_events():
+    from golem.models import GolemAttack
+    from golem.helpers import petition_geni
+
+    golem_events = GolemAttack.objects.all()
+    for golem in golem_events:
+        if golem.status == 'Ongoing' :
+            event_ticket, attack_info = petition_geni(id_event=golem.id_name)
+            post(attack_info,golem.id_name)
+        else:
+            pass
+
+
+@shared_task
 def create_route(golem_id,route_dic,peer):
     from flowspec.helpers import get_route,find_routes
     from golem.models import GolemAttack
@@ -359,10 +374,13 @@ def create_route(golem_id,route_dic,peer):
                 route.name = route_dic['name']+'_1'
                 route.peer = peers
                 route.status = 'PENDING'
-                tcpflag = golem_translate_tcpflag(route_dic['tcpflag'])
-                route.source,route.destination,route.port,route.tcpflag = route_dic['ipsrc'],route_dic['ipdest'],route_dic['port'], tcpflag
-                route.save() 
-                print(route)
+                if route_dic['protocol'] == 'tcp':
+                    tcpflag = golem_translate_tcpflag(route_dic['tcpflag'])
+                    route.source,route.destination,route.port,route.tcpflag = route_dic['ipsrc'],route_dic['ipdest'],route_dic['port'], tcpflag
+                    route.save()
+                else: 
+                    route.source,route.destination,route.port = route_dic['ipsrc'],route_dic['ipdest'],route_dic['port']
+                    route.save()
                 route.protocol.add(route_dic['protocol'])
                 g = GolemAttack.objects.get(id_name=golem_id)
                 g.set_route(route)
@@ -377,13 +395,16 @@ def create_route(golem_id,route_dic,peer):
             num = (int(n)+1)
             dicname = route_dic['name']
             name = str(f"{dicname}_{num}")
-            print('name: ',name,' tipo: ',type(name))
             route.name = name
             route.peer = peers
             route.status = 'PENDING'
-            tcpflag = golem_translate_tcpflag(route_dic['tcpflag'])
-            route.source,route.destination,route.port,route.tcpflag = route_dic['ipsrc'],route_dic['ipdest'],route_dic['port'], tcpflag
-            route.save()
+            if route_dic['protocol'] == 'tcp':
+                tcpflag = golem_translate_tcpflag(route_dic['tcpflag'])
+                route.source,route.destination,route.port,route.tcpflag = route_dic['ipsrc'],route_dic['ipdest'],route_dic['port'], tcpflag
+                route.save()
+            else:
+                route.source,route.destination,route.port = route_dic['ipsrc'],route_dic['ipdest'],route_dic['port']
+                route.save()
             route.protocol.add(route_dic['protocol'])
             g = GolemAttack.objects.get(id_name=golem_id)
             g.set_route(route)
@@ -400,8 +421,7 @@ def post(anomaly_info, id_event):
     from golem.models import GolemAttack
     from golem.helpers import petition_geni
     import time
-    
-    print('New webhook message, event status: ', anomaly_info['status'], ' ', anomaly_info['severity'],' ', id_event)
+
     if not anomaly_info['institution_name'] == 'Non-Home':
         if anomaly_info['status'] == 'Open' or anomaly_info == 'Ongoing':
             time.sleep(90)
@@ -409,10 +429,11 @@ def post(anomaly_info, id_event):
             traffic_event = event_ticket['response']['result']['data'][0]['traffic_characteristics']
             dic_regla = assemble_dic(traffic_event,event_info)
             if not event_info['status'] == 'Recovered' and not event_info['status']=='Burst':
-                prt = traffic_event[4]['data'][0][0]; protocol = get_protocol(prt)
+                prt = traffic_event[4]['data'][0][0]
+                protocol = get_protocol(prt)
                 ip = get_ip_address(event_info['ip_attacked'])
                 link = get_link(dic_regla['id_attack'])
-                send_message(f"Nuevo ataque a la institución '{dic_regla['institution_name']}' de tipo '{dic_regla['attack_name']}' contra el recurso '{ip}', datos sobre el ataque son: Id: {dic_regla['id_attack']}, Status: {dic_regla['status']}, Max Value: {dic_regla['max_value']} Threshold value: {dic_regla['th_value']}. Para más información sobre el ataque consulte el siguiente link: {link}.")  
+                send_message(f"Nuevo ataque a la institución '{dic_regla['institution_name']}' de tipo '{dic_regla['attack_name']}' contra el recurso '{ip}' con id {dic_regla['id_attack']} y estado {dic_regla['status']}. Consulte nuestra web para ver las reglas que le hemos propuesto y para más información sobre el ataque visite el siguiente link: {link}")  
                 peer = find_peer(dic_regla['institution_name'])
                 route_dic = {'name':dic_regla['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla['ip_dest'],'ipsrc':dic_regla['ip_src'],'protocol':protocol.pk,'tcpflag':dic_regla['tcp_flag'],'port':dic_regla['port']}
                 if peer:
@@ -442,12 +463,13 @@ def post(anomaly_info, id_event):
                         m_protocol = check_protocol(p1)
                         dic2 = {'name':dic_regla2['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla2['ip_dest'],'ipsrc':dic_regla2['ip_src'],'protocol':m_protocol.pk,'tcpflag':dic_regla2['tcp_flag'],'port':dic_regla2['port']}
                         create_route(id_event,dic2,peer.peer_tag)
-                        send_message(f"El ataque registrado anteriormente a la institucion {dic_regla2['institution_name']} con id {dic_regla2['id_attack']} persiste y hemos obtenido nuevos datos del {dic_regla2['attack_name']} id: {dic_regla2['id_attack']}, status: {dic_regla2['status']},  max_value: {dic_regla2['max_value']}, threshold value: {dic_regla2['th_value']}.  Consulte nuestra web para ver las reglas que le hemos propuesto y para más información sobre el ataque visite el siguiente link: {link1}.")
+                        send_message(f"El ataque registrado anteriormente a la institucion {dic_regla2['institution_name']} con id {dic_regla2['id_attack']} persiste y hemos obtenido nuevos datos del {dic_regla2['attack_name']}. Consulte nuestra web para ver las reglas propuestas y para más información sobre el ataque visite el siguiente link: {link1}")
                         recovered = False 
                         while recovered:
                             time.sleep(300)
                             attack_data, attack_info = petition_geni(id_event)
                             if attack_info['status'] != 'Recovered' and attack_info != 'Burst':
+                                print('we should be before the third rule proposition')
                                  # "THIRD RULE PROPOSITION"
                                 traffic_data = attack_data['response']['result']['data'][0]['traffic_characteristics']
                                 dic_regla3 = assemble_dic(traffic_data,attack_info)
@@ -457,20 +479,21 @@ def post(anomaly_info, id_event):
                                 attack.save()
                                 dic3 = {'name':dic_regla3['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla3['ip_dest'],'ipsrc':dic_regla3['ip_src'],'port':dic_regla3['port'],'protocol':m_protocol.pk,'tcpflag':dic_regla3['tcp_flag']}
                                 create_route(id_event,dic3,peer.peer_tag)
-                                send_message(f"El ataque registrado anteriormente a la institución {dic_regla3['institution_name']} persiste {dic_regla3['attack_name']} y hemos obtenido nuevos datos: Id: {dic_regla3['id_attack']}, Status: {dic_regla3['status']}, Max Value: {dic_regla3['max_value']}, Threshold value: {dic_regla3['th_value']}. Si desea más información sobre el ataque visite el siguiente link: {link2}.")
+                                send_message(f"El ataque registrado anteriormente a la institución {dic_regla3['institution_name']} persiste {dic_regla3['attack_name']} y hemos obtenido nuevos datos del {dic_regla3['attack_name']} con id: {dic_regla3['id_attack']}, status: {dic_regla3['status']}. Consulte nuestra web para ver las reglas propuestas y para más información sobre el ataque visite el siguiente link: {link2}.")
                                 recovered = False
-                            elif attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':
-                                    id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
-                                    attack = GolemAttack.objects.get(id_name=id_event)
-                                    attack.status, attack.max_value, attack.threshold_value = status, max_value, th_value
-                                    attack.save()
-                                    send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} e id {id_attack} ha terminado. Más información sobre el ataque : Id: {id_attack}, Status: {status}, Max Value: {max_value}, Threshold value: {th_value}.")
-                                    recovered = True
+                            if attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':
+                                print('sending the recovered message')
+                                id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
+                                attack = GolemAttack.objects.get(id_name=id_event)
+                                attack.status, attack.max_value, attack.threshold_value = status, max_value, th_value
+                                attack.save()
+                                send_message(f"El ataque registrado anteriormente a la institución {institution_name} con id {id_attack} ha terminado. Más información en Remedios o REM-GOLEM.")
+                                recovered = True
                     else:
                         if info['status'] == 'Recovered' or info['status']=='Burst':
                             attack = GolemAttack.objects.get(id_name=id_event)
                             id_att, status, max_value, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
-                            send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} y estado {status} ha terminado. Más información sobre el ataque : Id: {id_event}, Max Value: {max_value}, Threshold value: {th_value}.")                  
+                            send_message(f"El ataque registrado anteriormente a la institución {institution_name} con id {id} y estado {status} ha terminado. Más información en Remedios o REM-GOLEM.")                  
                     # send message to slack saying the attack has finished
                     # wait 4 min 
                     # rule proposition and send email to user
@@ -487,7 +510,7 @@ def post(anomaly_info, id_event):
                 attack.max_value = max_value
                 attack.threshold_value = th_value
                 attack.save()
-                send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} y estado {status} ha terminado. Más información sobre el ataque : Id: {id_att}, Max Value: {max_value}, Threshold value: {th_value}.")
+                send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} y estado {status} ha terminado. Status: {status}, Max Value: {max_value}, Threshold value: {th_value}. Más información en Remedios o REM-GOLEM.")
                     # check if it's recovered and already in database to inform the attack is over
             except ObjectDoesNotExist:
                 print(f'There was an attack with id: {id_event}.')            
@@ -500,10 +523,9 @@ def post(anomaly_info, id_event):
                 attack.max_value = max_value
                 attack.threshold_value = th_value
                 attack.save()      
-                send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} y estado {status} ha terminado. Más información sobre el ataque : Id: {id_att}, Max Value: {max_value}, Threshold value: {th_value}.")
+                send_message(f"El ataque registrado anteriormente a la institución {institution_name} con id {id_att} ha terminado. Más información en Remedios o REM-Golem.")
                 # check if it's recovered and already in database to inform the attack is over
             except ObjectDoesNotExist:
                 print(f'There was an attack with id: {id_event}.')
                 pass     
-    else:
-        pass
+   

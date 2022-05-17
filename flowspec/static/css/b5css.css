@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css?family=Roboto");
 
 :root {
     --header-height: 3rem;
@@ -6,7 +6,7 @@
     /* --first-color: #4723D9; */
     --first-color-light: #AFA5D9;
     --white-color: #F7F6FB;
-    --body-font: 'Nunito', sans-serif;
+    --body-font: 'Roboto', serif;
     --normal-font-size: 1rem;
     --z-fixed: 100
 }
@@ -21,7 +21,7 @@ body {
     position: relative;
     margin: var(--header-height) 0 0 0;
     padding: 0 1rem;
-    font-family: var(--body-font);
+    /* font-family: var(--body-font); */
     /* font-size: var(--normal-font-size); */
     transition: .5s;
 }

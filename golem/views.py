@@ -5,13 +5,17 @@ from braces.views import CsrfExemptMixin
 from django.contrib.auth.decorators import login_required
 from allauth.account.decorators import verified_email_required
 from django.views.decorators.cache import never_cache
+from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
+
 
 from .models import *
 
-from flowspec.tasks import *
+from flowspec.tasks import post
 from peers.models import *
 from .helpers import *
 import json
+import threading
+from flowspec.forms import *
 
 # Create your views here.
 class ProcessWebHookView(CsrfExemptMixin, View):
@@ -19,8 +23,9 @@ class ProcessWebHookView(CsrfExemptMixin, View):
         message = json.loads(request.body)
         id_event = message['event']['id']
         anomaly_ticket, anomaly_info = petition_geni(id_event)
-        #post.apply_async(args=[anomaly_ticket, anomaly_info, id_event], kwargs={'kwarg1':'anomaly_ticket','kwarg2':'anomaly_info','kwarg3':'id_event'})
-        post(anomaly_info, id_event) 
+        print('New webhook event, ', id_event)
+        post.apply_async((anomaly_info, id_event))
+        #post(anomaly_info, id_event) 
         return HttpResponse()
 
 @verified_email_required
@@ -81,3 +86,64 @@ def delete_golem(request,golem_id):
         peer = Peer.objects.get(peer_name=peer_name)
         golem_attacks = GolemAttack.objects.filter(peer=peer.pk).all()[::-1]
         return render(request,'golem/display.html',{'attacks':golem_attacks})
+
+
+##================= commit pending routes to router
+
+@login_required
+@never_cache
+def commit_to_router(request,route_slug):
+    fd = route_slug.find('_')
+    peer_tag = route_slug[fd+1:-2]
+    route = get_specific_route(applier=None,peer=peer_tag,route_slug=route_slug)
+    print('peer tag: ', peer_tag)
+    route.commit_add()
+    print('route has been commited to the router: ', route)
+    return HttpResponseRedirect(reverse("attack-list"))
+
+
+@verified_email_required
+@login_required
+def verify_commit_route(request):
+    if 'token' in request.COOKIES:
+        url = reverse('commit')
+        response = HttpResponseRedirect(url)
+        return response 
+    else:
+        if request.is_ajax and request.method == "GET":
+            if not 'token' in request.COOKIES:
+                num = get_code()
+                user = request.user
+                msg = "El usuario {user} ha solicitado un codigo de seguridad para configurar una regla propuesta en el router. Código: '{code}'.".format(user=user,code=num)
+                code = Validation(value=num,user=request.user)
+                code.save()
+                send_message(msg)
+                response = JsonResponse({"valid":True}, status = 200)
+                try:
+                    response.set_cookie('token',value=num,max_age=900) 
+                except Exception as e:
+                    print('There was an exception when trying to assign the token, ',e)
+                return response      
+        if request.method=='POST':
+            form = ValidationForm(request.POST)
+            if form.is_valid():
+                code = form.cleaned_data.get('value')
+                value = Validation.objects.latest('id')
+                try:
+                    if str(value) == str(code):
+                        url = reverse('add')
+                        response = HttpResponseRedirect(url) 
+                        return response
+                    else:
+                        form = ValidationForm(request.GET)
+                        message = "El código introducido es erróneo porfavor introduzca el último código enviado."
+                        return render(request,'values/add_value.html', {'form': form, 'message':message})
+                
+                except Exception as e:
+                    form = ValidationForm(request.GET)
+                    message = "El código introducido es erróneo porfavor introduzca el último código enviado."
+                    return render(request,'values/add_value.html', {'form': form, 'message':message})
+            else:
+                form = ValidationForm(request.GET)
+                message = "El código introducido es erróneo porfavor introduzca el último código enviado."
+                return render(request,'values/add_value.html', {'form': form, 'message':message})

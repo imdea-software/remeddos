@@ -11,7 +11,7 @@ from celery.schedules import crontab
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'flowspy.settings')
 
 #using celerys broker or rabbitmq
-app = Celery('flowspy')
+app = Celery('flowspy',backend='redis://redidock.redimadrid.es')
 
 app.config_from_object('django.conf:settings', namespace='CELERY')
 

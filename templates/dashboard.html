@@ -19,7 +19,7 @@
 					<div class="container">
 					  <div class="row mb-5">
 						<div class="col">
-						  <h1>REM-e-DDOS <br> Dashboard </h1>
+						  <h1 class="font-monospace">REM-e-DDOS</h1>
 						  <p>Here you can see the routes that you have been configured to protect for your insitution. <br> 
 							For more information about the routes that have been created for the REM-Golem attacks or the events themselves please follow one of the next links:</p>
 						  <div class="col-md-3  align-items-center" style="display:inline-block;">
@@ -77,9 +77,9 @@
 								Days to expire: {{route.days_to_expire}} 
 							   {% endif %}
 							  </small></p>
-							  <small><table class="table table-hover">
+							<table class="table table-hover">
 								{{ route.get_table|safe|escape }}
-							</table></small>
+							</table>
 							{% if not request.COOKIES.token %}
 							<a href="{% url 'edit-route' route.name %}" class="btn btn-info btn-sm btn-warning" id="edit_button_{{route.pk}}">Edit route</a>
 							{% else %}
@@ -94,7 +94,7 @@
 						<div class="card-body">
 							<h5 class="card-title text-danger">{{route.name}}</h5>
 							<p class="card-text"> Status: <span class="badge bg-danger">{{route.status}}</span></p>
-							<small><table class="table table-hover">{{route.get_table | safe | escape}} </table> </small>
+							<table class="table table-hover">{{route.get_table | safe | escape}} </table>
 						</div>
 					</div>
 						{% elif route.status == 'EXPIRED' %}
@@ -102,7 +102,7 @@
 						<div class="card-body">
 							<h5 class="card-title text-dark">{{route.name}}</h5>
 							<p class="card-text"> Status: <span class="badge bg-dark">{{route.status}}</span></p>
-							<small><table class="table table-hover">{{route.get_table | safe | escape}} </table> </small>
+							<table class="table table-hover">{{route.get_table | safe | escape}} </table>
 						</div>
 					</div>
 						{% endif %}
@@ -110,8 +110,8 @@
 				{% endfor %}
 
 			</div>
-			<div class="col-sm-6" id="hero" style="display:block;">
-				<div class="card" style="border:None;">
+			<div class="col-sm-6" id="hero"  style="display:block;">
+				<div class="card" style="border:None;" class="position-fixed overflow-visible" style="z-index:1;">
                     <h5 class="card-title">Shortcuts</h5>
                     <div class="card-body btn-group">
 					{% if not request.COOKIES.token %}

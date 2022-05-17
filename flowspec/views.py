@@ -25,7 +25,7 @@ from allauth.account.decorators import verified_email_required
 from django.contrib.auth import logout
 from django.contrib.sites.models import Site
 from django.contrib.auth.models import User
-from django.http import HttpResponseRedirect, HttpResponse, JsonResponse, HttpResponseBadRequest
+from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
@@ -51,6 +51,7 @@ from flowspec.forms import *
 from flowspec.models import *
 from peers.models import *
 from flowspec.tasks import *
+from flowspec.helpers import *
 
 #from registration.models import RegistrationProfile 
 
@@ -61,7 +62,6 @@ from django.conf import settings
 from django.template.defaultfilters import slugify
 from django.core.exceptions import PermissionDenied
 from flowspec.helpers import *
-from django.utils.crypto import get_random_string
 import datetime
 import os
 import shutil
@@ -87,10 +87,6 @@ logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(LOG_FILENAME)
 handler.setFormatter(formatter)
 logger.addHandler(handler)
-
-def get_code():
-   n = get_random_string(length=6)
-   return n
 
 @login_required
 def user_routes(request):
@@ -138,43 +134,61 @@ def dashboard(request):
             request,'error.html',{'error': error})
     if peers:
         if request.user.is_superuser:
-            #all_group_routes = Route.objects.all().order_by('-last_updated')[:10]
-            all_group_routes = find_routes(user.username)
-            # add method for revising which rules are expired and which not for deleting the ones that are 
-            for group_route in all_group_routes:
-                group_route.has_expired()
+            all_group_routes = find_all_routes()
+            if all_group_routes != None:
+                all_routes = []
+                for groute in all_group_routes:
+                    for group_route in groute:
+                        if (group_route.applier == None and group_route.status=='ACTIVE') or group_route.applier!=None: 
+                            group_route.has_expired()
+                            all_routes.append(group_route)
+                print('routes: ', type(all_routes),' ',all_routes)
+                return render(request,'dashboard.html',{'routes': all_routes,'messages': message,'file' : '','route_slug':route_name},)
+            else:
+                message = 'You have not added any rules yet'
+                return render(request,'dashboard.html',{'routes': all_group_routes.prefetch_related('applier', 'applier','protocol','dscp'),'messages': message,'file' : '','route_slug':route_name})
+
         else:
-            #all_group_routes = Route.objects.filter(applier=request.user)
             all_group_routes = find_routes(user.username)
-            # checking if any route is expired, if they are, the rules are deleted
-            for group_route in all_group_routes:
-                group_route.has_expired()
-        if all_group_routes is None:
-            message = 'You have not added any rules yet'
+            if all_group_routes != None:
+                for group_route in all_group_routes:
+                    group_route.has_expired()
+                return render(request,'dashboard.html',{'routes': all_group_routes.prefetch_related('applier', 'applier','protocol','dscp'),'messages': message,'file' : '','route_slug':route_name})
+            else:
+                message = 'You have not added any rules yet'
+                return render(request,'dashboard.html',{'routes': all_group_routes.prefetch_related('applier', 'applier','protocol','dscp'),'messages': message,'file' : '','route_slug':route_name})
     else:
         message = 'You are not associated with a peer.'
         return render(request,'dashboard.html',{'messages': message})
-    return render(request,'dashboard.html',{'routes': all_group_routes.prefetch_related('applier', 'applier','protocol','dscp',),'messages': message,'file' : '','route_slug':route_name},)
+    
 
 
 @login_required
 @never_cache
 def group_routes(request):
-    try:
-        user = request.user
-        routes = find_routes(user.username)
-    except UserProfile.DoesNotExist:
-        error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
-        return render(request,'error.html',{'error': error})
-    context = {'route_slug' : routes,'file'  : ''}
-    return render(request,'user_routes.html',context)
+    user = request.user
+    if user.is_superuser:
+        try:
+            routes = find_all_routes()
+        except UserProfile.DoesNotExist:
+            error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
+            return render(request,'error.html',{'error': error})
+        context = {'route_slug' : routes,'file'  : ''}
+        return render(request,'user_routes.html',context)
+    else:
+        try:
+            routes = find_routes(user.username)
+        except UserProfile.DoesNotExist:
+            error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
+            return render(request,'error.html',{'error': error})
+        context = {'route_slug' : routes,'file'  : ''}
+        return render(request,'user_routes.html',context)
 
 
 @verified_email_required
 @login_required
 @never_cache
 def group_routes_ajax(request):
-    print('PENDING 1')
     all_group_routes = []
     applier = request.user
     user = User.objects.get(username=applier)
@@ -189,7 +203,8 @@ def group_routes_ajax(request):
         )
     if request.user.is_superuser:
         #all_group_routes = Route.objects.all()
-        all_group_routes = find_routes(user.username)
+        all_group_routes = find_all_routes()
+        #print('the error is here, do we get the routes? ', routes)
     else:
         all_group_routes = find_routes(user.username)
         #all_group_routes = Route.objects.filter(applier=request.user)
@@ -221,64 +236,100 @@ def overview_routes_ajax(request):
 
 
 def build_routes_json(groutes, is_superuser):
-    routes = []
-    for r in groutes.prefetch_related(
-            'applier',
-            #'fragmenttype',
-            'protocol',
-            'dscp',
-    ):
-        if r.applier != None: 
-            rd = {}
-            rd['id'] = r.pk
-            rd['port'] = r.port
-            rd['sourceport'] = r.sourceport
-            rd['destinationport'] = r.destinationport
-            # name with link to rule details
-            rd['name'] = r.name
-            rd['details'] = '<a href="%s">%s</a>' % (r.get_absolute_url(), r.name)
-            if not r.comments:
-                rd['comments'] = 'Not Any'
-            else:
-                rd['comments'] = r.comments
-            rd['match'] = r.get_match()
-            rd['then'] = r.get_then()
-            rd['status'] = r.status
-            # in case there is no applier (this should not occur)
-            try:
-                #rd['applier'] = r.applier.username
-                userinfo = r.applier_username_nice
-                #if is_superuser:
-                #  applier_username = r.applier.username
-                #  if applier_username != userinfo:
-                #    userinfo += " ("+applier_username+")"
-                rd['applier'] = userinfo
-            except:
-                rd['applier'] = 'unknown'
-                rd['peer'] = ''
-            else:
-                try:
-                    peers = r.applier.profile.peers.prefetch_related('networks')
-                    username = None
-                    for peer in peers:
-                        if username:
-                            break
-                        for network in peer.networks.all():
-                            net = IPNetwork(network)
-                            if IPNetwork(r.destination) in net:
-                                username = peer.peer_name
-                                break
+    group_routes = []
+    if is_superuser:
+        for routes in groutes:
+            for r in routes.prefetch_related('applier','protocol','dscp'):
+                if (r.applier == None and r.status=='ACTIVE') or (r.applier == None and r.status=='ERROR') or r.applier!=None:
+                    rd = {}
+                    rd['id'] = r.pk
+                    rd['port'] = r.port
+                    rd['sourceport'] = r.sourceport
+                    rd['destinationport'] = r.destinationport
+                    # name with link to rule details
+                    rd['name'] = r.name
+                    rd['details'] = '<a href="%s">%s</a>' % (r.get_absolute_url(), r.name)
+                    if not r.comments:
+                        rd['comments'] = 'Not Any'
+                    else:
+                        rd['comments'] = r.comments
+                    rd['match'] = r.get_match()
+                    rd['then'] = r.get_then()
+                    rd['status'] = r.status
                     try:
-                        rd['peer'] = username
-                    except UserProfile.DoesNotExist:
+                        userinfo = r.applier_username_nice
+                        rd['applier'] = userinfo
+                    except:
+                        rd['applier'] = 'unknown'
                         rd['peer'] = ''
-                except Exception as e:
-                    print(e)
+                    else:
+                        try:
+                            peers = r.applier.profile.peers.prefetch_related('networks')
+                            username = None
+                            for peer in peers:
+                                if username:
+                                    break
+                                for network in peer.networks.all():
+                                    net = IPNetwork(network)
+                                    if IPNetwork(r.destination) in net:
+                                        username = peer.peer_name
+                                        break
+                            try:
+                                rd['peer'] = username
+                            except UserProfile.DoesNotExist:
+                                rd['peer'] = ''
+                        except Exception as e:
+                            print(e)
 
-            rd['expires'] = "%s" % r.expires
-            rd['response'] = "%s" % r.response
-            routes.append(rd)
-    return routes
+                    rd['expires'] = "%s" % r.expires
+                    rd['response'] = "%s" % r.response
+                    group_routes.append(rd)
+    else: 
+        for r in groutes.prefetch_related('applier','protocol','dscp'):
+                if (r.applier == None and r.status=='ACTIVE') or (r.applier == None and r.status=='ERROR') or r.applier!=None: 
+                    rd = {}
+                    rd['id'] = r.pk
+                    rd['port'] = r.port
+                    rd['sourceport'] = r.sourceport
+                    rd['destinationport'] = r.destinationport
+                    # name with link to rule details
+                    rd['name'] = r.name
+                    rd['details'] = '<a href="%s">%s</a>' % (r.get_absolute_url(), r.name)
+                    if not r.comments:
+                        rd['comments'] = 'Not Any'
+                    else:
+                        rd['comments'] = r.comments
+                    rd['match'] = r.get_match()
+                    rd['then'] = r.get_then()
+                    rd['status'] = r.status
+                    try:
+                        userinfo = r.applier_username_nice
+                        rd['applier'] = userinfo
+                    except:
+                        rd['applier'] = 'unknown'
+                        rd['peer'] = ''
+                    else:
+                        try:
+                            peers = r.applier.profile.peers.prefetch_related('networks')
+                            username = None
+                            for peer in peers:
+                                if username:
+                                    break
+                                for network in peer.networks.all():
+                                    net = IPNetwork(network)
+                                    if IPNetwork(r.destination) in net:
+                                        username = peer.peer_name
+                                        break
+                            try:
+                                rd['peer'] = username
+                            except UserProfile.DoesNotExist:
+                                rd['peer'] = ''
+                        except Exception as e:
+                            print(e)
+                    rd['expires'] = "%s" % r.expires
+                    rd['response'] = "%s" % r.response
+                    group_routes.append(rd)
+    return group_routes
 
 @verified_email_required
 @login_required
@@ -536,7 +587,6 @@ def edit_route(request, route_slug):
         if not request.user.is_superuser:
             form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
             form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)      
-        print('right before return')
         return render(request,'apply.html', {'form': form,'edit': True,'applier': applier,'routename':routename,'maxexpires': settings.MAX_RULE_EXPIRE_DAYS})
 
 
@@ -590,9 +640,10 @@ def verify_delete_user(request, route_slug):
 @login_required
 @never_cache
 def delete_route(request, route_slug):
+    print('HOOLIIII ', route_slug)
     uname = request.user.username
     route = get_object_or_404(get_edit_route(uname), name=route_slug)
-    #route = get_object_or_404(Route, name=route_slug)
+    
     peers = route.applier.profile.peers.all()
     username = None
     for peer in peers:
@@ -627,22 +678,10 @@ def delete_route(request, route_slug):
         except:
             # in case the header is not provided
             route.requesters_address = 'unknown'
+        print('HELLO? ITS DIS ME YOUR LOOKING FOOR')
         route.save()
         route.commit_delete()
     return HttpResponseRedirect(reverse("group-routes"))
-
-@login_required
-@never_cache
-def commit_to_router(request,route_slug):
-    fd = route_slug.find('_')
-    peer_tag = route_slug[fd+1:-2]
-    route = get_specific_route(applier=None,peer=peer_tag,route_slug=route_slug)
-    route.commit_add()
-    print('route has been commited to the router: ', route)
-    return HttpResponseRedirect(reverse("attack-list"))
-    """ except Exception as e:
-        print('There has been an error when committing the route to the router. Exception: ',e)
-        return HttpResponseRedirect(reverse("dashboard")) """
 
 
 @login_required
@@ -652,7 +691,6 @@ def exterminate_route(request,route_slug):
     peer_tag = route_slug[fd+1:-2]
     route = get_specific_route(applier=None,peer=peer_tag,route_slug=route_slug)
     route.delete()
-    print('route has been deleted: ', route)
     return HttpResponseRedirect(reverse("attack-list"))
 
 
@@ -961,10 +999,7 @@ def sync_router(request):
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-code': icmpcode = c.text 
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type': icmptype = c.text 
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length' and c.text != '': packetlength = c.text
-                            if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source': source = c.text                       
-            print('traza 3')
-            print(peer)
-            print('name_fw: ', name_fw,protocol,applier,destination, source)
+                            if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source': source = c.text
             if (peer in name_fw):
                 try:
                     #route = Route(name=name_fw,applier=applier,source=source,sourceport=src_port,destination=destination,
@@ -1061,7 +1096,6 @@ def backup(request):
     current_date = now.strftime("%d-%B-%Y") 
     try:
         call_command('dumpdata', f'flowspec.Route_{peer_tag}', format='json',output=f'_backup/{peer_tag}/{peer_tag}_backup_{current_date}_{current_time}.json')
-        #call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
         message = 'Copia de seguridad creada con éxito.'
         send_message(message)
         return render(request,'routes_synced.html',{'message':message}) 
@@ -1090,10 +1124,6 @@ def restore_backup(request):
             send_message(message)
             return render(request,'routes_synced.html',{'message':message}) 
         except Exception as e:
-            """ message = ('Ha ocurrido un error y no se ha podido restaurar la base de datos. Error:  ',e)
-            send_message(message) """
-            print('Ha habiado un error: ',e)
-            #return render(request,'routes_synced.html',{'message':message})
             return render(request,'routes_synced.html')
             
 @verified_email_required
@@ -1147,17 +1177,8 @@ def restore_complete_db(request):
     else:
         return render(request,'routes_synced.html',{'message':'Esta opción solo puede ser usada por un superusuario, disculpe las molestias.'})
 
-##================= Webhook GENI
 
-class ProcessWebHookView(CsrfExemptMixin, View):
-    def post(self, request, *args, **kwargs):
-        message = json.loads(request.body)
-        id_event = message['event']['id']
-        anomaly_ticket, anomaly_info = petition_geni(id_event)
-        print('entra en el process view')
-        #post.apply_async(args=[anomaly_ticket, anomaly_info, id_event], kwargs={'kwarg1':'anomaly_ticket','kwarg2':'anomaly_info','kwarg3':'id_event'})
-        post(request,anomaly_ticket, anomaly_info, id_event) 
-        return HttpResponse()
-        
+
+
 
 
