@@ -574,7 +574,6 @@ def edit_route(request, route_slug):
                 }
             )
     else:
-        print('route_edit within edit, ', route_edit)
         routename = route_edit.name
         if (not route_original.status== 'ACTIVE'):
             route_edit.expires = datetime.date.today() + datetime.timedelta(days=settings.EXPIRATION_DAYS_OFFSET-1)
@@ -640,10 +639,9 @@ def verify_delete_user(request, route_slug):
 @login_required
 @never_cache
 def delete_route(request, route_slug):
-    print('HOOLIIII ', route_slug)
     uname = request.user.username
     route = get_object_or_404(get_edit_route(uname), name=route_slug)
-    
+
     peers = route.applier.profile.peers.all()
     username = None
     for peer in peers:
@@ -678,7 +676,6 @@ def delete_route(request, route_slug):
         except:
             # in case the header is not provided
             route.requesters_address = 'unknown'
-        print('HELLO? ITS DIS ME YOUR LOOKING FOOR')
         route.save()
         route.commit_delete()
     return HttpResponseRedirect(reverse("group-routes"))
@@ -691,7 +688,7 @@ def exterminate_route(request,route_slug):
     peer_tag = route_slug[fd+1:-2]
     route = get_specific_route(applier=None,peer=peer_tag,route_slug=route_slug)
     route.delete()
-    return HttpResponseRedirect(reverse("attack-list"))
+    return HttpResponseRedirect(reverse("dashboard"))
 
 
 
@@ -928,19 +925,7 @@ def display_graphs(request,route_slug):
     #route = get_object_or_404(Route, name=route_slug)
     return render(request,'graphs.html',{'route':route})
     
-def get_routes_router():
-    retriever = Retriever()
-    router_config = retriever.fetch_config_str()    
-    tree = ET.fromstring(router_config)
-    data = [d for d in tree]
-    config = [c for c in data]
-    for config_nodes in config:
-        options = config_nodes
-    for option_nodes in options:
-        flow = option_nodes 
-    for flow_nodes in flow:
-        routes = flow_nodes   
-    return routes
+
 """ PENDING ROUTES """
 @verified_email_required
 @login_required
@@ -972,7 +957,6 @@ def sync_router(request):
     # first initialize all the needed vars    
     applier = User.objects.get(pk=request.user.pk); routes = get_routes_router() ; fw_rules = []; message = ''
     # for getting the route parameters is needed to run through the xml 
-    print('traza 1')
     for children in routes:
         then = '' ; then_action = '' ; protocol = [] ; destination = [] ; source = '' ; src_port =  '' ; dest_port = '' ; tcpflags = '' ; icmpcode = ''; icmptype = ''; packetlength = ''; prot = '';  name_fw = ''
         for child in children:
@@ -981,8 +965,7 @@ def sync_router(request):
                 if (peer in name_fw):
                     name_peer = child.text
                     fw_rules.append(child.text)                              
-            # if the user peer organisation is found on the router the program will collect all the vars info    
-            print('traza 2')
+            # if the user peer organisation is found on the router the program will collect all the vars info
             if (peer in name_fw):  
                 for child in children:
                     if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}then':
@@ -1002,8 +985,6 @@ def sync_router(request):
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source': source = c.text
             if (peer in name_fw):
                 try:
-                    #route = Route(name=name_fw,applier=applier,source=source,sourceport=src_port,destination=destination,
-                    # destinationport=dest_port,icmpcode=icmpcode,icmptype=icmptype,packetlength=packetlength,tcpflag=tcpflags,status="ACTIVE")  
                     route = get_route(username)
                     route.name = name_fw
                     route.applier = applier
@@ -1016,7 +997,6 @@ def sync_router(request):
                     route.packetlength = packetlength
                     route.tcpflag = tcpflags
                     route.status = 'ACTIVE'
-                    print('Regla firewall ',route)
                     route.save()
                     if isinstance(protocol,(list)):
                         for p in protocol:
@@ -1029,7 +1009,6 @@ def sync_router(request):
                     route.then.add(th_act.pk)
                     message ='Todas las reglas ya han sido sincronizadas con la base de datos.' 
                         # check if the route is already in our DB
-                    print('its not exiting thro here')
                 except Exception as e:                    
                     #message = 'Routes have already been syncronised.'
                     print(f'Regla: {name_fw} ya ha está sincronizada con la base de datos.')
@@ -1043,6 +1022,7 @@ def sync_router(request):
 @never_cache 
 #synchronize routes from the database to the router
 def routes_sync(request):
+    
     username = request.user.username
     routes = find_routes(username); route = get_routes_router()
     peer = get_peer_tag(username); names = []
@@ -1050,31 +1030,22 @@ def routes_sync(request):
         for child in children:
             if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
                 if child.text.endswith('_%s'%peer):
-                    print('names: ',child.text)
                     names.append(child.text)                   
             else:
                 pass  
     routenames = [x.name for x in routes]
     message = ''
     diff = (set(routenames).difference(names))
-    print('route names: ', routenames)
-    print('names: ', names)
     notsynced_routes = list(diff)
-    print('estamos llegando a buen puerto?',notsynced_routes)
     if notsynced_routes:
         for route in notsynced_routes:
-            # route = Route.objects.get(name=route)
             route = get_object_or_404(get_edit_route(username), name=route)
-            print('route: ', route)
-
             if (route.has_expired()==False) and (route.status== 'ACTIVE' or route.status== 'OUTOFSYNC'):
-                print('traza 1')
                 route.save()
                 message = ('Estado: %s, regla de firewall no sincronizada: %s, guardando regla de firewall.' %(route.status, route.name))
                 send_message(message)
             else:
                 if (route.has_expired()==True) or (route.status== 'EXPIRED' and route.status!= 'ADMININACTIVE' and route.status!= 'INACTIVE'):
-                    print('traza 2')
                     route.check_sync() 
                     message = ('Estado: %s, regla de firewall  %s, comprobando regla.' %(route.status, route.name))
                     send_message(message)

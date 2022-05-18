@@ -310,6 +310,20 @@ def find_routes(applier=None, peer=None):
     user_routes = routes[peer]
     return user_routes
 
+def get_routes_router():
+    retriever = Retriever()
+    router_config = retriever.fetch_config_str()    
+    tree = ET.fromstring(router_config)
+    data = [d for d in tree]
+    config = [c for c in data]
+    for config_nodes in config:
+        options = config_nodes
+    for option_nodes in options:
+        flow = option_nodes 
+    for flow_nodes in flow:
+        routes = flow_nodes   
+    return routes
+
 def get_route(applier,peer):
   from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   routes = {
