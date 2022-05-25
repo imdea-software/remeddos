@@ -20,22 +20,16 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-#====TG Settings:
-""" API_KEY = settings.API_KEY_T
-bot = telebot.TeleBot(API_KEY)  """
-
-
-from itertools import tee
-
 def get_code():
   from django.utils.crypto import get_random_string
   n = get_random_string(length=6)
   return n
 
 def iter_for_delta_changes(iterable):
-    a,b = tee(iterable)
-    next(b,None)
-    return zip(a,b)
+  from itertools import tee
+  a,b = tee(iterable)
+  next(b,None)
+  return zip(a,b)
 
 def send_new_mail(subject, message, from_email, recipient_list, bcc_list):
   try:
@@ -47,34 +41,28 @@ def send_new_mail(subject, message, from_email, recipient_list, bcc_list):
     logger.error("helpers::send_new_mail() failed: exc="+str(e)) 
 
 
-def send_message(message):
-  client = slack.WebClient(token=settings.SLACK_TOKEN)
-  client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+def send_message(message, peer=None):
+  print('inside send_message, this is peer: ', peer)
+  slack_channels = {'CEU':'C03GQM0MN0K','CIB':'C03GA4HK8FR','CSIC':'C03HEF23RAL','CUNEF':'C03H3B3G3G9','CV':'C03GQMFQ519','IMDEA':'C03H3B7GBND','IMDEA_NET':'C03GJ3M124E',
+  'Punch':'C03H3B7GBND','UAH':'C03H3B9BTGR','UAM':'C03GQML0JP5','UC3M':'C03GQN6P9MG','UCM':'C03GJ3RENLE','UEM':'C03H3BE7EBB',
+  'UNED':'C03GA56STTR','UPM':'C03GJ3W32KY', 'URJC':'C03GJ3X931C'}
+  if not peer:
+    client = slack.WebClient(token=settings.SLACK_TOKEN)
+    client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
+  else:
+    print('peer: ', peer, ' channel: ', slack_channels[peer], ' text: ', message)
+    channel = slack_channels[peer]
+    client = slack.WebClient(token=settings.REM_SLACK_TOKEN)
+    client.chat_postMessage(channel=channel, text=message) 
 
-""" @bot.message_handler(commands=['Greet'])
-def greet(message):
-  bot.reply_to(message,'Hello there! How is it going?')
-  bot.polling() """
-
-""" def send_message_tg(message):
-  print(message)
-  telegram_send.send(messages=[message]) """
-""" def send_message_tg(message):
-  import requests
-  id_chat ='@redimadrid_bot'
-  token = settings.API_KEY_T
-  url = (f'https://api.telegram.org/bot{token}/sendMessage')
-
-  params = {'chat_id':id,'text':message}
-  requests.post(url,params=params)
-  #bot.send_message(message.chat_id, msg) """
 
 def get_link(id_golem):
   import paramiko
   from flowspy import settings
   
   try:
-    ssh = paramiko.SSHClient();ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     path = "/home/remedios/.ssh/id_rsa"
     k = paramiko.RSAKey.from_private_key_file(path)
     ssh.connect(hostname="logs.redimadrid.es", port=22, pkey=k, username="alicia.cardenosa")
@@ -188,7 +176,7 @@ def check_protocol(protocol):
     return match_protocol
 
 def assemble_dic(traffic_event,event_info):
-  print('within assemble_dic: ', traffic_event)
+  
   ip_dest = traffic_event[1]['data'][0][0]; 
   ip_src = traffic_event[0]['data'][0][0] 
   source_port = traffic_event[2]['data'][0][0]; fd = source_port.find(':') ; src_port = source_port[fd+1::] 
@@ -485,8 +473,6 @@ def get_instance_form(applier, route):
 def get_specific_route(applier,peer, route_slug):
   from peers.models import Peer
   from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
-  print('inside get specific route, route_slug: ', route_slug)
-  check = True
   peers = Peer.objects.all()
   if not applier == None:
     peer_tag = get_peer_tag(applier)
@@ -854,7 +840,6 @@ def create_db_backup():
     #call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
   message = 'Copia de seguridad creada con éxito.'
   print(message)
-    #send_message(message)
     
 def restore_db_backup():
   from django.core.management import call_command

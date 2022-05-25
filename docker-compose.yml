@@ -1,5 +1,17 @@
 version: '3.8'
 services:
+    db:
+        image: postgres:13
+        restart: always
+        environment:
+            - POSTGRES_HOST_AUTH_METHOD=trust
+            - POSTGRES_DB=flowspy 
+            - POSTGRES_USER=fod
+            - POSTGRES_PASSWORD=heix6ieG
+        volumes:
+            - ./data/db:/var/lib/postgresql/data
+        ports:
+             - 5432:5432
     web:
         build: .
         command: >
@@ -20,27 +32,25 @@ services:
         ports:
             - 22:22
             - 8000:8000   
-    db:
-        image: postgres:13
-        restart: always
-        environment:
-            - POSTGRES_HOST_AUTH_METHOD=trust
-            - POSTGRES_DB=flowspy 
-            - POSTGRES_USER=fod
-            - POSTGRES_PASSWORD=heix6ieG
-        ports:
-             - 5432:5432
+    
     redis:
-        image: redis:6
+        image: redis:alpine
+        restart: always
         ports:
-            - 6379:6379
+            - '6379:6379'
+        depends_on:
+            - db
+            - web
+        
     worker:
         build: .
         command: >
             sh -c "celery -A flowspy worker -l INFO"
+        restart: always
         depends_on: 
             - redis
             - web
+            - db
         environment:
             - DB_HOST=db
             - DB_NAME=flowspy
@@ -62,7 +72,4 @@ networks:
     default:
         name: redifod_network
         driver: bridge
-    
-
-
     

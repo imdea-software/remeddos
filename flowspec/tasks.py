@@ -226,9 +226,6 @@ def notify_expired():
     from django.template.loader import render_to_string
 
     peers = ['CV', 'CIB', 'CSIC', 'CEU', 'CUNEF', 'IMDEA_NET', 'IMDEA', 'UAM', 'UC3M', 'UCM', 'UAH', 'UEM', 'UNED', 'UPM', 'URJC']
-    message = ('Initializing expiration notification')
-    #send_message(message)
-    print(message)
     for peer in peers:
         routes = find_routes(applier=None, peer=peer)
         today = datetime.date.today()
@@ -251,21 +248,21 @@ def notify_expired():
                             if expiration_days == 1:
                                 days_num = ' day'
                             message = ('Route %s expires %s%s. Notifying %s (%s)' %(route.name, expiration_days_text, days_num, route.applier, route.applier.email))
-                            send_message(message)
+                            send_message(message=message,peer=peer)
                             send_mail(settings.EMAIL_SUBJECT_PREFIX + "Rule %s expires %s%s" %
                                     (route.name,expiration_days_text, days_num),
                                     mail_body, settings.SERVER_EMAIL,
                                     [route.applier.email])
                         except Exception as e:
                             message = ("Exception: %s"%e)
-                            send_message(message)
+                            send_message(message=message,peer=peer)
             else:
                 message = ("Route: %s, won't expire." % route.name)
                 send_message(message)
                 print(message)
                 pass
-        messagae = ('Expiration notification process finished')
-        send_message(message)
+        message = ('Expiration notification process finished')
+        send_message(message=message,peer=peer)
 
 @shared_task
 def expired_val_codes():
@@ -281,19 +278,26 @@ def routes_sync():
     from flowspec.helpers import find_all_routes
     from utils.proxy import Retriever
     from xml.etree import ElementTree as ET
-    options =  [];flow = [];route = []
+    
+    
+    options =  []
+    flow = []
+    route = []
     retriever = Retriever()
     router_config = retriever.fetch_config_str()
     routes = find_all_routes()
     tree = ET.fromstring(router_config)
     data = [d for d in tree]
     config = [c for c in data]   
+
+
     for config_nodes in config:
         options = config_nodes
     for option_nodes in options:
         flow = option_nodes 
     for flow_nodes in flow:
         route = flow_nodes      
+   
     names = []
     for children in route:
         for child in children:
@@ -304,8 +308,7 @@ def routes_sync():
     routenames = []
     for x in routes:
         for route in x:
-            if route.applier != None:
-                print(route.name)
+            if route.status == 'ACTIVE' or route.applier != None:
                 routenames.append(route.name)
     diff = set(routenames).difference(names)
     notsynced_routes = list(diff)
@@ -315,8 +318,7 @@ def routes_sync():
             peer_tag = route[pt+1::]
             route = get_specific_route(applier=None,peer=peer_tag,route_slug=route)
             try:
-                if (route.status == 'PENDING' or route.status == 'DEACTIVATED' or route.status == 'OUTOFSYNC') and route.applier == None:
-                    print(route)
+                if (route.status == 'PENDING' or route.status == 'DEACTIVATED' or route.status == 'OUTOFSYNC' or route.status == 'ERROR' or route.status == None) and route.applier == None:
                     route.status = 'PENDING'
                     route.save()
                     
@@ -328,7 +330,7 @@ def routes_sync():
                     if (route.has_expired()==True) or (route.status == 'EXPIRED' or route.status != 'ADMININACTIVE' or route.status != 'INACTIVE'):
                         message = ('Route: %s route status: %s'%(route.status, route.name))
                         send_message(message)
-                        route.check_sync()  
+                        route.check_sync()                  
             except Exception as e:
                 print('There was an exception when trying to sync the routes, route: ',route,' error: ', e)           
     else:
@@ -342,6 +344,7 @@ def check_golem_events():
     from golem.helpers import petition_geni
 
     golem_events = GolemAttack.objects.all()
+    print('Started checking golem events.')
     for golem in golem_events:
         if golem.status == 'Ongoing' :
             event_ticket, attack_info = petition_geni(id_event=golem.id_name)
@@ -355,6 +358,7 @@ def create_route(golem_id,route_dic,peer):
     from flowspec.helpers import get_route,find_routes
     from golem.models import GolemAttack
     from peers.models import Peer
+
     #ip origen, ip destino, protocolo, puerto (que mas trafico tenga), la tcp flag q mas trafico que tenga, 
     #el tcp-flag si el protocolo es udp debe ser descartado porque siempre va a ser 0
     peers = Peer.objects.get(peer_tag=peer)
@@ -365,7 +369,7 @@ def create_route(golem_id,route_dic,peer):
         for r in routes:
             name = r.name
             fd = name.find('_')
-            if golem_id==name[:fd]:
+            if golem_id == name[:fd] :
                 golem_routes.append(r)
                 #busqueda de todas las reglas, ver si alguna tiene el nombre del ataque
                 #cuantas hay, dependiendo de cuantas crear 1,2,3
@@ -389,11 +393,13 @@ def create_route(golem_id,route_dic,peer):
             except Exception as e:
                 print('An exception happened: ',e)
         else:
-            golem_routes.sort()
-            last_element = golem_routes[-1]
-            n = last_element.name[-1]
+            print('INSIDE CREATE ROUTE: ', golem_routes)
+            sorted_routes = [route.name for route in golem_routes]
+            last_element = sorted_routes[-1]
+            n = last_element[-1]
             num = (int(n)+1)
             dicname = route_dic['name']
+            print('creating a third rule maybe')
             name = str(f"{dicname}_{num}")
             route.name = name
             route.peer = peers
@@ -429,12 +435,13 @@ def post(anomaly_info, id_event):
             traffic_event = event_ticket['response']['result']['data'][0]['traffic_characteristics']
             dic_regla = assemble_dic(traffic_event,event_info)
             if not event_info['status'] == 'Recovered' and not event_info['status']=='Burst':
+                peer = find_peer(dic_regla['institution_name'])
+                send_message(f'1º trace after 90 sg {id_event}', peer=peer.peer_tag)
                 prt = traffic_event[4]['data'][0][0]
                 protocol = get_protocol(prt)
                 ip = get_ip_address(event_info['ip_attacked'])
                 link = get_link(dic_regla['id_attack'])
-                send_message(f"Nuevo ataque a la institución '{dic_regla['institution_name']}' de tipo '{dic_regla['attack_name']}' contra el recurso '{ip}' con id {dic_regla['id_attack']} y estado {dic_regla['status']}. Consulte nuestra web para ver las reglas que le hemos propuesto y para más información sobre el ataque visite el siguiente link: {link}")  
-                peer = find_peer(dic_regla['institution_name'])
+                send_message(message = (f"Nuevo ataque a la institución '{dic_regla['institution_name']}' de tipo '{dic_regla['attack_name']}' contra el recurso '{ip}' con id {dic_regla['id_attack']} y estado {dic_regla['status']}. Consulte nuestra web para ver las reglas que le hemos propuesto y para más información sobre el ataque visite el siguiente link: {link}"), peer=peer.peer_tag)  
                 route_dic = {'name':dic_regla['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla['ip_dest'],'ipsrc':dic_regla['ip_src'],'protocol':protocol.pk,'tcpflag':dic_regla['tcp_flag'],'port':dic_regla['port']}
                 if peer:
                     geni_attack = GolemAttack(id_name=dic_regla['id_attack'], peer=peer, ip_src = dic_regla['ip_src'], port=dic_regla['port'], tcpflag=dic_regla['tcp_flag'], status = dic_regla['status'], max_value=dic_regla['max_value'],threshold_value=dic_regla['th_value'], typeof_attack=dic_regla['typeofattack'],typeof_value=dic_regla['typeofvalue'],link=link)
@@ -463,37 +470,42 @@ def post(anomaly_info, id_event):
                         m_protocol = check_protocol(p1)
                         dic2 = {'name':dic_regla2['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla2['ip_dest'],'ipsrc':dic_regla2['ip_src'],'protocol':m_protocol.pk,'tcpflag':dic_regla2['tcp_flag'],'port':dic_regla2['port']}
                         create_route(id_event,dic2,peer.peer_tag)
-                        send_message(f"El ataque registrado anteriormente a la institucion {dic_regla2['institution_name']} con id {dic_regla2['id_attack']} persiste y hemos obtenido nuevos datos del {dic_regla2['attack_name']}. Consulte nuestra web para ver las reglas propuestas y para más información sobre el ataque visite el siguiente link: {link1}")
-                        recovered = False 
+                        send_message(f"El ataque registrado anteriormente a la institucion {dic_regla2['institution_name']} con id {dic_regla2['id_attack']} persiste y hemos obtenido nuevos datos del {dic_regla2['attack_name']}. Consulte nuestra web para ver las reglas propuestas y para más información sobre el ataque visite el siguiente link: {link1}", peer=peer.peer_tag)
+                        recovered = True 
                         while recovered:
                             time.sleep(300)
                             attack_data, attack_info = petition_geni(id_event)
                             if attack_info['status'] != 'Recovered' and attack_info != 'Burst':
-                                print('we should be before the third rule proposition')
                                  # "THIRD RULE PROPOSITION"
                                 traffic_data = attack_data['response']['result']['data'][0]['traffic_characteristics']
+                                print('before dic_regla3 : ',attack_info['status'])
                                 dic_regla3 = assemble_dic(traffic_data,attack_info)
-                                link2 = get_link(id_event)
+                                print('dictionary assembled : ',attack_info['status'])
+                                link2 = get_link(id_event)                                
                                 attack = GolemAttack.objects.get(id_name=id_event)
                                 attack.status, attack.max_value, attack.threshold_value,attack.link = dic_regla3['status'], dic_regla3['max_value'], dic_regla3['th_value'], link2
                                 attack.save()
+                                send_message(f"we should be before the third rule proposition {dic_regla3['id_attack']}",peer=peer.peer_tag)
+                                print('JUST BEFORE CREATE THIRD RULE ')
                                 dic3 = {'name':dic_regla3['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla3['ip_dest'],'ipsrc':dic_regla3['ip_src'],'port':dic_regla3['port'],'protocol':m_protocol.pk,'tcpflag':dic_regla3['tcp_flag']}
                                 create_route(id_event,dic3,peer.peer_tag)
-                                send_message(f"El ataque registrado anteriormente a la institución {dic_regla3['institution_name']} persiste {dic_regla3['attack_name']} y hemos obtenido nuevos datos del {dic_regla3['attack_name']} con id: {dic_regla3['id_attack']}, status: {dic_regla3['status']}. Consulte nuestra web para ver las reglas propuestas y para más información sobre el ataque visite el siguiente link: {link2}.")
-                                recovered = False
-                            if attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':
+                                send_message(message=(f"El ataque registrado anteriormente a la institución {dic_regla3['institution_name']} persiste {dic_regla3['attack_name']} y hemos obtenido nuevos datos del {dic_regla3['attack_name']} con id: {dic_regla3['id_attack']}, status: {dic_regla3['status']}. Consulte nuestra web para ver las reglas propuestas y para más información sobre el ataque visite el siguiente link: {link2}."),peer=peer.peer_tag)
+                                recovered = True
+                            elif attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':
                                 print('sending the recovered message')
                                 id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
                                 attack = GolemAttack.objects.get(id_name=id_event)
                                 attack.status, attack.max_value, attack.threshold_value = status, max_value, th_value
                                 attack.save()
-                                send_message(f"El ataque registrado anteriormente a la institución {institution_name} con id {id_attack} ha terminado. Más información en Remedios o REM-GOLEM.")
-                                recovered = True
+                                send_message(message=(f"El ataque registrado anteriormente a la institución {institution_name} con id {id_attack} ha terminado. Más información en Remedios o REM-GOLEM."),peer=peer.peer_tag)
+                                recovered = False
+                                break
                     else:
                         if info['status'] == 'Recovered' or info['status']=='Burst':
+                            peer = find_peer(institution_name)
                             attack = GolemAttack.objects.get(id_name=id_event)
                             id_att, status, max_value, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
-                            send_message(f"El ataque registrado anteriormente a la institución {institution_name} con id {id} y estado {status} ha terminado. Más información en Remedios o REM-GOLEM.")                  
+                            send_message(message=(f"El ataque registrado anteriormente a la institución {institution_name} con id {id_att} y estado {status} ha terminado. Más información en Remedios o REM-GOLEM."),peer=peer.peer_tag)                  
                     # send message to slack saying the attack has finished
                     # wait 4 min 
                     # rule proposition and send email to user
@@ -503,6 +515,7 @@ def post(anomaly_info, id_event):
                     print('The peer that has suffered the attack is not connected to REM-e-DDoS.')
         elif anomaly_info['status']=='Burst':
             try:
+                peer = find_peer(institution_name)
                 attack = GolemAttack.objects.get(id_name=id_event)
                 event, info = petition_geni(id_event)
                 id_att, status, max_value, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
@@ -510,12 +523,13 @@ def post(anomaly_info, id_event):
                 attack.max_value = max_value
                 attack.threshold_value = th_value
                 attack.save()
-                send_message(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} y estado {status} ha terminado. Status: {status}, Max Value: {max_value}, Threshold value: {th_value}. Más información en Remedios o REM-GOLEM.")
+                send_message(message=(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} y estado {status} ha terminado. Status: {status}, Max Value: {max_value}, Threshold value: {th_value}. Más información en Remedios o REM-GOLEM."),peer=peer.peer_tag)
                     # check if it's recovered and already in database to inform the attack is over
             except ObjectDoesNotExist:
                 print(f'There was an attack with id: {id_event}.')            
         elif anomaly_info['status'] == 'Recovered': 
             try:
+                peer = find_peer(institution_name)
                 attack = GolemAttack.objects.get(id_name=id_event)
                 event, info = petition_geni(id_event)
                 id_att, status, max_value, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
@@ -523,9 +537,126 @@ def post(anomaly_info, id_event):
                 attack.max_value = max_value
                 attack.threshold_value = th_value
                 attack.save()      
-                send_message(f"El ataque registrado anteriormente a la institución {institution_name} con id {id_att} ha terminado. Más información en Remedios o REM-Golem.")
+                send_message(message=(f"El ataque registrado anteriormente a la institución {institution_name} con id {id_att} ha terminado. Más información en Remedios o REM-Golem."),peer=peer.peer_tag)
                 # check if it's recovered and already in database to inform the attack is over
             except ObjectDoesNotExist:
                 print(f'There was an attack with id: {id_event}.')
                 pass     
    
+
+   ## check that the routes that are configured on the router are found on the db
+@shared_task
+def sync_router():
+    from peers.models import Peer
+    from flowspec.models import MatchProtocol,ThenAction
+    from flowspec.helpers import get_routes_router, get_route
+    from accounts.models import UserProfile
+
+    peers = Peer.objects.all()
+    users = UserProfile.objects.all()
+    for peer in peers:
+        """ if not user.user.is_superuser:
+            username = user.user.username """
+            # find what peer organisation does the user belong to
+        """peers = user.peers.all()
+            peer = [peer for peer in peers]
+            peer = peer[0]
+            applier = user.user;
+            """
+            # first initialize all the needed vars    
+        routes = get_routes_router() ; fw_rules = []; message = ''
+            # for getting the route parameters is needed to run through the xml 
+        for children in routes:
+            then = '' ; then_action = '' ; protocol = [] ; destination = [] ; source = '' ; src_port =  '' ; dest_port = '' ; tcpflags = '' ; icmpcode = ''; icmptype = ''; packetlength = ''; prot = '';  name_fw = ''
+            for child in children:
+                if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
+                    name_fw = child.text
+                    if (peer.peer_name in name_fw):
+                            fw_rules.append(child.text)                              
+                    # if the user peer organisation is found on the router the program will collect all the info
+                if (peer.peer_name in name_fw):  
+                    for child in children:
+                        if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}then':
+                            for thenaction in child:                    
+                                th = thenaction.tag ; start = th.find('}') ; then = th[start+1::]
+                                then_action = thenaction.text
+                        if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}match':
+                            for c in child:
+                                if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}protocol': protocol = c.text
+                                if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination-port':dest_port = c.text
+                                if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source-port':src_port = c.text
+                                if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination':destination = c.text
+                                if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}tcp-flags': tcpflags = c.text 
+                                if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-code': icmpcode = c.text 
+                                if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type': icmptype = c.text 
+                                if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length' and c.text != '': packetlength = c.text
+                                if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source': source = c.text
+                if (peer.peer_name in name_fw):
+                    try: 
+                        route = get_route(applier=None,peer=peer.peer_name)
+                        route.name = name_fw
+                            #route.applier = applier
+                        route.source = source
+                        route.sourceport = src_port
+                        route.destination = destination
+                        route.destinationport = dest_port
+                        route.icmpcode = icmpcode
+                        route.icmptype = icmptype
+                        route.packetlength = packetlength
+                        route.tcpflag = tcpflags
+                        route.status = 'ACTIVE'
+                        route.save()
+                        if isinstance(protocol,(list)):
+                            for p in protocol:
+                                prot, created = MatchProtocol.objects.get_or_create(protocol=p)
+                                route.protocol.add(prot.pk)
+                        else:
+                            prot, created = MatchProtocol.objects.get_or_create(protocol=protocol)
+                            route.protocol.add(prot)
+                        th_act, created = ThenAction.objects.get_or_create(action=then,action_value=then_action)
+                        route.then.add(th_act.pk)
+                        print('checked route: ', route)
+                        message ='Routes are syncronised with the database.' 
+                                # check if the route is already in our DB
+                    except Exception as e:                    
+                            #message = 'Routes have already been syncronised.'
+                        print(f'Route: {name_fw} has already been syncronised with the database.')
+                else:
+                        # means that the route does not belong to the user's peer
+                    pass
+    
+
+#task for deleting attacks and routes that are a week old and not relevant
+@shared_task
+def delete_expired_events():
+    from golem.models import GolemAttack
+    from django.utils import timezone
+    import datetime
+
+    today = timezone.now() 
+    golem_events = GolemAttack.objects.all()
+    for event in golem_events:
+        expired_date = event.received_at  + datetime.timedelta(days=7)
+        if today > expired_date:
+            print('Event: ', event.id_name,' deleted.')
+            event.delete()
+
+
+         
+@shared_task
+def delete_expired_proposed_routes():
+    from django.utils import timezone
+    from flowspec.helpers import find_all_routes
+    import datetime
+
+    today = timezone.now()
+    routes = find_all_routes()
+    for x in routes:
+        for route in x:
+            if route.status == 'PENDING' and route.applier == None:
+                expired_date = route.filed + datetime.timedelta(days=7)
+                if today > expired_date:
+                    print('Route: ', route.name,' is about to expired')
+                    route.delete()
+                    pass
+

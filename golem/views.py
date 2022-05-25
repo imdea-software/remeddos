@@ -97,6 +97,8 @@ def commit_to_router(request,route_slug):
     peer_tag = route_slug[fd+1:-2]
     route = get_specific_route(applier=None,peer=peer_tag,route_slug=route_slug)
     print('peer tag: ', peer_tag)
+    route.applier = request.user
+    route.save()
     route.commit_add()
     print('route has been commited to the router: ', route)
     return HttpResponseRedirect(reverse("attack-list"))
@@ -105,45 +107,40 @@ def commit_to_router(request,route_slug):
 @verified_email_required
 @login_required
 def verify_commit_route(request):
-    if 'token' in request.COOKIES:
-        url = reverse('commit')
-        response = HttpResponseRedirect(url)
-        return response 
-    else:
-        if request.is_ajax and request.method == "GET":
-            if not 'token' in request.COOKIES:
-                num = get_code()
-                user = request.user
-                msg = "El usuario {user} ha solicitado un codigo de seguridad para configurar una regla propuesta en el router. Código: '{code}'.".format(user=user,code=num)
-                code = Validation(value=num,user=request.user)
-                code.save()
-                send_message(msg)
-                response = JsonResponse({"valid":True}, status = 200)
-                try:
-                    response.set_cookie('token',value=num,max_age=900) 
-                except Exception as e:
-                    print('There was an exception when trying to assign the token, ',e)
-                return response      
-        if request.method=='POST':
-            form = ValidationForm(request.POST)
-            if form.is_valid():
-                code = form.cleaned_data.get('value')
-                value = Validation.objects.latest('id')
-                try:
-                    if str(value) == str(code):
-                        url = reverse('add')
-                        response = HttpResponseRedirect(url) 
-                        return response
-                    else:
-                        form = ValidationForm(request.GET)
-                        message = "El código introducido es erróneo porfavor introduzca el último código enviado."
-                        return render(request,'values/add_value.html', {'form': form, 'message':message})
-                
-                except Exception as e:
+    if request.is_ajax and request.method == "GET":
+        if not 'token' in request.COOKIES:
+            num = get_code()
+            user = request.user
+            msg = "El usuario {user} ha solicitado un codigo de seguridad para configurar una regla propuesta en el router. Código: '{code}'.".format(user=user,code=num)
+            code = Validation(value=num,user=request.user)
+            code.save()
+            send_message(msg)
+            response = JsonResponse({"valid":True}, status = 200)
+            try:
+                response.set_cookie('token',value=num,max_age=900) 
+            except Exception as e:
+                print('There was an exception when trying to assign the token, ',e)
+            return response      
+    if request.method=='POST':
+        form = ValidationForm(request.POST)
+        if form.is_valid():
+            code = form.cleaned_data.get('value')
+            value = Validation.objects.latest('id')
+            try:
+                if str(value) == str(code):
+                    url = reverse('commit')
+                    response = HttpResponseRedirect(url) 
+                    return response
+                else:
                     form = ValidationForm(request.GET)
                     message = "El código introducido es erróneo porfavor introduzca el último código enviado."
                     return render(request,'values/add_value.html', {'form': form, 'message':message})
-            else:
+                
+            except Exception as e:
                 form = ValidationForm(request.GET)
                 message = "El código introducido es erróneo porfavor introduzca el último código enviado."
                 return render(request,'values/add_value.html', {'form': form, 'message':message})
+        else:
+            form = ValidationForm(request.GET)
+            message = "El código introducido es erróneo porfavor introduzca el último código enviado."
+            return render(request,'values/add_value.html', {'form': form, 'message':message})

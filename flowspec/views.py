@@ -142,7 +142,6 @@ def dashboard(request):
                         if (group_route.applier == None and group_route.status=='ACTIVE') or group_route.applier!=None: 
                             group_route.has_expired()
                             all_routes.append(group_route)
-                print('routes: ', type(all_routes),' ',all_routes)
                 return render(request,'dashboard.html',{'routes': all_routes,'messages': message,'file' : '','route_slug':route_name},)
             else:
                 message = 'You have not added any rules yet'

@@ -55,7 +55,7 @@ NETCONF_PORT=os.environ.get('NETCONF_PORT')
 EMAIL_HOST_USER=os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD=os.environ.get('EMAIL_HOST_PASSWORD')
 
-
+REM_SLACK_TOKEN = os.environ.get('REM_SLACK_TOKEN')
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -93,7 +93,7 @@ DBBACKUP_CONNECTORS = {'connector':'dbbackup.db.postgresql.PgDumpBinaryConnector
 # although not all choices may be available on all operating systems.
 # In a Windows environment this must be set to your system time zone.
 #TIME_ZONE = 'Europe/Athens'
-TIME_ZONE = 'Europe/London'
+TIME_ZONE = 'Europe/Madrid'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html

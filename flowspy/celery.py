@@ -36,6 +36,11 @@ app.conf.beat_schedule = {
         "schedule": crontab(minute=0, hour=0),
         "args": (),
     },
+    "check-golem-events":{
+        "task":"flowspec.tasks.check_golem_events",
+        "schedule": crontab(minute="*/30"),
+        "args": (),
+    }
     
 }
 

@@ -328,6 +328,7 @@ $(document).ready( function(){
                     {% endif %}
                     {% if not request.COOKIES.token %}
                         deleteurl = "{% url 'delete-route' route_slug='routename'  %}".replace('routename', full.name.toString());
+                        deleteroute = "{% url 'exterminate' route_slug='routename' %}".replace('routename', full.name.toString());
                     {% else %}
                         deleteurl = "{% url 'delete' route_slug='routename'  %}".replace('routename', full.name.toString());
                     {% endif %}
@@ -344,7 +345,8 @@ $(document).ready( function(){
                      	btn = '<a href="'+editurl+'" class="btn btn btn-sm btn-outline-danger" id="edit_button_{{route.pk}}">{% trans "Resincronizar" %}</a>';
                      }
                      if (status == "ERROR" ){
-                     	btn = '<a href="'+editurl+'" class="btn btn btn-sm btn-outline-warning" id="edit_button_{{route.pk}}">{% trans "Arreglar!" %}</a>';
+                     	btn = '<div class="row"><div class="col col-2 btn-group d-inline"><a href="'+editurl+'" class="btn btn btn-sm btn-outline-warning" id="edit_button_{{route.pk}}">{% trans "Arreglar!" %}</a>';
+                        
                      }
                      return btn;
                      },
@@ -409,5 +411,7 @@ th{
 	font-size: 12px;
 }
 </style>
+
+
 
 {% endblock %}
