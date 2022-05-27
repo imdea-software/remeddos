@@ -115,7 +115,7 @@ TCP_CHOICES =(
     ("syn","SYN"),
 )
 
-#def days_offset(): return datetime.date.today() + datetime.timedelta(days = settings.EXPIRATION_DAYS_OFFSET)
+
 def days_offset(): return datetime.date.today() + datetime.timedelta(days = settings.EXPIRATION_DAYS_OFFSET-1)
 
 class MatchPort(models.Model):
@@ -159,30 +159,6 @@ class ThenAction(models.Model):
         ordering = ['action', 'action_value']
         unique_together = ("action", "action_value")
 
-#=== Back up signal
-""" class Backup_signal(models.Model):
-    boolean = models.BooleanField(default=False, null=False)
-
-    def __str__(self):
-        return '%s'%self.boolean
-
-
-def signal_test(sender,instance, **kwargs):
-    print('its working')
-    try: 
-        backupboolean = Backup_signal.objects.latest('pk')
-    except ObjectDoesNotExist:
-        backupboolean = Backup_signal(boolean=True)
-        backupboolean.save()
-    if not backupboolean.boolean: 
-        print('working backupfile')
-        backupboolean.boolean == True
-        backupboolean.save()
-    else:
-        pass
-post_save.connect(signal_test, sender=Route)
-post_delete.connect(signal_test,sender=Route)
- """
 class Validation(models.Model):
     value = models.CharField(max_length=10, blank=False, null=False)
     user = models.ForeignKey(User,on_delete=models.CASCADE)
@@ -197,14 +173,6 @@ class Validation(models.Model):
             logger.info(f'Deleting verification code {self}')
             self.delete()
          
-""" class Graph(models.Model):
-    graph_img = models.ImageField(upload_to='media/',max_length=200)
-    route = models.ForeignKey(Route,on_delete=models.CASCADE)
-
-
-    def __str__(self):
-        return self.route.name """
-
 
 #================================= Route Casa Velázquez
 class Route_CV(models.Model):    

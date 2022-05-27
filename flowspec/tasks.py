@@ -36,10 +36,14 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
+#add helper for finding a peer based on a route name
+
 @shared_task(ignore_result=True, serializer='json')
 def add(route, callback=None):
     from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
     from utils import proxy as PR
+
+    peer = get_peer_with_name(route.name)
     try:
         applier = PR.Applier(route_object=route)
         commit, response = applier.apply()
@@ -51,36 +55,38 @@ def add(route, callback=None):
         route.response = response
         route.save()
         message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
-        send_message(message)
+        send_message(message,peer)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
         message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
-        send_message(message)
+        send_message(message,peer)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
         message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
-        send_message(message)
+        send_message(message,peer)
     except Exception as e:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
         message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
-        send_message(message)
+        send_message(message,peer)
     except TransactionManagementError: 
         route.status = "ERROR"
         route.response = "Transaction Management Error"
         route.save()
         message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
-        send_message(message)
+        send_message(message,peer)
 
 @shared_task(ignore_result=True)
 def edit(route, callback=None):
     from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
     from utils import proxy as PR
+
+    peer = get_peer_with_name(route.name)
     try:
         applier = PR.Applier(route_object=route)
         commit, response = applier.apply(operation="replace")
@@ -92,31 +98,33 @@ def edit(route, callback=None):
         route.response = response
         route.save()
         message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
-        send_message(message)
+        send_message(message,peer)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
         message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
-        send_message(message)
+        send_message(message,peer)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
         message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
-        send_message(message)
+        send_message(message,peer)
     except Exception:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
         message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
-        send_message(message)
+        send_message(message,peer)
 
 
 @shared_task(ignore_result=True)
 def delete(route, **kwargs):
     from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
     from utils import proxy as PR
+
+    peer = get_peer_with_name(route.name)
     try:
         applier = PR.Applier(route_object=route)
         commit, response = applier.apply(operation="delete")
@@ -132,25 +140,25 @@ def delete(route, **kwargs):
         route.response = response
         route.save()
         message = (f"Suspending rule:  {route.name}")
-        send_message(message)
+        send_message(message,peer)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
         message = (f"[{route.applier}] Suspending rule:  {route.name} - Result: {response}")
-        send_message(message)
+        send_message(message,peer)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
         message = (f"[{route.applier}] Suspending rule:  {route.name} - Result: {response}")
-        send_message(message)
+        send_message(message,peer)
     except Exception as e:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
         message = (f"[{route.applier}] Suspending rule:  {route.name} - Result: {response}")
-        send_message(message)
+        send_message(message,peer)
 
 
 # May not work in the first place... proxy is not aware of Route models
@@ -159,6 +167,7 @@ def batch_delete(routes, **kwargs):
     from utils import proxy as PR
     import datetime
 
+    peer = get_peer_with_name(route.name)
     if routes:
         for route in routes:
             route.status = 'PENDING';route.save()
@@ -182,7 +191,7 @@ def batch_delete(routes, **kwargs):
             route.expires = datetime.date.today()
             route.save()
             message = (f"[{route.applier_username_nice}] Rule removal: %s%s- Result %s" % (route.name, reason_text, response), route.applier)
-            send_message(message)
+            send_message(message,peer)
     else:
         return False
 
@@ -195,21 +204,19 @@ def check_sync(route_name=None, selected_routes=[]):
         else:
             routes = selected_routes
         if route_name:
-            print('this is route name' , routes)
             routes = routes.filter(name=route_name)
         for route in routes:
             if route.has_expired() and (route.status != 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE'):
                 if route.status != 'ERROR':
                     message = ('Expiring %s route %s' %(route.status, route.name)) 
-                    send_message(message)
+                    send_message(message,peer)
                     route.status='EXPIRED'
                     route.save()
                     delete(route)
                 if route.status == 'ERROR' and route.has_expired():
                     message = ('Deleting %s route with error %s' %(route.status, route.name)) 
-                    send_message(message)
+                    send_message(message,peer)
                     route.status='EXPIRED'
-                    print(' this is route, ',route.status)
                     route.save()
                 elif route.status == 'OUTOFSYN':
                     route.check_sync()
@@ -258,11 +265,8 @@ def notify_expired():
                             send_message(message=message,peer=peer)
             else:
                 message = ("Route: %s, won't expire." % route.name)
-                send_message(message)
-                print(message)
+                send_message(message,peer)
                 pass
-        message = ('Expiration notification process finished')
-        send_message(message=message,peer=peer)
 
 @shared_task
 def expired_val_codes():
@@ -314,28 +318,26 @@ def routes_sync():
     notsynced_routes = list(diff)
     if notsynced_routes:
         for route in notsynced_routes:
-            pt = route.find('_')
-            peer_tag = route[pt+1::]
+            peer_tag = get_peer_with_name(route)
             route = get_specific_route(applier=None,peer=peer_tag,route_slug=route)
             try:
                 if (route.status == 'PENDING' or route.status == 'DEACTIVATED' or route.status == 'OUTOFSYNC' or route.status == 'ERROR' or route.status == None) and route.applier == None:
                     route.status = 'PENDING'
                     route.save()
-                    
                 if (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):
                     route.commit_add()
                     message = ('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
-                    send_message(message)
+                    send_message(message,peer_tag)
                 else:
                     if (route.has_expired()==True) or (route.status == 'EXPIRED' or route.status != 'ADMININACTIVE' or route.status != 'INACTIVE'):
                         message = ('Route: %s route status: %s'%(route.status, route.name))
-                        send_message(message)
+                        send_message(message,peer_tag)
                         route.check_sync()                  
             except Exception as e:
-                print('There was an exception when trying to sync the routes, route: ',route,' error: ', e)           
+                print('There was an exception when trying to sync the routes route: ', e)           
     else:
         message = ('There are no routes out of sync')
-        send_message(message)
+        send_message(message, peer_tag)
 
 
 @shared_task
@@ -344,7 +346,6 @@ def check_golem_events():
     from golem.helpers import petition_geni
 
     golem_events = GolemAttack.objects.all()
-    print('Started checking golem events.')
     for golem in golem_events:
         if golem.status == 'Ongoing' :
             event_ticket, attack_info = petition_geni(id_event=golem.id_name)
@@ -393,13 +394,11 @@ def create_route(golem_id,route_dic,peer):
             except Exception as e:
                 print('An exception happened: ',e)
         else:
-            print('INSIDE CREATE ROUTE: ', golem_routes)
             sorted_routes = [route.name for route in golem_routes]
             last_element = sorted_routes[-1]
             n = last_element[-1]
             num = (int(n)+1)
             dicname = route_dic['name']
-            print('creating a third rule maybe')
             name = str(f"{dicname}_{num}")
             route.name = name
             route.peer = peers
@@ -428,20 +427,23 @@ def post(anomaly_info, id_event):
     from golem.helpers import petition_geni
     import time
 
+        # first we filter out the attack, it could belong to a registered peer or not, also there will be false positives (bursts attacks)
     if not anomaly_info['institution_name'] == 'Non-Home':
         if anomaly_info['status'] == 'Open' or anomaly_info == 'Ongoing':
+            # wait 90 sec for a get request, information won't be ready until a 1.30 min has passed
             time.sleep(90)
             event_ticket, event_info = petition_geni(id_event)
             traffic_event = event_ticket['response']['result']['data'][0]['traffic_characteristics']
             dic_regla = assemble_dic(traffic_event,event_info)
             if not event_info['status'] == 'Recovered' and not event_info['status']=='Burst':
+                 # get together all the relevant information into one dictionary in order to create the proposed route
+                 # also registered the attack and the proposed route to the DB
                 peer = find_peer(dic_regla['institution_name'])
-                send_message(f'1º trace after 90 sg {id_event}', peer=peer.peer_tag)
                 prt = traffic_event[4]['data'][0][0]
                 protocol = get_protocol(prt)
                 ip = get_ip_address(event_info['ip_attacked'])
                 link = get_link(dic_regla['id_attack'])
-                send_message(message = (f"Nuevo ataque a la institución '{dic_regla['institution_name']}' de tipo '{dic_regla['attack_name']}' contra el recurso '{ip}' con id {dic_regla['id_attack']} y estado {dic_regla['status']}. Consulte nuestra web para ver las reglas que le hemos propuesto y para más información sobre el ataque visite el siguiente link: {link}"), peer=peer.peer_tag)  
+                send_message(message = (f"Nuevo ataque DDoS contra el recurso '{ip}' con id {dic_regla['id_attack']}. Consulte nuestra web donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link}"), peer=peer.peer_tag)  
                 route_dic = {'name':dic_regla['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla['ip_dest'],'ipsrc':dic_regla['ip_src'],'protocol':protocol.pk,'tcpflag':dic_regla['tcp_flag'],'port':dic_regla['port']}
                 if peer:
                     geni_attack = GolemAttack(id_name=dic_regla['id_attack'], peer=peer, ip_src = dic_regla['ip_src'], port=dic_regla['port'], tcpflag=dic_regla['tcp_flag'], status = dic_regla['status'], max_value=dic_regla['max_value'],threshold_value=dic_regla['th_value'], typeof_attack=dic_regla['typeofattack'],typeof_value=dic_regla['typeofvalue'],link=link)
@@ -457,6 +459,7 @@ def post(anomaly_info, id_event):
                         p=get_protocol(protocol)
                         geni_attack.protocol.add(p.pk)
                         geni_attack.save()
+                    # wait a bit more to check if the attack is still going, if it is, the program will proposed another route
                     time.sleep(210)
                     event_data, info = petition_geni(id_event)
                     if info['status'] != 'Recovered' and info['status'] !='Burst':
@@ -470,77 +473,70 @@ def post(anomaly_info, id_event):
                         m_protocol = check_protocol(p1)
                         dic2 = {'name':dic_regla2['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla2['ip_dest'],'ipsrc':dic_regla2['ip_src'],'protocol':m_protocol.pk,'tcpflag':dic_regla2['tcp_flag'],'port':dic_regla2['port']}
                         create_route(id_event,dic2,peer.peer_tag)
-                        send_message(f"El ataque registrado anteriormente a la institucion {dic_regla2['institution_name']} con id {dic_regla2['id_attack']} persiste y hemos obtenido nuevos datos del {dic_regla2['attack_name']}. Consulte nuestra web para ver las reglas propuestas y para más información sobre el ataque visite el siguiente link: {link1}", peer=peer.peer_tag)
+                        send_message(f"El ataque DDoS con id {dic_regla2['id_attack']} persiste y hemos actualizado los datos del ataque. Consulte nuestra web donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link1}", peer=peer.peer_tag)
                         recovered = True 
                         while recovered:
                             time.sleep(300)
                             attack_data, attack_info = petition_geni(id_event)
                             if attack_info['status'] != 'Recovered' and attack_info != 'Burst':
-                                 # "THIRD RULE PROPOSITION"
+                                 # wait 4 min 
+                                # rule proposition and send email to user
+                                # repeat process every 5 min until status equals 'recovered'
                                 traffic_data = attack_data['response']['result']['data'][0]['traffic_characteristics']
-                                print('before dic_regla3 : ',attack_info['status'])
                                 dic_regla3 = assemble_dic(traffic_data,attack_info)
-                                print('dictionary assembled : ',attack_info['status'])
                                 link2 = get_link(id_event)                                
                                 attack = GolemAttack.objects.get(id_name=id_event)
                                 attack.status, attack.max_value, attack.threshold_value,attack.link = dic_regla3['status'], dic_regla3['max_value'], dic_regla3['th_value'], link2
                                 attack.save()
-                                send_message(f"we should be before the third rule proposition {dic_regla3['id_attack']}",peer=peer.peer_tag)
-                                print('JUST BEFORE CREATE THIRD RULE ')
                                 dic3 = {'name':dic_regla3['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla3['ip_dest'],'ipsrc':dic_regla3['ip_src'],'port':dic_regla3['port'],'protocol':m_protocol.pk,'tcpflag':dic_regla3['tcp_flag']}
                                 create_route(id_event,dic3,peer.peer_tag)
-                                send_message(message=(f"El ataque registrado anteriormente a la institución {dic_regla3['institution_name']} persiste {dic_regla3['attack_name']} y hemos obtenido nuevos datos del {dic_regla3['attack_name']} con id: {dic_regla3['id_attack']}, status: {dic_regla3['status']}. Consulte nuestra web para ver las reglas propuestas y para más información sobre el ataque visite el siguiente link: {link2}."),peer=peer.peer_tag)
+                                send_message(message=(f"El ataque DDoS con id {dic_regla3['id_attack']} persiste y hemos actualizado los datos del ataque. Consulte nuestra web donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link2}."),peer=peer.peer_tag)
                                 recovered = True
                             elif attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':
-                                print('sending the recovered message')
                                 id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
                                 attack = GolemAttack.objects.get(id_name=id_event)
                                 attack.status, attack.max_value, attack.threshold_value = status, max_value, th_value
                                 attack.save()
-                                send_message(message=(f"El ataque registrado anteriormente a la institución {institution_name} con id {id_attack} ha terminado. Más información en Remedios o REM-GOLEM."),peer=peer.peer_tag)
+                                send_message(message=(f"El ataque DDoS con id {id_attack} ha terminado. Más información en REMeDDoS o REM-GOLEM."),peer=peer.peer_tag)
                                 recovered = False
                                 break
                     else:
                         if info['status'] == 'Recovered' or info['status']=='Burst':
-                            peer = find_peer(institution_name)
+                            # send message to slack saying the attack has finished
                             attack = GolemAttack.objects.get(id_name=id_event)
                             id_att, status, max_value, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
-                            send_message(message=(f"El ataque registrado anteriormente a la institución {institution_name} con id {id_att} y estado {status} ha terminado. Más información en Remedios o REM-GOLEM."),peer=peer.peer_tag)                  
-                    # send message to slack saying the attack has finished
-                    # wait 4 min 
-                    # rule proposition and send email to user
-                    # repeat process every 5 min until status equals 'recovered'
-                    # GeniEvents.objects.create(event=event_info,traffic_characteristics=traffic_event,network_characteristics=net_event)
+                            peer = find_peer(institution_name)                           
+                            send_message(message=(f"El ataque DDoS con id {id_att} ha terminado. Más información en Remedios o REM-GOLEM."),peer=peer.peer_tag)                  
                 else:
-                    print('The peer that has suffered the attack is not connected to REM-e-DDoS.')
+                    #The peer that has suffered the attack is not connected to REM-e-DDoS
+                    pass
         elif anomaly_info['status']=='Burst':
             try:
-                peer = find_peer(institution_name)
+                # check if it's recovered and already in database to inform the attack is over
                 attack = GolemAttack.objects.get(id_name=id_event)
                 event, info = petition_geni(id_event)
                 id_att, status, max_value, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
+                peer = find_peer(institution_name)
                 attack.status = status
                 attack.max_value = max_value
                 attack.threshold_value = th_value
                 attack.save()
-                send_message(message=(f"El ataque registrado anteriormente a la institución {institution_name} con nombre {name} y estado {status} ha terminado. Status: {status}, Max Value: {max_value}, Threshold value: {th_value}. Más información en Remedios o REM-GOLEM."),peer=peer.peer_tag)
-                    # check if it's recovered and already in database to inform the attack is over
-            except ObjectDoesNotExist:
-                print(f'There was an attack with id: {id_event}.')            
+                send_message(message=(f"El ataque DDoS con {info['id']} ha terminado. Más información en Remedios o REM-GOLEM."),peer=peer.peer_tag)
+            except ObjectDoesNotExist: pass           
         elif anomaly_info['status'] == 'Recovered': 
+            # check if it's recovered and already in database to inform the attack is over
             try:
-                peer = find_peer(institution_name)
                 attack = GolemAttack.objects.get(id_name=id_event)
                 event, info = petition_geni(id_event)
                 id_att, status, max_value, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
+                peer = find_peer(institution_name)
                 attack.status = status
                 attack.max_value = max_value
                 attack.threshold_value = th_value
                 attack.save()      
-                send_message(message=(f"El ataque registrado anteriormente a la institución {institution_name} con id {id_att} ha terminado. Más información en Remedios o REM-Golem."),peer=peer.peer_tag)
-                # check if it's recovered and already in database to inform the attack is over
+                send_message(message=(f"El ataque DDoS con id {id_att} ha terminado. Más información en Remedios o REM-Golem."),peer=peer.peer_tag)
             except ObjectDoesNotExist:
-                print(f'There was an attack with id: {id_event}.')
+                # the attack was not important to be saved inside the DB
                 pass     
    
 

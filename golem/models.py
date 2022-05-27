@@ -50,11 +50,6 @@ class GolemAttack(models.Model):
     route_upm = models.ManyToManyField(Route_UPM,blank=True)
     route_urjc = models.ManyToManyField(Route_URJC,blank=True)
 
-# test for saving 
-#  Nuevo ataque a la institución 'UAH' de tipo '['Host TCP Traffic']' contra el recurso '193.146.58.180'.
-#  La regla para poder mitigar este ataque que te proponemos desde RediMadrid es [ ... ]. Más información sobre
-#  el ataque : Id: A377936, Status: Ongoing, Max Value: 264235306.66667, Threshold value: 203800000.
-
     def __str__(self):
         return (f'{self.id_name}, {self.peer}, {self.route}, {self.status}')
 
@@ -105,9 +100,3 @@ class GolemAttack(models.Model):
             self.route_upm.add(route) if self.peer.peer_tag == 'UPM' else None
             self.route_urjc.add(route) if self.peer.peer_tag == 'URJC' else None
 
-
-    def commit_add():
-        # method that will commit the route to the router once the client approves it
-        pass
-
-# from golem.models import * ; golem = GolemAttack.objects.get(pk=56) ; g = golem.history_translation()

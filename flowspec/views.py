@@ -342,10 +342,11 @@ def verify_add_user(request):
             if not 'token' in request.COOKIES:
                 num = get_code()
                 user = request.user
+                peer = get_peers(request.user.username)
                 msg = "El usuario {user} ha solicitado un codigo de seguridad para añadir una nueva regla. Código: '{code}'.".format(user=user,code=num)
                 code = Validation(value=num,user=request.user)
                 code.save()
-                send_message(msg)
+                send_message(msg,peer)
                 response = JsonResponse({"valid":True}, status = 200)
                 try:
                     response.set_cookie('token',value=num,max_age=900) 
@@ -460,12 +461,13 @@ def verify_edit_user(request,route_slug):
         if request.method =='GET' and not 'token' in request.COOKIES: 
             num = get_code()
             user= request.user.username
+            peer = get_peers(user)
             print('trace1')
             route = get_specific_route(applier=user,peer=None, route_slug=route_slug)
             msg = "El usuario {user} ha solicitado el siguiente código para editar la regla: {route_slug}. Código:  '{code}'.".format(user=user,code=num,route_slug=route_slug)
             code = Validation(value=num,user=request.user)
             code.save()
-            send_message(msg)
+            send_message(msg,peer)
             form = ValidationForm(request.GET)
             message = ""
             response = render(request,'values/add_value.html', {'form': form, 'message':message,'status':'edit', 'route':route})
@@ -597,10 +599,11 @@ def verify_delete_user(request, route_slug):
             num = get_code()
             user = request.user
             username = request.user.username
+            peer = get_peers(username)
             msg = "El usuario: {user} ha solicitado un código para poder eliminar una regla. Código: '{code}'.".format(user=user,code=num)
             code = Validation(value=num,user=request.user)
             code.save()
-            send_message(msg)
+            send_message(msg,peer)
             form = ValidationForm(request.GET)
             route = get_specific_route(applier=username,peer=None,route_slug=route_slug)
             message = f"CUIDADO. Seguro que quiere eliminar la siguiente regla {route_slug}?"
@@ -1049,10 +1052,10 @@ def routes_sync(request):
                     message = ('Estado: %s, regla de firewall  %s, comprobando regla.' %(route.status, route.name))
                     send_message(message)
         message = 'Reglas sincronizadas.'
-        send_message(message)
+        send_message(message,peer)
     else:
         message = 'No hay reglas sin sincronizar.'
-        send_message(message)
+        send_message(message,peer)
     return render(request,'routes_synced.html',{'message':message})
 
 @verified_email_required
@@ -1091,7 +1094,7 @@ def restore_backup(request):
         try:
             call_command(f"loaddata",fixture_path)
             message = 'La copia de seguridad ha sido restaurada con éxito, recomendamos en caso de caida también sincronizar su router con la base de datos.'
-            send_message(message)
+            send_message(message,peer_tag)
             return render(request,'routes_synced.html',{'message':message}) 
         except Exception as e:
             return render(request,'routes_synced.html')

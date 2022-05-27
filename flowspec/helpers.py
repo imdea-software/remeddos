@@ -56,6 +56,19 @@ def send_message(message, peer=None):
     client.chat_postMessage(channel=channel, text=message) 
 
 
+def get_peer_with_name(name):
+  fd = name.find('_')
+  peer_name = '' 
+  if not name[fd::][-1].isnumeric():
+    peer_name = name[fd+1::]
+  else:
+    n = name[fd+1::]
+    fd1 = n.find('_')
+    peer_name = n[:fd1]
+  return peer_name
+
+
+
 def get_link(id_golem):
   import paramiko
   from flowspy import settings
@@ -176,25 +189,27 @@ def check_protocol(protocol):
     return match_protocol
 
 def assemble_dic(traffic_event,event_info):
+  try:
+    ip_dest = traffic_event[1]['data'][0][0]; 
+    ip_src = traffic_event[0]['data'][0][0] 
+    source_port = traffic_event[2]['data'][0][0]; fd = source_port.find(':') ; src_port = source_port[fd+1::] 
+    destination_port = traffic_event[3]['data'][0][0]; fn = destination_port.find(':'); dest_port = destination_port[fn+1::]
+    p = traffic_event[4]['data'][0][0]; tcp_flag = traffic_event[5]['data'][0][0]
+    spt = traffic_event[2]['data'][0][1]; sport = traffic_event[2]['data'][0][0] ; fs = sport.find(':'); srcport = sport[fs+1:]
+    dpt = traffic_event[3]['data'][0][1]; dport = traffic_event[3]['data'][0][0] ; fd = dport.find(':'); destport = dport[fd+1:]
+    ft = tcp_flag.find('(')
+    tcpflag = tcp_flag[:ft]
+    if spt > dpt : 
+      dic = {'id_attack':event_info['id'],'status':event_info['status'],'typeofattack':event_info['typeof_attack'],'max_value':event_info['max_value'],'th_value':event_info['threshold_value'],
+      'attack_name':event_info['attack_name'],'institution_name':event_info['institution_name'],'typeofvalue':event_info['typeof_value'],
+      'ip_dest':ip_dest,'ip_src':ip_src,'source_port':src_port,'dest_port':dest_port,'tcp_flag':tcpflag,'port':srcport}
+    else:
+      dic = {'id_attack':event_info['id'],'status':event_info['status'],'typeofattack':event_info['typeof_attack'],'max_value':event_info['max_value'],'th_value':event_info['threshold_value'],
+      'attack_name':event_info['attack_name'],'institution_name':event_info['institution_name'],'typeofvalue':event_info['typeof_value'],
+      'ip_dest':ip_dest,'ip_src':ip_src,'source_port':src_port,'dest_port':dest_port,'tcp_flag':tcpflag,'port':destport}
+  except Exception as e:
+    print('There was an exception when trying to assemble the dictionary for a proposed route.')
   
-  ip_dest = traffic_event[1]['data'][0][0]; 
-  ip_src = traffic_event[0]['data'][0][0] 
-  source_port = traffic_event[2]['data'][0][0]; fd = source_port.find(':') ; src_port = source_port[fd+1::] 
-  destination_port = traffic_event[3]['data'][0][0]; fn = destination_port.find(':'); dest_port = destination_port[fn+1::]
-  p = traffic_event[4]['data'][0][0]; tcp_flag = traffic_event[5]['data'][0][0]
-  spt = traffic_event[2]['data'][0][1]; sport = traffic_event[2]['data'][0][0] ; fs = sport.find(':'); srcport = sport[fs+1:]
-  dpt = traffic_event[3]['data'][0][1]; dport = traffic_event[3]['data'][0][0] ; fd = dport.find(':'); destport = dport[fd+1:]
-  ft = tcp_flag.find('(')
-  tcpflag = tcp_flag[:ft]
-  if spt > dpt : 
-    dic = {'id_attack':event_info['id'],'status':event_info['status'],'typeofattack':event_info['typeof_attack'],'max_value':event_info['max_value'],'th_value':event_info['threshold_value'],
-    'attack_name':event_info['attack_name'],'institution_name':event_info['institution_name'],'typeofvalue':event_info['typeof_value'],
-    'ip_dest':ip_dest,'ip_src':ip_src,'source_port':src_port,'dest_port':dest_port,'tcp_flag':tcpflag,'port':srcport}
-  else:
-    dic = {'id_attack':event_info['id'],'status':event_info['status'],'typeofattack':event_info['typeof_attack'],'max_value':event_info['max_value'],'th_value':event_info['threshold_value'],
-    'attack_name':event_info['attack_name'],'institution_name':event_info['institution_name'],'typeofvalue':event_info['typeof_value'],
-    'ip_dest':ip_dest,'ip_src':ip_src,'source_port':src_port,'dest_port':dest_port,'tcp_flag':tcpflag,'port':destport}
-
   return dic
 
 
