@@ -55,33 +55,32 @@
                 <!-- <button type="button" class="btn btn-outline btn-light close" data-bs-dismiss="offcanvas" aria-label="Close"><span aria-hidden="true">&times;</span></button> -->
                 <div class="nav_list text-wrap">
                   <a href="{% url 'dashboard' %}" class="nav_link text-white text-decoration-none font-weight-light text-wrap"> <i class='bi-clipboard nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Dashboard"></i> <span class="nav_name">Dashboard</span></a>
-                    <a href="{% url 'group-routes' %}" class="nav_link text-white text-decoration-none font-weight-light text-wrap"> <i class='bi-table nav_icon text-primary' data-bs-toggle="tooltip" data-bs-placement="top" title="Routes"></i> <span class="nav_name">Routes</span></a>  
+                    <a href="{% url 'group-routes' %}" class="nav_link text-white text-decoration-none font-weight-light text-wrap"> <i class='bi-table nav_icon text-primary' data-bs-toggle="tooltip" data-bs-placement="top" title="Routes"></i> <span class="nav_name">Mis Reglas</span></a>  
                     {% if not request.COOKIES.token %}
-                      <a href="#" class="nav_link text-white text-decoration-none text-wrap font-weight-light" data-bs-toggle="modal" data-bs-target="#addRouteM" id="submitButton"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Add rule"></i><span class="nav_name">Add rule</span></a>           
+                      <a href="#" class="nav_link text-white text-decoration-none text-wrap font-weight-light" data-bs-toggle="modal" data-bs-target="#addRouteM" id="submitButton"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Añadir regla"></i><span class="nav_name">Añadir regla</span></a>           
                     {% else %}
-                      <a href="{% url 'add' %}" class="nav_link text-white text-decoration-none text-wrap font-weight-light" id="submitButton"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Add rule"></i><span class="nav_name">Add rule</span></a>
+                      <a href="{% url 'add' %}" class="nav_link text-white text-decoration-none text-wrap font-weight-light" id="submitButton"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Añadir regla"></i><span class="nav_name">Añadir regla</span></a>
                     {% endif %}
                     <a href="{% url 'attack-list'  %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-table nav_icon text-danger' data-bs-toggle="tooltip" data-bs-placement="top" title="REM-GOLEM"></i> <span class="nav_name">REM - Golem</span></a>
                     {% if user.is_superuser %}
-                    <a href="#submenu1" class="nav_link text-white text-decoration-none font-weight-light" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="subMenu1"> <i class='bi-cloud nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Storage"></i> <span class="nav_name">Storage</span> </a>
+                    <a href="#submenu1" class="nav_link text-white text-decoration-none font-weight-light" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="subMenu1"> <i class='bi-cloud nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Storage"></i> <span class="nav_name">Almacenamiento</span> </a>
                         <div class="collapse" id="submenu1">
-                            <a href="#" class="nav_link text-white text-decoration-none font-weight-light text-wrap" data-bs-toggle="modal" data-bs-target="#confbModal" ><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Create back up copy"></i><span class="nav_name text-wrap">Create back up copy</span></a>
-                            <a href="#" class="nav_link text-white text-decoration-none font-weight-light"data-bs-toggle="modal" data-bs-target="#confresfileModal"><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Restore from a back up copy"></i><span class="nav_name">Restore from a back up copy</span></a>
-                            <a href="#" class="nav_link text-white text-decoration-none font-weight-light" data-bs-toggle="modal" data-bs-target="#confresdbModal"><i class="bi-arrow-repeat" data-bs-toggle="tooltip" data-bs-placement="top" title="Sync routes with DB"></i><span class="nav_name text-wrap">Sync routes with DB</span></a>
-                            <a href="#" class="nav_link text-white text-decoration-none font-weight-light" data-bs-toggle="modal" data-bs-target="#confsrModal"><i class="bi-router" data-bs-toggle="tooltip" data-bs-placement="top" title="Sync routes with router"></i><span class="nav_name text-wrap" >Sync routes with router</span></a>
-                            <a href="{% url 'db-backup'  %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Create a back up from your DB"></i> <span class="nav_name">Create a back up from your DB</span></a>
-                            <a href="{% url 'db-restore'  %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Restore DB"></i> <span class="nav_name">Restore DB</span></a> 
+                            <a href="#" class="nav_link text-white text-decoration-none font-weight-light text-wrap" data-bs-toggle="modal" data-bs-target="#confbModal" ><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Crear un back-up"></i><span class="nav_name text-wrap">Crear back-up</span></a>
+                            <a href="#" class="nav_link text-white text-decoration-none font-weight-light"data-bs-toggle="modal" data-bs-target="#confresfileModal"><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Restaurar a partir de un back-up"></i><span class="nav_name">Restaurar a partir de un back-up</span></a>
+                            <a href="#" class="nav_link text-white text-decoration-none font-weight-light" data-bs-toggle="modal" data-bs-target="#confresdbModal"><i class="bi-arrow-repeat" data-bs-toggle="tooltip" data-bs-placement="top" title="Sincronizar reglas con la BD"></i><span class="nav_name text-wrap">Sincronizar reglas con la BBDD</span></a>
+                            <a href="#" class="nav_link text-white text-decoration-none font-weight-light" data-bs-toggle="modal" data-bs-target="#confsrModal"><i class="bi-router" data-bs-toggle="tooltip" data-bs-placement="top" title="Sincronizar reglas con el router"></i><span class="nav_name text-wrap">Sincronizar reglas con el router</span></a>
+                            <a href="{% url 'db-backup'  %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Crear back-up de toda la BD"></i> <span class="nav_name">Crear back-up de toda la BD</span></a>
+                            <a href="{% url 'db-restore'  %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-gear nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Restaurar toda la BD"></i> <span class="nav_name">Restaurar toda la BD</span></a> 
                           </div> 
                     {% endif %}
                     {% if user.is_superuser%} 
                     <a href="{% url 'admin:index'  %}" class="nav_link text-white text-decoration-none font-weight-light" target="_blank"> <i class='bi-gear nav_icon ' data-bs-toggle="tooltip" data-bs-placement="top" title="Admin Panel"></i> <span class="nav_name">Admin</span></a> 
                     {% endif %}
-                    <a href="{% url 'user-profile' %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-person nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Mi perfil"></i> <span class="nav_name">My profile</span></a>
-                    
+                    <a href="{% url 'user-profile' %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-person nav_icon text-success' data-bs-toggle="tooltip" data-bs-placement="top" title="Mi perfil"></i> <span class="nav_name">Mi perfil</span></a>
                 {% endif %}
                 </div>
             </div>
-            <a href="{% url 'account_logout' %}" class="nav_link linklogout text-white text-decoration-none fw-light"> <i class='bi-person-x-fill nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Salir"></i> <span class="nav_name">Log out</span> </a>
+            <a href="{% url 'account_logout' %}" class="nav_link linklogout text-white text-decoration-none fw-light"> <i class='bi-person-x-fill nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Salir"></i> <span class="nav_name">Cerrar sesión</span> </a>
         </nav>
     </div>
     <!-- ENDOFNAVBAR-->
@@ -262,23 +261,19 @@
                       <div class="modal-body">
                         <div class="row">
                             <div class="col text-wrap">
-                            <p class="lh-base">Would you like to commit the current route to the router?</p>  
+                            <p class="lh-base">¿Estas seguro de querer activar esta regla de firewall?</p>  
                             </div>
                         </div>
                       </div>
                       <div class="modal-footer m-2">
                         {% if user.is_authenticated %}
-                        <form action="{% url 'vcommit' %}" method="POST" id="commit_route" class="row gx-3 gy-2 align-items-center">
+                        <form action="{% url 'vcommit' %}" id="commit_route">
                             {% csrf_token %}
-                            <div class="row">
-                              <label for="id_value" class="col form-label float-start m-2">Code: </label>
-                              <input type="text" id="id_value" name="value" class="col form-control m-2 " aria-describedby="valueHelpBlock">
-                              <button type="submit" class="btn btn-outline-primary btn-sm col float-end m-2">Yes</button>
-                            </div>
+                              <button type="submit" class="btn btn-danger">Sí</button>
                           </form>
-                        </form>
+                          <button type="button" class="btn btn-dark" data-bs-dismiss="modal">No</button>
                           {% else %}
-                          <p>You need to identify yourelf first before performing any further actions.</p>
+                          <p>Necesitas estar autenticado para poder realizar cualquier acción.</p>
                           {% endif %}
               </div>
             </div>

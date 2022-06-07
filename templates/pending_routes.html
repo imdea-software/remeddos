@@ -19,7 +19,7 @@
     <div class="row pt-3">
       <div class="panel-body table-responsive">
             <table class="table table-hover table-bordered table-responsive align-middle" id="pending_table">
-              <thead class="bg-dark text-white">
+              <thead class="">
                 <tr><th><small>ID</small></th><th><small>Proposed</small></th><th><small>Dest Addr</small></th><th><small>Src Addr</small></th><th><small>More information</small></th><th><small>Status</small></th><th><small>Actions</small></th></tr>
              </thead>
              <tbody>
@@ -40,9 +40,9 @@
                      <td>
                          {% if not route.status == 'ACTIVE' %}
                          {% if not request.COOKIES.token %}
-                         <a href="{% url 'vcommit'  %}" id="commitbutton1" href="#" data-bs-toggle="modal" data-bs-target="#commitModal" class="btn btn-outline btn-dark m-1"><i class="bi bi-patch-plus text-dark"></i></a>
+                         <a href="{% url 'vcommit'  %}" id="commitbutton1" href="#" data-bs-toggle="modal" data-bs-target="#commitModal" class="btn m-1"><i class="bi bi-patch-plus text-danger"></i></a>
                        {% else %}
-                           <a href="{% url 'commit' route.name%}" data-bs-toggle="tooltip" data-bs-placement="top" title="Commit route to router" class="btn btn-outline btn-dark m-1"><i class="bi bi-patch-plus text-dark"></i></a>
+                           <a href="{% url 'commit' route.name%}" data-bs-toggle="tooltip" data-bs-placement="top" title="Commit route to router" class="btn m-1"><i class="bi bi-patch-plus text-danger"></i></a>
                        {% endif %}
                          {% else %}
                          {% endif %}
@@ -61,20 +61,26 @@
             </div>
     
     
-<div class="col-sm-6 mt-5" id="section">
-      <div class="card">
-                  <h5 class="card-title text-left text-info">Shortcuts</h5>
-                  <div class="card-body">
-                    {% if not request.COOKIES.token %}
-                      <a class="btn btn-info btn-sm float-left" id="routebutton1" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus"></i> Add Route</a>
-                    {% else %}
-                      <a class="btn btn-info btn-sm float-left" id="routebutton1" href="{% url 'add' %}"><i class="bi bi-shield-plus"></i> Add Route</a>
-                    {% endif %}
-                      <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table"></i> User Routes</a>
-                      <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard"></i> Dashboard</a>
+            <div class="row p-2 mt-3">
+              <div class="col">
+                  <div class="card float-right">
+                      <h5 class="card-header text-left text-info">
+                          Shortcuts
+                      </h5>
+                      <div class="card-body">
+                          <div class="card-text btn-group">
+                          {% if not request.COOKIES.token %}
+                          <a class="btn btn-sm btn-outline float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
+                          {% else %}
+                          <a href="{% url 'add' %}" class="btn btn-sm float-left" id="routebutton"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
+                          {% endif %}
+                          <a class="btn btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table text-secondary mr-1"></i>Reglas</a>
+                          <a class="btn btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard text-info mr-1"></i>Dashboard</a>
+                      </div>
+                      </div>
+                      </div>
                   </div>
               </div>
-        </div>
 </div>
 
 {% endblock %}

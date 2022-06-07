@@ -205,7 +205,6 @@ def group_routes_ajax(request):
         return render(request,'error.html',{'error': error})
     jresp = {}
     routes = build_routes_json(all_group_routes, request.user.is_superuser)
-    print('routes ', routes)
     jresp['aaData'] = routes
     return JsonResponse(jresp)
 
@@ -922,10 +921,14 @@ def ajax_graphs(request):
 @login_required
 @never_cache
 def display_graphs(request,route_slug):
-    uname = request.user.username 
-    print('traza1')
-    route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
-    return render(request,'graphs.html',{'route':route})
+    uname = request.user.username
+    try:
+        route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
+        return render(request,'graphs.html',{'route':route})
+    except Exception as e:
+        logger.info('There was an exception when trying to display the graph. Error: ', e)
+        return HttpResponseRedirect(reverse('dashboard'))
+    
     
 
 """ PENDING ROUTES """
@@ -1161,6 +1164,9 @@ def restore_complete_db(request):
 
 
 
-
+"""  
+            celery -A flowspy worker -l INFO --logfile=/var/log/fod/celery_jobs.log --concurrency=10 -n worker1@%h 
+            celery -A flowspy worker --loglevel=INFO --logfile=/var/log/fod/celery_jobs.log  --concurrency=10 -n worker2@%h 
+            celery -A flowspy worker --loglevel=INFO --logfile=/var/log/fod/celery_jobs.log  --concurrency=10 -n worker3@%h" """
 
 

@@ -469,7 +469,9 @@ def get_edit_route(applier,rname=None):
     'URJC' : Route_URJC,
   } 
   if rname != None:
+    print('should be here')
     peer_tag = get_peer_with_name(rname)
+
   else:
     peer_tag = get_peer_tag(applier)
   user_routes = routes[peer_tag]

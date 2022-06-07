@@ -447,7 +447,7 @@ def post(anomaly_info, id_event):
                 protocol = get_protocol(prt)
                 ip = get_ip_address(event_info['ip_attacked'])
                 link = get_link(dic_regla['id_attack'])
-                send_message(message = (f"Nuevo ataque DDoS contra el recurso '{ip}' con id {dic_regla['id_attack']}. Consulte nuestra web donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link}"), peer=peer.peer_tag,superuser=False)  
+                send_message(message = (f"Nuevo ataque DDoS contra el recurso '{ip}' con id {dic_regla['id_attack']}. Consulte nuestra <https://remedios.redimadrid.es/|*web*> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link}."), peer=peer.peer_tag,superuser=False)  
                 route_dic = {'name':dic_regla['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla['ip_dest'],'ipsrc':dic_regla['ip_src'],'protocol':protocol.pk,'tcpflag':dic_regla['tcp_flag'],'port':dic_regla['port']}
                 if peer:
                     geni_attack = GolemAttack(id_name=dic_regla['id_attack'], peer=peer, ip_src = dic_regla['ip_src'], port=dic_regla['port'], tcpflag=dic_regla['tcp_flag'], status = dic_regla['status'], max_value=dic_regla['max_value'],threshold_value=dic_regla['th_value'], typeof_attack=dic_regla['typeofattack'],typeof_value=dic_regla['typeofvalue'],link=link)
@@ -477,7 +477,7 @@ def post(anomaly_info, id_event):
                         m_protocol = check_protocol(p1)
                         dic2 = {'name':dic_regla2['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla2['ip_dest'],'ipsrc':dic_regla2['ip_src'],'protocol':m_protocol.pk,'tcpflag':dic_regla2['tcp_flag'],'port':dic_regla2['port']}
                         create_route(id_event,dic2,peer.peer_tag)
-                        send_message(f"El ataque DDoS con id {dic_regla2['id_attack']} a la institución {institution_name} persiste y hemos actualizado los datos del ataque. Consulte nuestra web donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link1}", peer=peer.peer_tag,superuser=False)
+                        send_message(f"El ataque DDoS con id {dic_regla2['id_attack']} a la institución {dic_regla2['institution_name']} persiste y hemos actualizado los datos del ataque. Consulte nuestra <https://remedios.redimadrid.es/|web> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link1}.", peer=peer.peer_tag,superuser=False)
                         recovered = True 
                         while recovered:
                             time.sleep(300)
@@ -494,14 +494,14 @@ def post(anomaly_info, id_event):
                                 attack.save()
                                 dic3 = {'name':dic_regla3['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla3['ip_dest'],'ipsrc':dic_regla3['ip_src'],'port':dic_regla3['port'],'protocol':m_protocol.pk,'tcpflag':dic_regla3['tcp_flag']}
                                 create_route(id_event,dic3,peer.peer_tag)
-                                send_message(message=(f"El ataque DDoS con id {dic_regla3['id_attack']} a la institución {institution_name} persiste y hemos actualizado los datos del ataque. Consulte nuestra web donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información siga el siguiente link: {link2}."),peer=peer.peer_tag,superuser=False)
+                                send_message(message=(f"El ataque DDoS con id {dic_regla3['id_attack']} a la institución {institution_name} persiste y hemos actualizado los datos del ataque. Consulte nuestra <https://remedios.redimadrid.es/|web> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información siga el siguiente link: {link2}."),peer=peer.peer_tag,superuser=False)
                                 recovered = True
                             elif attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':
                                 id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
                                 attack = GolemAttack.objects.get(id_name=id_event)
                                 attack.status, attack.max_value, attack.threshold_value = status, max_value, th_value
                                 attack.save()
-                                send_message(message=(f"El ataque DDoS con id {id_attack} a la institución {institution_name} ha terminado. Más información en REMeDDoS o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
+                                send_message(message=(f"El ataque DDoS con id {id_attack} a la institución {institution_name} ha terminado. Más información en <https://remedios.redimadrid.es/|REMeDDoS> o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
                                 recovered = False
                                 break
                     else:
@@ -510,7 +510,7 @@ def post(anomaly_info, id_event):
                             attack = GolemAttack.objects.get(id_name=id_event)
                             id_att, status, max_value, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
                             peer = find_peer(institution_name)                           
-                            send_message(message=(f"El ataque DDoS con id {id_att} a la institución {institution_name} ha terminado. Más información en REMeDDoS o REM-GOLEM."),peer=peer.peer_tag,superuser=False)                  
+                            send_message(message=(f"El ataque DDoS con id {id_att} a la institución {institution_name} ha terminado. Más información en <https://remedios.redimadrid.es/|REMeDDoS> o REM-GOLEM."),peer=peer.peer_tag,superuser=False)                  
                 else:
                     #The peer that has suffered the attack is not connected to REM-e-DDoS
                     pass
@@ -525,7 +525,7 @@ def post(anomaly_info, id_event):
                 attack.max_value = max_value
                 attack.threshold_value = th_value
                 attack.save()
-                send_message(message=(f"El ataque DDoS con {info['id']} a la institución {institution_name} ha terminado. Más información en REMeDDoS o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
+                send_message(message=(f"El ataque DDoS con {info['id']} a la institución {institution_name} ha terminado. Más información en <https://remedios.redimadrid.es/|*REMeDDoS*> o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
             except ObjectDoesNotExist: pass           
         elif anomaly_info['status'] == 'Recovered': 
             # check if it's recovered and already in database to inform the attack is over
@@ -538,7 +538,7 @@ def post(anomaly_info, id_event):
                 attack.max_value = max_value
                 attack.threshold_value = th_value
                 attack.save()      
-                send_message(message=(f"El ataque DDoS con id {id_att} a la institución {institution_name} ha terminado. Más información en REMeDDoS o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
+                send_message(message=(f"El ataque DDoS con id {id_att} a la institución {institution_name} ha terminado. Más información en <https://remedios.redimadrid.es/|*REMeDDoS*> o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
             except ObjectDoesNotExist:
                 # the attack was not important to be saved inside the DB
                 pass     
@@ -654,10 +654,10 @@ def delete_expired_proposed_routes():
     routes = find_all_routes()
     for x in routes:
         for route in x:
-            if route.status == 'PENDING' and route.applier == None:
+            if route.status == 'OUTOFSYNC' and route.applier == None:
                 expired_date = route.filed + datetime.timedelta(days=5)
                 if today > expired_date:
-                    print('Route: ', route.name,' is about to expired')
+                    logger.info('Route: ', route.name,' is about to expired')
                     route.delete()
                     pass
 

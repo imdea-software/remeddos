@@ -267,12 +267,12 @@ $('document').ready(function(){
   <canvas id="curve_chart" class="w-100 h-75" name="curve_chart">
 </canvas>
 </section>
-<section id="section">
+<section>
   <div class="row align-items-left">
     <div class="col-sm-6">
       <div class="card mb-3">
+        <h5 class="card-header text-success">{{route.name}}</h5>
         <div class="card-body">
-          <h5 class="card-title text-success">{{route.name}}</h5>
             <p class="card-text"> Status: <span class="badge bg-success">{{route.status}}</span>
             {% if route.expires != None %}
             <span class="text-muted"> Expires: {{route.expires}}</span></p>
@@ -285,25 +285,31 @@ $('document').ready(function(){
             <table class="table table-hover table-responsive">
             {{ route.get_table|safe|escape }}
           </table>
+        </div>
+        <div class="card-footer">
           <a href="{% url 'edit-route' route.name %}" class="btn btn-info btn-sm btn-warning" id="edit_button_{{route.pk}}">Edit route</a>
         </div>
       </div>
     </div>
-    <div class="col-sm-6" id="hero">
-      <div class="card">
-                  <h5 class="card-title">
-          Shortcuts
-                  </h5>
-                  <div class="card-body btn-group">
-                      <a class="btn btn-info btn-sm float-left" id="addRuleButton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus"></i> Add Route</a>
-                      <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table"></i> User Routes</a>
-                      <a href="{% url 'pending-routes' %}" type="button" class="btn btn-info btn-sm float-left ml-2"> <i class="bi-clipboard"></i> Proposed Routes</a>
-                      <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard"></i> Dashboard</a>
-                    </div>
-              </div>
+    <div class="col-sm-6">
+      <div class="card float-right">
+        <h5 class="card-header text-left text-info">
+            Shortcuts
+        </h5>
+        <div class="card-body">
+            <div class="card-text btn-group">
+            {% if not request.COOKIES.token %}
+            <a class="btn btn-sm btn-outline float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
+            {% else %}
+            <a href="{% url 'add' %}" class="btn btn-sm float-left" id="routebutton"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
+            {% endif %}
+            <a class="btn btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table text-secondary mr-1"></i>Reglas</a>
+            <a href="{% url 'pending-routes' %}" type="button" class="btn btn-sm float-left ml-2"> <i class="bi-clipboard text-danger mr-1"></i>Reglas propuestas</a>
+            <a class="btn btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard text-info mr-1"></i>Dashboard</a>
+        </div>
+        </div>
+        </div>
     </div>
-
-  </div>
 </section>
 </div>
 

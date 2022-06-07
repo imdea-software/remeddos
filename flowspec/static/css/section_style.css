@@ -34,7 +34,7 @@ section {
   }
   #section .card {
     box-shadow: 11px 7px 16px #f9f9f9;
-    border: 0;
+    /* border: 0; */
     text-align: center; 
   }
   #section .icon {
@@ -45,6 +45,6 @@ section {
 
   #section{
     border: 1px;
-    background-color: none !important;
+    /* background-color: none !important; */
     
   }

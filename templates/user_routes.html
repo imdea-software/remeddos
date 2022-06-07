@@ -25,13 +25,13 @@
         }
     </style>
 {% endblock %}
-{% block title %}{% trans "User Routes" %}{% endblock %}
+{% block title %}{% trans "Mis reglas" %}{% endblock %}
 {% block contentplaceholder %}
 {% csrf_token %}
 <div class="container">
     <div class="row rows-cols-4 p-5">
         <div class="col">
-            <h3 class="page-heading text-center fw-light">{% trans "Firewall Routes" %} </h3>
+            <h3 class="page-heading text-center fw-light">{% trans "Mis reglas" %} </h3>
         </div>
         <div class="col">
             <div class="panel-heading float-end"> <i class="fa fa-shield"></i><span class="text-end">Firewall Routes</span>
@@ -40,17 +40,17 @@
     </div>
         <div class="panel-body table-responsive">
                     	<table class="table table-hover table-bordered align-middle p-2" id="routes_table">
-                        <thead class="bg-dark text-white">
+                        <thead class="">
                     <tr>
                         <th>Id</th>
-                        <th>{% trans "Name" %}</th>
-                        <th>{% trans "Information" %}</th>
-                        <th>{% trans "Then Action" %}</th>
-                        <th>{% trans "Status" %}</th>
-                        <th>{% trans "Belongs to" %}</th>
-                        <th>{% trans "Expires" %}</th>
-                        <th>{% trans "Answer" %}</th>
-                        <th>{% trans "Actions" %}</th>
+                        <th>Name</th>
+                        <th>Información</th>
+                        <th>Acción</th>
+                        <th>Estado</th>
+                        <th>Pertenece a</th>
+                        <th>Expira</th>
+                        <th>Respuesta</th>
+                        <th>Otros</th>
                     </tr>
                 </thead>
 
@@ -59,23 +59,27 @@
             </table>
             </div>
 
-            <div class="col-sm-6 mt-5 float-end" id="section">
-                <div class="card">
-                    <h5 class="card-title text-left">
-                        Shortcuts
-                    </h5>
-                    <div class="card-body btn-group">
-                    {% if not request.COOKIES.token %}
-						<a class="btn btn-info btn-sm float-left" id="addbutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus"></i> Add Route</a>
-                    {% else %}
-                      <a href="{% url 'add' %}"  class="btn btn-info btn-sm float-left" id="addButton"><i class="bi bi-shield-plus"></i> Add Route</a> 
-                    {% endif %}
-						<a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table"></i> User Routes</a>
-						<a href="{% url 'pending-routes' %}" type="button" class="btn btn-info btn-sm float-left ml-2"> <i class="bi-clipboard"></i> Proposed Routes</a>
-						<a class="btn btn-info btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard"></i> Dashboard</a>
+            <div class="row p-2 mt-3">
+                <div class="col">
+                    <div class="card float-right">
+                        <h5 class="card-header text-left text-info">
+                            Shortcuts
+                        </h5>
+                        <div class="card-body">
+                            <div class="card-text btn-group">
+                            {% if not request.COOKIES.token %}
+                            <a class="btn btn-sm btn-outline float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
+                            {% else %}
+                            <a href="{% url 'add' %}" class="btn btn-sm float-left" id="routebutton"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
+                            {% endif %}
+                            <a class="btn btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table text-secondary mr-1"></i>Reglas</a>
+                            <a href="{% url 'pending-routes' %}" type="button" class="btn btn-sm float-left ml-2"> <i class="bi-clipboard text-danger mr-1"></i>Reglas propuestas</a>
+                            <a class="btn btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard text-info mr-1"></i>Dashboard</a>
+                        </div>
+                        </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
 
 </div>
@@ -339,21 +343,21 @@ $(document).ready( function(){
                     {% endif %}
                      graphsurl = "{% url 'display-graphs' route_slug='routename'  %}".replace('routename', full.name.toString());
                      if (status == "ACTIVE" ){
-                     	btn = '<div class="row"><div class="col col-2 btn-group d-inline"><a href="'+editurl+'" class="btn btn-outline-dark m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Editar" %}"><i class="bi-pencil"></i></a>';
-                        btn = btn +'<a href="'+deleteurl+'" class="btn btn-outline-dark m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Desactivar" %}"><i class="bi-shield-fill-x"></i></a>';
-                        btn = btn +'<a href="'+graphsurl+'" class="btn btn-outline-dark m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Mostrar gráficos!" %}"><i class="bi-graph-up"></i></a></div></div>';
+                     	btn = '<div class="row"><div class="col col-2 btn-group d-inline"><a href="'+editurl+'" class="btn btn-outline-warning m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Editar" %}"><i class="bi-pencil text-dark"></i></a>';
+                        btn = btn +'<a href="'+deleteurl+'" class="btn btn-outline-danger m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Desactivar" %}"><i class="bi-shield-fill-x text-dark"></i></a>';
+                        btn = btn +'<a href="'+graphsurl+'" class="btn btn-outline-info m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Mostrar gráficos!" %}"><i class="bi-graph-up text-dark"></i></a></div></div>';
                     }
                      if (status == 'EXPIRED' || status == 'ADMININACTIVE' || status == 'INACTIVE' || status == 'DEACTIVATED' ){
-                     	btn = '<a href="'+editurl+'" class="btn btn-outline-dark m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Reactivar" %}" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up"></i></a>';
-                        btn = btn +'<a href="'+deleteroute+'" class="btn btn-outline-dark m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Eliminar regla de REM-E-DDOS" %}"><i class="bi-shield-fill-x"></i></a>';
+                     	btn = '<a href="'+editurl+'" class="btn btn-outline-warning m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Reactivar" %}" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>';
+                        btn = btn +'<a href="'+deleteroute+'" class="btn btn-outline-danger m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Eliminar regla de REM-E-DDOS" %}"><i class="bi-shield-fill-x text-dark"></i></a>';
                         console.log('traza');
                      }
                      if (status == "OUTOFSYNC" ){
-                     	btn = '<a href="'+editurl+'" class="btn btn btn-sm btn-outline-danger" id="edit_button_{{route.pk}}">{% trans "Resincronizar" %}</a>';
+                     	btn = '<a href="'+editurl+'" class="btn btn btn-sm btn-outline-danger id="edit_button_{{route.pk}}">{% trans "Resincronizar" %}</a>';
 
                      }
                      if (status == "ERROR" ){
-                     	btn = '<div class="row"><div class="col col-2 btn-group d-inline"><a href="'+editurl+'" class="btn btn btn-sm btn-outline-warning" id="edit_button_{{route.pk}}">{% trans "Arreglar!" %}</a>';
+                     	btn = '<div class="row"><div class="col col-2 btn-group d-inline"><a href="'+editurl+'" class="btn btn btn-sm btn-outline-danger" id="edit_button_{{route.pk}}">{% trans "Arreglar!" %}</a>';
                         
                      }
                      return btn;
