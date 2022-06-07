@@ -36,8 +36,6 @@ services:
     redis:
         image: redis:alpine
         restart: always
-        ports:
-            - 6379:6379
         depends_on:
             - db
             - web
@@ -45,7 +43,7 @@ services:
     worker:
         build: .
         command: >
-            sh -c "celery -A flowspy worker -l INFO"
+            sh -c "celery multi start w1 -A flowspy worker -l INFO --logfile=/var/log/fod/celery_jobs.log"
         restart: always
         depends_on: 
             - redis

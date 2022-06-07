@@ -260,8 +260,11 @@ $(document).ready( function(){
                      			if (status == 'PENDING'){
                      				return '<span class="badge pill bg-info">'+status+'</span>';
                      			}
+                                if (status == 'ERROR'){
+                                    return '<span class="badge pill bg-danger">'+status+'</span>';
+                                }
                      			else{
-                     				return '<span class="badge pill bg-danger">'+status+'</span>';
+                     				return '<span class="badge pill bg-dark">'+status+'</span>';
                      			}
                      		}
                      	}
@@ -285,6 +288,9 @@ $(document).ready( function(){
                             day:'numeric',
                         });
                         if(parsedate=='Invalid Date'){
+                            parsedate = 'No expira'
+                        }
+                        if (parsedate==null){
                             parsedate = 'No expira'
                         }
                      	return '<small>'+parsedate+'</small>';
@@ -321,16 +327,15 @@ $(document).ready( function(){
                      btn = '';
                     {% if not request.COOKIES.token %}
                         editurl = "{% url 'edit-route' route_slug='routename'  %}".replace('routename', full.name.toString());
-                        console.log('no token');
                     {% else %}
                         editurl = "{% url 'edit' route_slug='routename'  %}".replace('routename', full.name.toString());
-                        console.log('si token');
                     {% endif %}
                     {% if not request.COOKIES.token %}
                         deleteurl = "{% url 'delete-route' route_slug='routename'  %}".replace('routename', full.name.toString());
                         deleteroute = "{% url 'exterminate' route_slug='routename' %}".replace('routename', full.name.toString());
                     {% else %}
                         deleteurl = "{% url 'delete' route_slug='routename'  %}".replace('routename', full.name.toString());
+                        deleteroute = "{% url 'exterminate' route_slug='routename' %}".replace('routename', full.name.toString());
                     {% endif %}
                      graphsurl = "{% url 'display-graphs' route_slug='routename'  %}".replace('routename', full.name.toString());
                      if (status == "ACTIVE" ){
@@ -338,11 +343,14 @@ $(document).ready( function(){
                         btn = btn +'<a href="'+deleteurl+'" class="btn btn-outline-dark m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Desactivar" %}"><i class="bi-shield-fill-x"></i></a>';
                         btn = btn +'<a href="'+graphsurl+'" class="btn btn-outline-dark m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Mostrar gráficos!" %}"><i class="bi-graph-up"></i></a></div></div>';
                     }
-                     if (status == 'EXPIRED' || status == 'ADMININACTIVE' || status == 'INACTIVE' ){
+                     if (status == 'EXPIRED' || status == 'ADMININACTIVE' || status == 'INACTIVE' || status == 'DEACTIVATED' ){
                      	btn = '<a href="'+editurl+'" class="btn btn-outline-dark m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Reactivar" %}" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up"></i></a>';
+                        btn = btn +'<a href="'+deleteroute+'" class="btn btn-outline-dark m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Eliminar regla de REM-E-DDOS" %}"><i class="bi-shield-fill-x"></i></a>';
+                        console.log('traza');
                      }
                      if (status == "OUTOFSYNC" ){
                      	btn = '<a href="'+editurl+'" class="btn btn btn-sm btn-outline-danger" id="edit_button_{{route.pk}}">{% trans "Resincronizar" %}</a>';
+
                      }
                      if (status == "ERROR" ){
                      	btn = '<div class="row"><div class="col col-2 btn-group d-inline"><a href="'+editurl+'" class="btn btn btn-sm btn-outline-warning" id="edit_button_{{route.pk}}">{% trans "Arreglar!" %}</a>';

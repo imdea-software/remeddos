@@ -57,7 +57,7 @@ def display_routes(request,golem_name):
         if peer.peer_tag == golem.peer.peer_tag:
             p = peer.peer_tag
             reglas = dic.get(p,'Institución invalida')
-    return render(request,'golem/user_routes.html',{'routes':reglas,'golem_name':golem_name,'actions':actions})
+    return render(request,'golem/user_routes.html',{'routes':reglas,'golem_name':golem_name,'link':golem.link,'actions':actions})
     
 @verified_email_required
 @login_required
@@ -89,21 +89,6 @@ def delete_golem(request,golem_id):
 
 
 ##================= commit pending routes to router
-
-@login_required
-@never_cache
-def commit_to_router(request,route_slug):
-    fd = route_slug.find('_')
-    peer_tag = route_slug[fd+1:-2]
-    route = get_specific_route(applier=None,peer=peer_tag,route_slug=route_slug)
-    print('peer tag: ', peer_tag)
-    route.applier = request.user
-    route.save()
-    route.commit_add()
-    print('route has been commited to the router: ', route)
-    return HttpResponseRedirect(reverse("attack-list"))
-
-
 @verified_email_required
 @login_required
 def verify_commit_route(request):
@@ -111,10 +96,14 @@ def verify_commit_route(request):
         if not 'token' in request.COOKIES:
             num = get_code()
             user = request.user
+            peer = get_peer_tag(user.username)
             msg = "El usuario {user} ha solicitado un codigo de seguridad para configurar una regla propuesta en el router. Código: '{code}'.".format(user=user,code=num)
             code = Validation(value=num,user=request.user)
             code.save()
-            send_message(msg)
+            if request.user.is_superuser:
+                send_message(msg,peer=None, superuser=True)
+            else:
+                send_message(msg,peer,superuser=False)
             response = JsonResponse({"valid":True}, status = 200)
             try:
                 response.set_cookie('token',value=num,max_age=900) 
@@ -144,3 +133,16 @@ def verify_commit_route(request):
             form = ValidationForm(request.GET)
             message = "El código introducido es erróneo porfavor introduzca el último código enviado."
             return render(request,'values/add_value.html', {'form': form, 'message':message})
+
+@login_required
+@never_cache
+def commit_to_router(request,route_slug):
+    fd = route_slug.find('_')
+    peer_tag = route_slug[fd+1:-2]
+    route = get_specific_route(applier=None,peer=peer_tag,route_slug=route_slug)
+    route.applier = request.user
+    route.save()
+    route.commit_add()
+    return HttpResponseRedirect(reverse("attack-list"))
+
+

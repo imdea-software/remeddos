@@ -55,7 +55,7 @@ NETCONF_PORT=os.environ.get('NETCONF_PORT')
 EMAIL_HOST_USER=os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD=os.environ.get('EMAIL_HOST_PASSWORD')
 
-REM_SLACK_TOKEN = os.environ.get('REM_SLACK_TOKEN')
+
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -68,7 +68,7 @@ here = lambda x: os.path.join(os.path.abspath(os.path.dirname(__file__)), x)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
-ALLOWED_HOSTS = ['redidock.redimadrid.es','127.0.0.1','localhost','193.145.15.172','10.10.4.90','db','logs.redimadrid.es']
+ALLOWED_HOSTS = ['redidock.redimadrid.es','remedios.redimadrid.es','127.0.0.1','localhost','193.145.15.172','10.10.4.90','db','logs.redimadrid.es']
 SITE_ID = 1
 
 # Place a sequence of random chars here
@@ -339,8 +339,9 @@ POLL_SESSION_UPDATE = 60.0
 #==Slack Notifications
 SLACK_TOKEN=os.environ.get('SLACK_TOKEN')
 SLACK_CHANNEL=os.environ.get('CHANNEL')
+REM_SLACK_TOKEN = os.environ.get('REM_SLACK_TOKEN')
 
-#==Telegram Not
+#==Telegram Bot
 API_KEY_T=os.getenv('API_KEY_TG')
 
 # BCC mail addresses

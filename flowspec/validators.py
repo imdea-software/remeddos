@@ -20,12 +20,15 @@ def get_network(ip):
 def clean_ip(address):
     if False and address.is_private:
             return _('Private addresses not allowed')
-
     if address.version == 4 and int(address.prefixlen) == 32:
         if int(address.network.compressed.split('.')[-1]) == 0:
             return _('Malformed address format. Cannot be ...0/32')
         elif int(address.network.compressed.split('.')[-1]) == 255:
             return _('Malformed address format. Cannot be ...255/32')
+    if address == '0.0.0.0' or address == '0.0.0.0/0' or address == '0/0':
+        print('we entered here')
+        pass
+    
 
 
 def clean_status(status):

@@ -149,10 +149,14 @@ def dashboard(request):
 
         else:
             all_group_routes = find_routes(user.username)
+            routes = []
             if all_group_routes != None:
+                #for groute in all_group_routes:
                 for group_route in all_group_routes:
-                    group_route.has_expired()
-                return render(request,'dashboard.html',{'routes': all_group_routes.prefetch_related('applier', 'applier','protocol','dscp'),'messages': message,'file' : '','route_slug':route_name})
+                    if group_route.status=='ACTIVE':
+                        group_route.has_expired()
+                        routes.append(group_route)
+                return render(request,'dashboard.html',{'routes': routes,'messages': message,'file' : '','route_slug':route_name})
             else:
                 message = 'You have not added any rules yet'
                 return render(request,'dashboard.html',{'routes': all_group_routes.prefetch_related('applier', 'applier','protocol','dscp'),'messages': message,'file' : '','route_slug':route_name})
@@ -192,23 +196,16 @@ def group_routes_ajax(request):
     applier = request.user
     user = User.objects.get(username=applier)
     try:
-        peers = request.user.profile.peers.prefetch_related('networks')
+        if request.user.is_superuser:
+            all_group_routes = find_all_routes()
+        else:
+            all_group_routes = find_routes(user.username)
     except UserProfile.DoesNotExist:
         error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
-        return render(
-            request,
-            'error.html',
-            {'error': error}
-        )
-    if request.user.is_superuser:
-        #all_group_routes = Route.objects.all()
-        all_group_routes = find_all_routes()
-        #print('the error is here, do we get the routes? ', routes)
-    else:
-        all_group_routes = find_routes(user.username)
-        #all_group_routes = Route.objects.filter(applier=request.user)
+        return render(request,'error.html',{'error': error})
     jresp = {}
     routes = build_routes_json(all_group_routes, request.user.is_superuser)
+    print('routes ', routes)
     jresp['aaData'] = routes
     return JsonResponse(jresp)
 
@@ -346,7 +343,10 @@ def verify_add_user(request):
                 msg = "El usuario {user} ha solicitado un codigo de seguridad para añadir una nueva regla. Código: '{code}'.".format(user=user,code=num)
                 code = Validation(value=num,user=request.user)
                 code.save()
-                send_message(msg,peer)
+                if request.user.is_superuser:
+                    send_message(msg,peer,superuser=True)
+                else:
+                    send_message(msg,peer,superuser=False)
                 response = JsonResponse({"valid":True}, status = 200)
                 try:
                     response.set_cookie('token',value=num,max_age=900) 
@@ -396,21 +396,25 @@ def add_route(request):
         messages.add_message(request,messages.WARNING,('Insufficient rights on administrative networks. Cannot add rule. Contact your administrator'))
         return HttpResponseRedirect(reverse("group-routes"))
     if request.method == "GET":
-        #user = request.user.username
         form = find_get_form(user)
         form.applier = applier
-        #form = RouteForm(initial={'applier': applier})
         form.fields['destinationport'].required=False
         form.fields['sourceport'].required=False
         form.fields['port'].required=False
         form.fields['expires'].required=False
-        peer = Peer.objects.get(pk__in=user_peers)
-        #form.fields['source'] = forms.ModelChoiceField(queryset=peer.networks.all(), required=True)
-        #form.fields['destination'] = forms.ModelMultipleChoiceField(queryset=peer.networks.all(), required=True)
+        if request.user.is_superuser:
+            peer = Peer.objects.filter(pk__in=user_peers)
+            network = []
+            for p in peer:
+                network.append(p.networks.all())
+        else:
+            peer = Peer.objects.get(pk__in=user_peers)
+            network = peer.networks.all()
+
         if not request.user.is_superuser:
             form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
             form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
-        return render(request,'apply.html',{'form': form,'applier': applier,'maxexpires': settings.MAX_RULE_EXPIRE_DAYS,'peers':peer.networks.all()})
+        return render(request,'apply.html',{'form': form,'applier': applier,'maxexpires': settings.MAX_RULE_EXPIRE_DAYS,'peers':network})
     else:
         request_data = request.POST.copy()
         if request.user.is_superuser:
@@ -428,8 +432,9 @@ def add_route(request):
             if not request.user.is_superuser:
                 route.applier = request.user
             #route.status= "PENDING"
-            peer = Peer.objects.get(pk__in=user_peers)
-            route.peer = peer
+            if not request.user.is_superuser:
+                peer = Peer.objects.get(pk__in=user_peers)
+                route.peer = peer
             route.response = "Applying"
             route.source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
             route.destination = IPNetwork('%s/%s' % (IPNetwork(route.destination).network.compressed, IPNetwork(route.destination).prefixlen)).compressed
@@ -467,7 +472,10 @@ def verify_edit_user(request,route_slug):
             msg = "El usuario {user} ha solicitado el siguiente código para editar la regla: {route_slug}. Código:  '{code}'.".format(user=user,code=num,route_slug=route_slug)
             code = Validation(value=num,user=request.user)
             code.save()
-            send_message(msg,peer)
+            if request.user.is_superuser:
+                send_message(msg,peer,superuser=True)
+            else:
+                send_message(msg,peer,superuser=False)
             form = ValidationForm(request.GET)
             message = ""
             response = render(request,'values/add_value.html', {'form': form, 'message':message,'status':'edit', 'route':route})
@@ -502,8 +510,8 @@ def verify_edit_user(request,route_slug):
 def edit_route(request, route_slug):
     applier = request.user.pk
     username = request.user.username
-    #route_edit = get_object_or_404(get_edit_route(username), name=route_slug)
     route_edit = get_specific_route(applier=request.user.username, peer=None, route_slug=route_slug)
+    print('A VER COJOJNES, ROUTE EDIT ',route_edit)
     applier_peer_networks = []
     if request.user.is_superuser:
         applier_peer_networks = PeerRange.objects.all()
@@ -530,32 +538,38 @@ def edit_route(request, route_slug):
             except:
                 pass
         form = find_edit_post_route(username, request_data, route_edit)
-        
+        print('isnide post petition')
         critical_changed_values = ['source', 'destination', 'sourceport', 'destinationport', 'port', 'protocol', 'then', 'packetlenght','tcpflags']
-        if form.is_valid():
-            changed_data = form.changed_data
-            route = form.save(commit=False)
-            route.name = route_original.name
-            route.status= route_original.status
-            route.response = route_original.response
-            if not request.user.is_superuser:
+        print('t3, route og: ', route_original)
+        print('form valid: ', form.is_valid())
+        try:
+            if form.is_valid():
+                print('first t')
+                changed_data = form.changed_data
+                route = form.save(commit=False)
+                route.name = route_original.name
+                route.status= route_original.status
+                route.response = route_original.response
                 route.applier = request.user
-            if bool(set(changed_data) and set(critical_changed_values)) or (not route_original.status== 'ACTIVE'):
-                #route.status= "PENDING"
-                route.response = "Applying"
-                route.source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
-                route.destination = IPNetwork('%s/%s' % (IPNetwork(route.destination).network.compressed, IPNetwork(route.destination).prefixlen)).compressed
-                
-                try:
-                    route.requesters_address = request.META['HTTP_X_FORWARDED_FOR']
-                except:
-                    # in case the header is not provided
-                    route.requesters_address = 'unknown'
 
-            route.save()
-            if bool(set(changed_data) and set(critical_changed_values)) or (not route_original.status== 'ACTIVE'):
-                form.save_m2m()
-                route.commit_edit()
+                if bool(set(changed_data) and set(critical_changed_values)) or (not route_original.status== 'ACTIVE'):
+                    #route.status= "PENDING"
+                    route.response = "Applying"
+                    route.source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
+                    route.destination = IPNetwork('%s/%s' % (IPNetwork(route.destination).network.compressed, IPNetwork(route.destination).prefixlen)).compressed
+                    
+                    try:
+                        route.requesters_address = request.META['HTTP_X_FORWARDED_FOR']
+                    except:
+                        # in case the header is not provided
+                        route.requesters_address = 'unknown'
+
+                route.save()
+                if bool(set(changed_data) and set(critical_changed_values)) or (not route_original.status== 'ACTIVE'):
+                    form.save_m2m()
+                    route.commit_edit()
+        except Exception as e:
+            print('There has been an exception when trying to add a route: ', e)
             return HttpResponseRedirect(reverse("group-routes"))
         else:
             routename = route_edit.name  
@@ -564,23 +578,13 @@ def edit_route(request, route_slug):
                 form.fields['sourceport'].required=False
                 form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
                 form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
-            return render(request,
-                'apply.html',
-                {
-                    'form': form,
-                    'edit': True,
-                    'applier': applier,
-                    'routename':routename, 
-                    'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
-                }
-            )
+            return render(request,'apply.html',{'form': form,'edit': True,'applier': applier,'routename':routename, 'maxexpires': settings.MAX_RULE_EXPIRE_DAYS})
     else:
         routename = route_edit.name
         if (not route_original.status== 'ACTIVE'):
             route_edit.expires = datetime.date.today() + datetime.timedelta(days=settings.EXPIRATION_DAYS_OFFSET-1)
-        dictionary = model_to_dict(route_edit, fields=[], exclude=[])
-        routef = get_specific_route_pk(username,route_edit.pk) 
-        form  = get_instance_form(username, routef)
+        #dictionary = model_to_dict(route_edit, fields=[], exclude=[])
+        form  = get_instance_form(username, route_edit)
         form.fields['name'].required=False
         form.fields['destinationport'].required=False
         form.fields['sourceport'].required=False
@@ -603,7 +607,10 @@ def verify_delete_user(request, route_slug):
             msg = "El usuario: {user} ha solicitado un código para poder eliminar una regla. Código: '{code}'.".format(user=user,code=num)
             code = Validation(value=num,user=request.user)
             code.save()
-            send_message(msg,peer)
+            if request.user.is_superuser:
+                send_message(msg,peer,superuser=True)
+            else:
+                send_message(msg,peer,superuser=False)
             form = ValidationForm(request.GET)
             route = get_specific_route(applier=username,peer=None,route_slug=route_slug)
             message = f"CUIDADO. Seguro que quiere eliminar la siguiente regla {route_slug}?"
@@ -611,7 +618,7 @@ def verify_delete_user(request, route_slug):
             try:
                 response.set_cookie('token',value=num,max_age=900) 
             except Exception as e:
-                print('There was an exception when trying to assign the token, ',e)
+                logger.info('There was an exception when trying to assign the token, ',e)
             return response
                 
         if request.method=='POST':
@@ -642,29 +649,23 @@ def verify_delete_user(request, route_slug):
 @never_cache
 def delete_route(request, route_slug):
     uname = request.user.username
-    route = get_object_or_404(get_edit_route(uname), name=route_slug)
+    route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
 
-    peers = route.applier.profile.peers.all()
+    peers = get_peer_with_name(route_slug)
+    peer = Peer.objects.get(peer_tag=peers)
     username = None
-    for peer in peers:
-        if username:
+    for network in peer.networks.all():
+        net = IPNetwork(network)
+        if IPNetwork(route.destination) in net:
+            username = peer
             break
-        for network in peer.networks.all():
-            net = IPNetwork(network)
-            if IPNetwork(route.destination) in net:
-                username = peer
-                break
     applier_peer = username
-    peers = request.user.profile.peers.all()
     username = None
-    for peer in peers:
-        if username:
+    for network in peer.networks.all():
+        net = IPNetwork(network)
+        if IPNetwork(route.destination) in net:
+            username = peer
             break
-        for network in peer.networks.all():
-            net = IPNetwork(network)
-            if IPNetwork(route.destination) in net:
-                username = peer
-                break
     requester_peer = username
     if applier_peer == requester_peer or request.user.is_superuser:
         route.status= "INACTIVE"
@@ -809,7 +810,6 @@ def routes_update(request, route_slug):
 def routedetails(request, route_slug):
     uname = request.user.username
     route = get_specific_route(applier=uname,peer=None,route_slug=route_slug)
-    print('this is route, details : ',route)
     now = datetime.datetime.now()
     return render(request, 'flowspy/route_details.html', {'route': route,'mytime': now,'tz' : settings.TIME_ZONE,'is_superuser' : request.user.is_superuser,'route_comments_len' : len(str(route.comments))})
 
@@ -922,9 +922,9 @@ def ajax_graphs(request):
 @login_required
 @never_cache
 def display_graphs(request,route_slug):
-    uname = request.user.username
-    route = get_object_or_404(get_edit_route(uname), name=route_slug)
-    #route = get_object_or_404(Route, name=route_slug)
+    uname = request.user.username 
+    print('traza1')
+    route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
     return render(request,'graphs.html',{'route':route})
     
 
@@ -933,7 +933,6 @@ def display_graphs(request,route_slug):
 @login_required
 @never_cache
 def pending_routes(request):
-    print('pending_routes  1')
     try:
         user = request.user
         routes = find_routes(user.username)
@@ -1045,17 +1044,29 @@ def routes_sync(request):
             if (route.has_expired()==False) and (route.status== 'ACTIVE' or route.status== 'OUTOFSYNC'):
                 route.save()
                 message = ('Estado: %s, regla de firewall no sincronizada: %s, guardando regla de firewall.' %(route.status, route.name))
-                send_message(message)
+                if request.user.is_superuser:
+                    send_message(message,peer=None,superuser=True)
+                else:
+                    send_message(message,peer,superuser=False)
             else:
                 if (route.has_expired()==True) or (route.status== 'EXPIRED' and route.status!= 'ADMININACTIVE' and route.status!= 'INACTIVE'):
                     route.check_sync() 
                     message = ('Estado: %s, regla de firewall  %s, comprobando regla.' %(route.status, route.name))
-                    send_message(message)
+                    if request.user.is_superuser:
+                        send_message(message,peer=None,superuser=True)
+                    else:
+                        send_message(message,peer,superuser=False)
         message = 'Reglas sincronizadas.'
-        send_message(message,peer)
+        if request.user.is_superuser:
+            send_message(message,peer=None,superuser=True)
+        else:
+            send_message(message,peer,superuser=False)
     else:
         message = 'No hay reglas sin sincronizar.'
-        send_message(message,peer)
+        if request.user.is_superuser:
+            send_message(message,peer=None,superuser=True)
+        else:
+            send_message(message,peer,superuser=False)
     return render(request,'routes_synced.html',{'message':message})
 
 @verified_email_required
@@ -1070,11 +1081,11 @@ def backup(request):
     try:
         call_command('dumpdata', f'flowspec.Route_{peer_tag}', format='json',output=f'_backup/{peer_tag}/{peer_tag}_backup_{current_date}_{current_time}.json')
         message = 'Copia de seguridad creada con éxito.'
-        send_message(message)
+        send_message(message,peer=None,superuser=True)
         return render(request,'routes_synced.html',{'message':message}) 
     except Exception as e:
         message = ('Ha ocurrido un error intentando crear la copia de seguridad. %s'%e)
-        send_message(message)
+        send_message(message,peer=None,superuser=True)
         return render(request,'routes_synced.html',{'message':message})
 
 @verified_email_required
@@ -1094,7 +1105,7 @@ def restore_backup(request):
         try:
             call_command(f"loaddata",fixture_path)
             message = 'La copia de seguridad ha sido restaurada con éxito, recomendamos en caso de caida también sincronizar su router con la base de datos.'
-            send_message(message,peer_tag)
+            send_message(message,peer_tag,superuser=True)
             return render(request,'routes_synced.html',{'message':message}) 
         except Exception as e:
             return render(request,'routes_synced.html')
@@ -1122,9 +1133,9 @@ def create_db_backup(request):
         return render(request,'routes_synced.html',{'message':'Esta opción solo puede ser usada por un superusuario, disculpe las molestias.'})
     pass
 
-""" @verified_email_required
+@verified_email_required
 @login_required
-@never_cache  """
+@never_cache 
 def restore_complete_db(request):
     user = request.user
     if user.is_superuser:
@@ -1139,13 +1150,11 @@ def restore_complete_db(request):
         try:
             call_command(f"loaddata",fixture_path)
             message = 'La copia de seguridad ha sido restaurada con éxito.'
-            send_message(message)
+            send_message(message,peer=None,superuser=None)
             return render(request,'routes_synced.html',{'message':message}) 
         except Exception as e:
-            """ message = ('Ha ocurrido un error y no se ha podido restaurar la base de datos. Error:  ',e)
-            send_message(message) """
-            print('Ha habiado un error: ',e)
-            #return render(request,'routes_synced.html',{'message':message})
+            message = ('Ha ocurrido un error y no se ha podido restaurar la base de datos. Error:  ',e)
+            send_message(message,peer=None,superuser=None)
             return render(request,'routes_synced.html')
     else:
         return render(request,'routes_synced.html',{'message':'Esta opción solo puede ser usada por un superusuario, disculpe las molestias.'})

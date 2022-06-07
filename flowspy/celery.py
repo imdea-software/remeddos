@@ -11,7 +11,7 @@ from celery.schedules import crontab
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'flowspy.settings')
 
 #using celerys broker or rabbitmq
-app = Celery('flowspy',backend='redis://redidock.redimadrid.es')
+app = Celery('flowspy',backend='redis://redis:6379')
 
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
@@ -33,14 +33,19 @@ app.conf.beat_schedule = {
     },
     "every-day-sync-codes": {
         "task": "flowspec.tasks.expired_val_codes",
-        "schedule": crontab(minute=0, hour=0),
+        "schedule": crontab(minute=0, hour=0), 
         "args": (),
     },
-    "check-golem-events":{
-        "task":"flowspec.tasks.check_golem_events",
-        "schedule": crontab(minute="*/30"),
+    "every-day-del-golem-events": {
+        "task": "flowspec.tasks.delete_expired_events",
+        "schedule": crontab(minute=0, hour=0), 
         "args": (),
-    }
+    },
+    "every-day-del-proposed-routes": {
+        "task": "flowspec.tasks.delete_expired_proposed_routes",
+        "schedule": crontab(minute=0, hour=0), 
+        "args": (),
+    },
     
 }
 

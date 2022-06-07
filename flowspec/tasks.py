@@ -44,6 +44,7 @@ def add(route, callback=None):
     from utils import proxy as PR
 
     peer = get_peer_with_name(route.name)
+    print('Peer: ',peer,' Route: ',route)
     try:
         applier = PR.Applier(route_object=route)
         commit, response = applier.apply()
@@ -55,31 +56,31 @@ def add(route, callback=None):
         route.response = response
         route.save()
         message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
-        send_message(message,peer)
+        send_message(message,peer,superuser=False)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
         message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
-        send_message(message,peer)
+        send_message(message,peer,superuser=False)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
         message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
-        send_message(message,peer)
+        send_message(message,peer,superuser=False)
     except Exception as e:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
         message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
-        send_message(message,peer)
+        send_message(message,peer,superuser=False)
     except TransactionManagementError: 
         route.status = "ERROR"
         route.response = "Transaction Management Error"
         route.save()
         message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
-        send_message(message,peer)
+        send_message(message,peer,superuser=False)
 
 @shared_task(ignore_result=True)
 def edit(route, callback=None):
@@ -98,25 +99,25 @@ def edit(route, callback=None):
         route.response = response
         route.save()
         message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
-        send_message(message,peer)
+        send_message(message,peer,superuser=False)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
         message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
-        send_message(message,peer)
+        send_message(message,peer,superuser=False)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
         message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
-        send_message(message,peer)
+        send_message(message,peer,superuser=False)
     except Exception:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
         message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
-        send_message(message,peer)
+        send_message(message,peer,superuser=False)
 
 
 @shared_task(ignore_result=True)
@@ -140,25 +141,25 @@ def delete(route, **kwargs):
         route.response = response
         route.save()
         message = (f"Suspending rule:  {route.name}")
-        send_message(message,peer)
+        send_message(message,peer,superuser=False)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
         message = (f"[{route.applier}] Suspending rule:  {route.name} - Result: {response}")
-        send_message(message,peer)
+        send_message(message,peer,superuser=False)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
         message = (f"[{route.applier}] Suspending rule:  {route.name} - Result: {response}")
-        send_message(message,peer)
+        send_message(message,peer,superuser=False)
     except Exception as e:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
         message = (f"[{route.applier}] Suspending rule:  {route.name} - Result: {response}")
-        send_message(message,peer)
+        send_message(message,peer,superuser=False)
 
 
 # May not work in the first place... proxy is not aware of Route models
@@ -191,31 +192,34 @@ def batch_delete(routes, **kwargs):
             route.expires = datetime.date.today()
             route.save()
             message = (f"[{route.applier_username_nice}] Rule removal: %s%s- Result %s" % (route.name, reason_text, response), route.applier)
-            send_message(message,peer)
+            send_message(message,peer,superuser=False)
     else:
         return False
 
 @shared_task
 def check_sync(route_name=None, selected_routes=[]):
-    peers = ['CV', 'CIB', 'CSIC', 'CEU', 'CUNEF', 'IMDEA_NET', 'IMDEA', 'UAM', 'UC3M', 'UCM', 'UAH', 'UEM', 'UNED', 'UPM', 'URJC']
+    peers = Peer.objects.all()
     for peer in peers:
         if not selected_routes:
-            routes = find_routes(applier=None,peer=peer)
+            routes = find_routes(applier=None,peer=peer.peer_tag)
         else:
             routes = selected_routes
         if route_name:
             routes = routes.filter(name=route_name)
         for route in routes:
+            if route.has_expired() and route.status == 'INACTIVE':
+                route.status == 'EXPIRED'
+                route.save()
             if route.has_expired() and (route.status != 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE'):
                 if route.status != 'ERROR':
                     message = ('Expiring %s route %s' %(route.status, route.name)) 
-                    send_message(message,peer)
+                    send_message(message,peer.peer_tag,superuser=False)
                     route.status='EXPIRED'
                     route.save()
                     delete(route)
                 if route.status == 'ERROR' and route.has_expired():
                     message = ('Deleting %s route with error %s' %(route.status, route.name)) 
-                    send_message(message,peer)
+                    send_message(message,peer.peer_tag,superuser=False)
                     route.status='EXPIRED'
                     route.save()
                 elif route.status == 'OUTOFSYN':
@@ -232,9 +236,9 @@ def notify_expired():
     from django.core.mail import send_mail
     from django.template.loader import render_to_string
 
-    peers = ['CV', 'CIB', 'CSIC', 'CEU', 'CUNEF', 'IMDEA_NET', 'IMDEA', 'UAM', 'UC3M', 'UCM', 'UAH', 'UEM', 'UNED', 'UPM', 'URJC']
+    peers = Peer.objects.all()
     for peer in peers:
-        routes = find_routes(applier=None, peer=peer)
+        routes = find_routes(applier=None, peer=peer.peer_tag)
         today = datetime.date.today()
         for route in routes:
             if route.expires != None:
@@ -255,17 +259,17 @@ def notify_expired():
                             if expiration_days == 1:
                                 days_num = ' day'
                             message = ('Route %s expires %s%s. Notifying %s (%s)' %(route.name, expiration_days_text, days_num, route.applier, route.applier.email))
-                            send_message(message=message,peer=peer)
+                            send_message(message=message,peer=peer.peer_tag,superuser=False)
                             send_mail(settings.EMAIL_SUBJECT_PREFIX + "Rule %s expires %s%s" %
                                     (route.name,expiration_days_text, days_num),
                                     mail_body, settings.SERVER_EMAIL,
                                     [route.applier.email])
                         except Exception as e:
-                            message = ("Exception: %s"%e)
-                            send_message(message=message,peer=peer)
+                            logger.info("Exception: %s"%e)
+                            #send_message(message=message,peer=peer.peer_tag)
             else:
                 message = ("Route: %s, won't expire." % route.name)
-                send_message(message,peer)
+                logger.info(message,peer)
                 pass
 
 @shared_task
@@ -327,17 +331,17 @@ def routes_sync():
                 if (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):
                     route.commit_add()
                     message = ('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
-                    send_message(message,peer_tag)
+                    send_message(message,peer_tag,superuser=False)
                 else:
                     if (route.has_expired()==True) or (route.status == 'EXPIRED' or route.status != 'ADMININACTIVE' or route.status != 'INACTIVE'):
                         message = ('Route: %s route status: %s'%(route.status, route.name))
-                        send_message(message,peer_tag)
+                        send_message(message,peer_tag,superuser=False)
                         route.check_sync()                  
             except Exception as e:
                 print('There was an exception when trying to sync the routes route: ', e)           
     else:
         message = ('There are no routes out of sync')
-        send_message(message, peer_tag)
+        send_message(message, peer_tag,superuser=False)
 
 
 @shared_task
@@ -443,7 +447,7 @@ def post(anomaly_info, id_event):
                 protocol = get_protocol(prt)
                 ip = get_ip_address(event_info['ip_attacked'])
                 link = get_link(dic_regla['id_attack'])
-                send_message(message = (f"Nuevo ataque DDoS contra el recurso '{ip}' con id {dic_regla['id_attack']}. Consulte nuestra web donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link}"), peer=peer.peer_tag)  
+                send_message(message = (f"Nuevo ataque DDoS contra el recurso '{ip}' con id {dic_regla['id_attack']}. Consulte nuestra web donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link}"), peer=peer.peer_tag,superuser=False)  
                 route_dic = {'name':dic_regla['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla['ip_dest'],'ipsrc':dic_regla['ip_src'],'protocol':protocol.pk,'tcpflag':dic_regla['tcp_flag'],'port':dic_regla['port']}
                 if peer:
                     geni_attack = GolemAttack(id_name=dic_regla['id_attack'], peer=peer, ip_src = dic_regla['ip_src'], port=dic_regla['port'], tcpflag=dic_regla['tcp_flag'], status = dic_regla['status'], max_value=dic_regla['max_value'],threshold_value=dic_regla['th_value'], typeof_attack=dic_regla['typeofattack'],typeof_value=dic_regla['typeofvalue'],link=link)
@@ -473,7 +477,7 @@ def post(anomaly_info, id_event):
                         m_protocol = check_protocol(p1)
                         dic2 = {'name':dic_regla2['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla2['ip_dest'],'ipsrc':dic_regla2['ip_src'],'protocol':m_protocol.pk,'tcpflag':dic_regla2['tcp_flag'],'port':dic_regla2['port']}
                         create_route(id_event,dic2,peer.peer_tag)
-                        send_message(f"El ataque DDoS con id {dic_regla2['id_attack']} persiste y hemos actualizado los datos del ataque. Consulte nuestra web donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link1}", peer=peer.peer_tag)
+                        send_message(f"El ataque DDoS con id {dic_regla2['id_attack']} a la institución {institution_name} persiste y hemos actualizado los datos del ataque. Consulte nuestra web donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link1}", peer=peer.peer_tag,superuser=False)
                         recovered = True 
                         while recovered:
                             time.sleep(300)
@@ -490,14 +494,14 @@ def post(anomaly_info, id_event):
                                 attack.save()
                                 dic3 = {'name':dic_regla3['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla3['ip_dest'],'ipsrc':dic_regla3['ip_src'],'port':dic_regla3['port'],'protocol':m_protocol.pk,'tcpflag':dic_regla3['tcp_flag']}
                                 create_route(id_event,dic3,peer.peer_tag)
-                                send_message(message=(f"El ataque DDoS con id {dic_regla3['id_attack']} persiste y hemos actualizado los datos del ataque. Consulte nuestra web donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link2}."),peer=peer.peer_tag)
+                                send_message(message=(f"El ataque DDoS con id {dic_regla3['id_attack']} a la institución {institution_name} persiste y hemos actualizado los datos del ataque. Consulte nuestra web donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información siga el siguiente link: {link2}."),peer=peer.peer_tag,superuser=False)
                                 recovered = True
                             elif attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':
                                 id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
                                 attack = GolemAttack.objects.get(id_name=id_event)
                                 attack.status, attack.max_value, attack.threshold_value = status, max_value, th_value
                                 attack.save()
-                                send_message(message=(f"El ataque DDoS con id {id_attack} ha terminado. Más información en REMeDDoS o REM-GOLEM."),peer=peer.peer_tag)
+                                send_message(message=(f"El ataque DDoS con id {id_attack} a la institución {institution_name} ha terminado. Más información en REMeDDoS o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
                                 recovered = False
                                 break
                     else:
@@ -506,7 +510,7 @@ def post(anomaly_info, id_event):
                             attack = GolemAttack.objects.get(id_name=id_event)
                             id_att, status, max_value, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
                             peer = find_peer(institution_name)                           
-                            send_message(message=(f"El ataque DDoS con id {id_att} ha terminado. Más información en Remedios o REM-GOLEM."),peer=peer.peer_tag)                  
+                            send_message(message=(f"El ataque DDoS con id {id_att} a la institución {institution_name} ha terminado. Más información en REMeDDoS o REM-GOLEM."),peer=peer.peer_tag,superuser=False)                  
                 else:
                     #The peer that has suffered the attack is not connected to REM-e-DDoS
                     pass
@@ -521,7 +525,7 @@ def post(anomaly_info, id_event):
                 attack.max_value = max_value
                 attack.threshold_value = th_value
                 attack.save()
-                send_message(message=(f"El ataque DDoS con {info['id']} ha terminado. Más información en Remedios o REM-GOLEM."),peer=peer.peer_tag)
+                send_message(message=(f"El ataque DDoS con {info['id']} a la institución {institution_name} ha terminado. Más información en REMeDDoS o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
             except ObjectDoesNotExist: pass           
         elif anomaly_info['status'] == 'Recovered': 
             # check if it's recovered and already in database to inform the attack is over
@@ -534,7 +538,7 @@ def post(anomaly_info, id_event):
                 attack.max_value = max_value
                 attack.threshold_value = th_value
                 attack.save()      
-                send_message(message=(f"El ataque DDoS con id {id_att} ha terminado. Más información en Remedios o REM-Golem."),peer=peer.peer_tag)
+                send_message(message=(f"El ataque DDoS con id {id_att} a la institución {institution_name} ha terminado. Más información en REMeDDoS o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
             except ObjectDoesNotExist:
                 # the attack was not important to be saved inside the DB
                 pass     
@@ -589,7 +593,7 @@ def sync_router():
                                 if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source': source = c.text
                 if (peer.peer_name in name_fw):
                     try: 
-                        route = get_route(applier=None,peer=peer.peer_name)
+                        route = get_route(applier=None,peer=peer.peer_tag)
                         route.name = name_fw
                             #route.applier = applier
                         route.source = source
@@ -611,15 +615,16 @@ def sync_router():
                             route.protocol.add(prot)
                         th_act, created = ThenAction.objects.get_or_create(action=then,action_value=then_action)
                         route.then.add(th_act.pk)
-                        print('checked route: ', route)
                         message ='Routes are syncronised with the database.' 
                                 # check if the route is already in our DB
                     except Exception as e:                    
                             #message = 'Routes have already been syncronised.'
-                        print(f'Route: {name_fw} has already been syncronised with the database.')
+                            
+                            pass
                 else:
                         # means that the route does not belong to the user's peer
                     pass
+        print(f'Database syncronised {peer.peer_name}')
     
 
 #task for deleting attacks and routes that are a week old and not relevant
@@ -632,7 +637,7 @@ def delete_expired_events():
     today = timezone.now() 
     golem_events = GolemAttack.objects.all()
     for event in golem_events:
-        expired_date = event.received_at  + datetime.timedelta(days=7)
+        expired_date = event.received_at  + datetime.timedelta(days=5)
         if today > expired_date:
             print('Event: ', event.id_name,' deleted.')
             event.delete()
@@ -650,7 +655,7 @@ def delete_expired_proposed_routes():
     for x in routes:
         for route in x:
             if route.status == 'PENDING' and route.applier == None:
-                expired_date = route.filed + datetime.timedelta(days=7)
+                expired_date = route.filed + datetime.timedelta(days=5)
                 if today > expired_date:
                     print('Route: ', route.name,' is about to expired')
                     route.delete()

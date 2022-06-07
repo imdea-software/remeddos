@@ -8,38 +8,16 @@
 
 {% block contentplaceholder %}
 <div class="container-fluid p-5">
-<div class="row m-2">
-  <div class="col m-2 p-2">
-    <h4 class="fw-light">{% trans "Log in" %}</h4>
-    </div>
-    </div>
-
-{% get_providers as socialaccount_providers %}
 <div class="row">
-  <div class="col align-middle">
-      {% if socialaccount_providers %}
-          <p>{% blocktrans with site.name as site_name %}Please sign in with one
-          of your existing third party accounts. Or, <a href="{{ signup_url }}">sign up</a>
-          for a {{ site_name }} account and sign in below:{% endblocktrans %}</p>
+  <div class="col">
+    <h4 class="fw-light">{% trans "RediMadrid REM-E-DDoS" %}</h4>
+    </div>
+    </div>
 
-          <div class="socialaccount_ballot">
 
-            <ul class="socialaccount_providers">
-              {% include "socialaccount/snippets/provider_list.html" with process="login" %}
-            </ul>
-
-            <div class="login-or">{% trans 'or' %}</div>
-
-          </div>
-
-      {% include "socialaccount/snippets/login_extra.html" %}
-  </div>
-</div>
-{% else %}
 <div class="row">
     <div class="col">
       <p>{% blocktrans %}If you don't have a profile registered yet, please visit the next <a href="{{ signup_url }}"> link </a>.{% endblocktrans %}</p>
-      {% endif %}
     </div>
 </div>
 

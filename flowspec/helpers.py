@@ -41,34 +41,54 @@ def send_new_mail(subject, message, from_email, recipient_list, bcc_list):
     logger.error("helpers::send_new_mail() failed: exc="+str(e)) 
 
 
-def send_message(message, peer=None):
-  print('inside send_message, this is peer: ', peer)
+def send_message(message, peer=None, superuser=False):
   slack_channels = {'CEU':'C03GQM0MN0K','CIB':'C03GA4HK8FR','CSIC':'C03HEF23RAL','CUNEF':'C03H3B3G3G9','CV':'C03GQMFQ519','IMDEA':'C03H3B7GBND','IMDEA_NET':'C03GJ3M124E',
   'Punch':'C03H3B7GBND','UAH':'C03H3B9BTGR','UAM':'C03GQML0JP5','UC3M':'C03GQN6P9MG','UCM':'C03GJ3RENLE','UEM':'C03H3BE7EBB',
   'UNED':'C03GA56STTR','UPM':'C03GJ3W32KY', 'URJC':'C03GJ3X931C'}
-  if not peer:
+  # if there is no peer, the message will be sent to the default testing slack channel, the one used for redimadrid staff
+  if not peer or superuser:
+    print('vars : ', settings.SLACK_CHANNEL, settings.SLACK_TOKEN)
     client = slack.WebClient(token=settings.SLACK_TOKEN)
     client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
   else:
-    print('peer: ', peer, ' channel: ', slack_channels[peer], ' text: ', message)
     channel = slack_channels[peer]
     client = slack.WebClient(token=settings.REM_SLACK_TOKEN)
     client.chat_postMessage(channel=channel, text=message) 
 
 
-def get_peer_with_name(name):
-  fd = name.find('_')
+#  find peer tag based on a routename 
+def get_peer_with_name(routename):
+  fd = routename.find('_')
   peer_name = '' 
-  if not name[fd::][-1].isnumeric():
-    peer_name = name[fd+1::]
+  if not routename[fd::][-1].isnumeric():
+    peer_name = routename[fd+1::]
   else:
-    n = name[fd+1::]
+    n = routename[fd+1::]
     fd1 = n.find('_')
     peer_name = n[:fd1]
   return peer_name
 
+# get peer object
+def get_peers(username):
+  user = User.objects.get(username=username)
+  up = UserProfile.objects.get(user=user)
+  peers = up.peers.all()
+  peername = ''
+  for peer in peers:
+    peername = peer.peer_name
+  return peername
+
+#  find peer tag based on a username
+def get_peer_tag(username):
+  user = User.objects.get(username=username)
+  up = UserProfile.objects.get(user=user)
+  peers = up.peers.all()
+  for peer in peers:
+    peer_tag = peer.peer_tag
+  return peer_tag
 
 
+  # method for finding golem pop up link 
 def get_link(id_golem):
   import paramiko
   from flowspy import settings
@@ -119,28 +139,36 @@ def get_peer_techc_mails(user, peer):
     return mail
 
 
-def get_peers(username):
-  user = User.objects.get(username=username)
-  up = UserProfile.objects.get(user=user)
-  peers = up.peers.all()
-  peername = ''
-  for peer in peers:
-    peername = peer.peer_name
-  return peername
-
-def get_peer_tag(username):
-  user = User.objects.get(username=username)
-  up = UserProfile.objects.get(user=user)
-  peers = up.peers.all()
-  for peer in peers:
-    peer_tag = peer.peer_tag
-  return peer_tag
-
+# retrieve files from backup dir
 def get_back_up_files():
   files = []
   for f in os.listdir(settings.BACK_UP_DIR):
     files.append(f)
   return files
+
+#============== back up code
+
+def create_db_backup():
+  from django.core.management import call_command
+  now = datetime.datetime.now()
+  current_time = now.strftime("%H:%M")
+  current_date = now.strftime("%d-%B-%Y")
+  call_command('dumpdata', format='json',output=f'_backup/FOD/FOD_backup_{current_date}_{current_time}.json')
+    #call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
+  message = 'Copia de seguridad creada con éxito.'
+  print(message)
+    
+def restore_db_backup():
+  from django.core.management import call_command
+  now = datetime.datetime.now()
+  call_command('dumpdata', output_filename=("_backup/FOD/FOD_backup_08-March-2022_16:39.json"))
+  message = 'Succesfull restore.'
+  print(message)
+
+
+
+## methods for parsing or checking data exist in db for when collecting info from either zabbix or rem_golem
+
 
 def translate_protocol(prot):
   operations = {'ah':51,'egp':8,'gre':47,'icmp':1,'igmp':2,'ospf':89, 'pim':103, 'rsvp':46,'sctp':132,'tcp':6,'udp':17}
@@ -189,6 +217,8 @@ def check_protocol(protocol):
     return match_protocol
 
 def assemble_dic(traffic_event,event_info):
+  # organise all info collected from rem_golem, also we assemble here the route based on the attack
+  # for example which port to use depending on the traffic
   try:
     ip_dest = traffic_event[1]['data'][0][0]; 
     ip_src = traffic_event[0]['data'][0][0] 
@@ -213,10 +243,24 @@ def assemble_dic(traffic_event,event_info):
   return dic
 
 
+def get_ip_address(ip):
+  import subprocess
+  process = subprocess.Popen(["nslookup", ip], stdout=subprocess.PIPE)
+  output = str(process.communicate()[0]).split("'")
+  try:
+    helper = output[1].split("\\t"); h = helper[1].split("\\n")
+    address = h[0].split("=")
+    return address[1]
+  except Exception as e:
+    print('There was an error when trying to parse the ip. Error: ',e)
+    return ip
+
+
+""" Graph's, Zabbix helpers """
+  # first we find the route we need for the zabbix query, then we check which parameters we need in order to get the full query
+  # and then we assemble it
 def get_query(routename, dest, src, username):
-  from flowspec.models import Route
   route = get_specific_route(applier=username,peer=None,route_slug=routename)
-  #route = Route.objects.get(name=routename)
   source = '0/0' if src == '0.0.0.0/0' else src[:-3]
   destination = '0/0' if dest == '0.0.0.0/0' else dest[:-3]
   query = (f'jnxFWCounterByteCount["{source},{destination}"]')
@@ -246,40 +290,89 @@ def get_graph_name(routename,dest,src):
   graph_name = (f'FWCounter {q3}') 
   return graph_name
 
-def get_ip_address(ip):
-  # 62.204.192.200
-  # 193.146.228.27
-  import subprocess
-  process = subprocess.Popen(["nslookup", ip], stdout=subprocess.PIPE)
-  output = str(process.communicate()[0]).split("'")
-  try:
-    helper = output[1].split("\\t"); h = helper[1].split("\\n")
-    address = h[0].split("=")
-    return address[1]
-  except Exception as e:
-    print('There was an error when trying to parse the ip. Error: ',e)
-    return ip
+def graphs(timefrom,timetill, routename, username):
+  from flowspec.models import Route
+  zapi = ZabbixAPI(ZABBIX_SOURCE)
+  zapi.login(ZABBIX_USER,ZABBIX_PWD)
+  route = get_object_or_404(get_edit_route(username), name=routename)
+  query = get_query(route.name, route.destination, route.source, username)
+  #in order to access history log we need to send the dates as timestamp
+  if not timefrom=='' and not timetill=='':
+    from_date_obj = datetime.datetime.strptime(timefrom,"%Y/%m/%d %H:%M")
+    till_date_obj = datetime.datetime.strptime(timetill,"%Y/%m/%d %H:%M")
 
-#===================================================== Routes helpers
+    ts_from = int(from_date_obj.timestamp())
+    ts_till = int(till_date_obj.timestamp())
+    #query for getting the itemid and the hostid
+    item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
+    item_id = [i['itemid'] for i in item['result']]
+    hostid = [i['hostid'] for i in item['result']]
+    print('host ',from_date_obj,till_date_obj)
+    #if query fails it might be because parameters are not int parsed
+    item_history = zapi.history.get(hostids=hostid,itemids=item_id,time_from=ts_from,time_till=ts_till)
+    
+      
+    beats_date = []; beats_hour = []; clock_value = []; beat_value = []; beats_fulltime = []; beats_values = []
+
+    for x in item_history:
+      clock_value.append(x['clock'])
+      beat_value.append(x['value'])
+   
+    for x in clock_value:
+      y = datetime.datetime.fromtimestamp(int(x))
+      beats_date.append(y.strftime("%m/%d/%Y"))
+      beats_hour.append(y.strftime("%H:%M:%S"))
+      beats_fulltime.append(y.strftime("%Y/%m/%d %H:%M:%S"))
+      
+    beats_values = dict(zip(beats_hour,beat_value))
+    return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
+  else:
+    beats_date, beats_hour, beat_value, beats_values, beats_fulltime = get_default_graph(routename)
+    return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
+
+
+def get_default_graph(routename, username):
+  zapi = ZabbixAPI(ZABBIX_SOURCE)
+  zapi.login(ZABBIX_USER,ZABBIX_PWD)
+  route = get_object_or_404(get_edit_route(username), name=routename)
+  query = get_query(route.name, route.destination, route.source, username)
+
+  item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
+  item_id = [i['itemid'] for i in item['result']]
+  hostid = [i['hostid'] for i in item['result']]
+
+  now = datetime.datetime.now() 
+  yesterday = datetime.datetime.now() - timedelta(1)
+  ts_from = int(yesterday.timestamp())
+  ts_till = int(now.timestamp())
+    
+  item_history = zapi.history.get(hostids=hostid,itemids=item_id,time_from=ts_from,time_till=ts_till)
+  
+      
+  beats_date = []; beats_hour = []; clock_value = []; beat_value = []; beats_fulltime = []; beats_values = []
+  for x in item_history:
+    clock_value.append(x['clock'])
+    beat_value.append(x['value'])
+      
+  for x in clock_value:
+    y = datetime.datetime.fromtimestamp(int(x))
+    beats_date.append(y.strftime("%m/%d/%Y"))
+    beats_hour.append(y.strftime("%H:%M:%S"))
+    beats_fulltime.append(y.strftime("%Y/%m/%d %H:%M:%S"))
+      
+  beats_values = dict(zip(beats_hour,beat_value))
+  return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
+
+
+
+""" Route helpers """
+
 def find_route_pk(applier, pk):
   from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   route = {
-    'Punch': Route.objects.get(id=pk),
-    'IMDEA': Route_IMDEA.objects.get(id=pk),
-    'CV': Route_CV.objects.get(id=pk),
-    'CIB' : Route_CIB.objects.get(id=pk),
-    'CSIC' : Route_CSIC.objects.get(id=pk),
-    'CEU' : Route_CEU.objects.get(id=pk),
-    'CUNEF' : Route_CUNEF.objects.get(id=pk),
-    'IMDEA_NET': Route_IMDEANET.objects.get(id=pk),
-    'UAM' : Route_UAM.objects.get(id=pk),
-    'UC3M' : Route_UC3M.objects.get(id=pk),
-    'UCM' : Route_UCM.objects.get(id=pk),
-    'UAH' : Route_UAH.objects.get(id=pk),
-    'UEM' : Route_UEM.objects.get(id=pk),
-    'UNED' : Route_UNED.objects.get(id=pk),
-    'UPM' : Route_UPM.objects.get(id=pk),
-    'URJC' : Route_URJC.objects.get(id=pk),
+    'Punch': Route.objects.get(id=pk), 'IMDEA': Route_IMDEA.objects.get(id=pk), 'CV': Route_CV.objects.get(id=pk), 'CIB' : Route_CIB.objects.get(id=pk),'CSIC' : Route_CSIC.objects.get(id=pk),
+  'CEU' : Route_CEU.objects.get(id=pk),'CUNEF' : Route_CUNEF.objects.get(id=pk),'IMDEA_NET': Route_IMDEANET.objects.get(id=pk), 'UAM' : Route_UAM.objects.get(id=pk),'UC3M' : Route_UC3M.objects.get(id=pk),
+    'UCM' : Route_UCM.objects.get(id=pk),'UAH' : Route_UAH.objects.get(id=pk),'UEM' : Route_UEM.objects.get(id=pk),'UNED' : Route_UNED.objects.get(id=pk),'UPM' : Route_UPM.objects.get(id=pk),'URJC' : Route_URJC.objects.get(id=pk),
   }
   peer_tag = get_peer_tag(applier)
   user_route = route[peer_tag]
@@ -355,7 +448,7 @@ def get_route(applier,peer):
     user_routes = routes[peer]
     return user_routes
 
-def get_edit_route(applier):
+def get_edit_route(applier,rname=None):
   from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   routes = {
     'Punch': Route,
@@ -374,8 +467,11 @@ def get_edit_route(applier):
     'UNED' : Route_UNED,
     'UPM' : Route_UPM,
     'URJC' : Route_URJC,
-  }
-  peer_tag = get_peer_tag(applier)
+  } 
+  if rname != None:
+    peer_tag = get_peer_with_name(rname)
+  else:
+    peer_tag = get_peer_tag(applier)
   user_routes = routes[peer_tag]
   return user_routes
 
@@ -489,110 +585,104 @@ def get_specific_route(applier,peer, route_slug):
   from peers.models import Peer
   from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   peers = Peer.objects.all()
-  if not applier == None:
-    peer_tag = get_peer_tag(applier)
-  if not peer == None:
-    peer_tag = peer
-  if peer == None and applier == None:
-    fd = route_slug.find('_')
-    peer_tag = route_slug[fd+1:-2]
+  peer_tag = get_peer_with_name(route_slug)
   for r in peers:
     if peer_tag == 'IMDEA': 
       try:
         route = Route_IMDEA.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
-          print('There has been an error')
+          logger.info('There has been an error when trying to find the route')
     elif peer_tag == 'CV':
       try:
         route = Route_CV.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
-        print('There has been an error')
+        logger.info('There has been an error when trying to find the route')
     elif peer_tag == 'CIB':
       try:
         route = Route_CIB.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
-        print('There has been an error')
+        logger.info('There has been an error when trying to find the route')
     elif peer_tag == 'CSIC':
       try:
         route = Route_CSIC.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
-        print('There has been an error')
+        logger.info('There has been an error when trying to find the route')
     elif peer_tag == 'CEU':
       try:
         route = Route_CEU.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
-        print('There has been an error')
+        logger.info('There has been an error when trying to find the route')
     elif peer_tag == 'CUNEF':
       try:
         route = Route_CUNEF.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
-        print('There has been an error')
+        logger.info('There has been an error when trying to find the route')
     elif peer_tag == 'IMDEA_NET':
       try:
         route = Route_IMDEANET.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
-        print('There has been an error')
+        logger.info('There has been an error when trying to find the route')
     elif peer_tag == 'UAM':
       try:
         route = Route_UAM.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
-        print('There has been an error')
+        logger.info('There has been an error when trying to find the route')
     elif peer_tag == 'UC3M':
       try:
         route = Route_UC3M.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
-        print('There has been an error')
+        logger.info('There has been an error when trying to find the route')
     elif peer_tag == 'UCM':
       try:
         route = Route_UCM.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
-        print('There has been an error')
+        logger.info('There has been an error when trying to find the route')
     elif peer_tag == 'UAH':
       try:
         route = Route_UAH.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
-        print('There has been an error')
+        logger.info('There has been an error when trying to find the route')
     elif peer_tag == 'UEM':
       try:
         route = Route_UEM.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
-        print('There has been an error')
+        logger.info('There has been an error when trying to find the route')
     elif peer_tag == 'UNED':
       try:
         route = Route_UNED.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
-        print('There has been an error')
+        logger.info('There has been an error when trying to find the route')
     elif peer_tag == 'UPM':
       try:
         route = Route_UPM.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
-        print('There has been an error')
+        logger.info('There has been an error when trying to find the route')
     elif peer_tag == 'URJC':
       try:
         route = Route_URJC.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
-        print('There has been an error')
+        logger.info('There has been an error when trying to find the route')
     elif peer_tag == 'Punch':
       try:
         route = Route.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
-        print('There has been an error')
+        logger.info('There has been an error when trying to find the route')
 
   
 
@@ -769,96 +859,4 @@ def find_peer(peer_name):
 
        
 
-def graphs(timefrom,timetill, routename, username):
-  from flowspec.models import Route
-  zapi = ZabbixAPI(ZABBIX_SOURCE)
-  zapi.login(ZABBIX_USER,ZABBIX_PWD)
-  route = get_object_or_404(get_edit_route(username), name=routename)
-  query = get_query(route.name, route.destination, route.source, username)
-  #in order to access history log we need to send the dates as timestamp
-  if not timefrom=='' and not timetill=='':
-    from_date_obj = datetime.datetime.strptime(timefrom,"%Y/%m/%d %H:%M")
-    till_date_obj = datetime.datetime.strptime(timetill,"%Y/%m/%d %H:%M")
 
-    ts_from = int(from_date_obj.timestamp())
-    ts_till = int(till_date_obj.timestamp())
-    #query for getting the itemid and the hostid
-    item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
-    item_id = [i['itemid'] for i in item['result']]
-    hostid = [i['hostid'] for i in item['result']]
-    print('host ',from_date_obj,till_date_obj)
-    #if query fails it might be because parameters are not int parsed
-    item_history = zapi.history.get(hostids=hostid,itemids=item_id,time_from=ts_from,time_till=ts_till)
-    
-      
-    beats_date = []; beats_hour = []; clock_value = []; beat_value = []; beats_fulltime = []; beats_values = []
-
-    for x in item_history:
-      clock_value.append(x['clock'])
-      beat_value.append(x['value'])
-   
-    for x in clock_value:
-      y = datetime.datetime.fromtimestamp(int(x))
-      beats_date.append(y.strftime("%m/%d/%Y"))
-      beats_hour.append(y.strftime("%H:%M:%S"))
-      beats_fulltime.append(y.strftime("%Y/%m/%d %H:%M:%S"))
-      
-    beats_values = dict(zip(beats_hour,beat_value))
-    return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
-  else:
-    beats_date, beats_hour, beat_value, beats_values, beats_fulltime = get_default_graph(routename)
-    return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
-
-
-def get_default_graph(routename, username):
-  from flowspec.models import Route
-  zapi = ZabbixAPI(ZABBIX_SOURCE)
-  zapi.login(ZABBIX_USER,ZABBIX_PWD)
-  route = get_object_or_404(get_edit_route(username), name=routename)
-  query = get_query(route.name, route.destination, route.source, username)
-
-  item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
-  item_id = [i['itemid'] for i in item['result']]
-  hostid = [i['hostid'] for i in item['result']]
-
-  now = datetime.datetime.now() 
-  yesterday = datetime.datetime.now() - timedelta(1)
-  ts_from = int(yesterday.timestamp())
-  ts_till = int(now.timestamp())
-    
-  item_history = zapi.history.get(hostids=hostid,itemids=item_id,time_from=ts_from,time_till=ts_till)
-  
-      
-  beats_date = []; beats_hour = []; clock_value = []; beat_value = []; beats_fulltime = []; beats_values = []
-  for x in item_history:
-    clock_value.append(x['clock'])
-    beat_value.append(x['value'])
-      
-  for x in clock_value:
-    y = datetime.datetime.fromtimestamp(int(x))
-    beats_date.append(y.strftime("%m/%d/%Y"))
-    beats_hour.append(y.strftime("%H:%M:%S"))
-    beats_fulltime.append(y.strftime("%Y/%m/%d %H:%M:%S"))
-      
-  beats_values = dict(zip(beats_hour,beat_value))
-  return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
-
-
-#============== back up code
-
-def create_db_backup():
-  from django.core.management import call_command
-  now = datetime.datetime.now()
-  current_time = now.strftime("%H:%M")
-  current_date = now.strftime("%d-%B-%Y")
-  call_command('dumpdata', format='json',output=f'_backup/FOD/FOD_backup_{current_date}_{current_time}.json')
-    #call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
-  message = 'Copia de seguridad creada con éxito.'
-  print(message)
-    
-def restore_db_backup():
-  from django.core.management import call_command
-  now = datetime.datetime.now()
-  call_command('dumpdata', output_filename=("_backup/FOD/FOD_backup_08-March-2022_16:39.json"))
-  message = 'Succesfull restore.'
-  print(message)
