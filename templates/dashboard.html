@@ -99,9 +99,9 @@
 						</div>
 						<div class="card-footer">
 							{% if not request.COOKIES.token %}
-							<a href="{% url 'edit-route' route.name %}" class="btn btn-outline-warning m-1" data-bs-toggle="tooltip" data-bs-placement="top"  id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up mr-2"></i>Resincronizar</a>
+							<a href="{% url 'edit-route' route.name %}" class="btn btn-sm btn-outline-warning m-1" data-bs-toggle="tooltip" data-bs-placement="top"  id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up mr-2"></i>Resincronizar</a>
 							{% else %}
-							<a href="{% url 'edit' route.name %}" class="btn btn-outline-warning m-1" data-bs-toggle="tooltip" data-bs-placement="top"  id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up mr-2"></i>Resincronizar</a>
+							<a href="{% url 'edit' route.name %}" class="btn btn-sm btn-outline-warning m-1" data-bs-toggle="tooltip" data-bs-placement="top"  id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up mr-2"></i>Resincronizar</a>
 							{% endif %}	
 						</div>
 					</div>
@@ -114,9 +114,9 @@
 						</div>
 						<div class="card-footer">
 							{% if not request.COOKIES.token %}
-							<a href="{% url 'edit-route' route.name %}" class="btn btn-outline-warning m-1" data-bs-toggle="tooltip" data-bs-placement="top"  id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up mr-2"></i>Resincronizar</a>
+							<a href="{% url 'edit-route' route.name %}" class="btn btn-sm btn-outline-warning m-1" data-bs-toggle="tooltip" data-bs-placement="top"  id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up mr-2"></i>Resincronizar</a>
 							{% else %}
-							<a href="{% url 'edit' route.name %}" class="btn btn-outline-warning m-1" data-bs-toggle="tooltip" data-bs-placement="top"  id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up mr-2"></i>Resincronizar</a>
+							<a href="{% url 'edit' route.name %}" class="btn btn-sm btn-outline-warning m-1" data-bs-toggle="tooltip" data-bs-placement="top"  id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up mr-2"></i>Resincronizar</a>
 							{% endif %}
 						</div>
 					</div>
@@ -128,17 +128,17 @@
 			<!-- <div class="col-sm-6" id="hero"  style="display:block;"> -->
 				<div class="col-sm-6"  style="display:block;">
 					  <div class="card">
-								  <h5 class="card-header text-left">Shortcuts</h5>
+								  <h5 class="card-header text-left text-info ">Shortcuts</h5>
 								  <div class="card-body btn-group">
 									<div class="card-text btn-group">
 									  {% if not request.COOKIES.token %}
-									  <a class="btn btn-sm btn-outline float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
+									  <a class="btn btn-sm btn-outline-dark float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
 									  {% else %}
-									  <a href="{% url 'add' %}" class="btn btn-sm float-left" id="routebutton"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
+									  <a href="{% url 'add' %}" class="btn btn-outline-dark btn-sm float-left" id="routebutton"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
 									  {% endif %}
-									  <a class="btn btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table text-secondary mr-1"></i>Reglas</a>
-									  <a href="{% url 'pending-routes' %}" type="button" class="btn btn-sm float-left ml-2"> <i class="bi-clipboard text-danger mr-1"></i>Reglas propuestas</a>
-									  <a class="btn btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard text-info mr-1"></i>Dashboard</a>
+									  <a class="btn btn-sm btn-outline-dark float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table text-secondary mr-1"></i>Reglas</a>
+									  <a href="{% url 'pending-routes' %}" type="button" class="btn btn-outline-dark btn-sm float-left ml-2"> <i class="bi-clipboard text-danger mr-1"></i>Reglas propuestas</a>
+									  <a class="btn btn-outline-dark btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard text-info mr-1"></i>Dashboard</a>
 								  </div>
 								
 						</div>

@@ -3,7 +3,9 @@
 {% load static %}
 
 {% block extrahead %}
-<link rel="stylesheet" href="{% static 'css/profile_style.css' %}">
+<!-- <link rel="stylesheet" href="{% static 'css/profile_style.css' %}"> -->
+<link rel="stylesheet" href="{% static 'css/dashboard_style.css' %}">
+<link rel="stylesheet" href="{% static 'css/section_style.css' %}">
 {% endblock %}
 
 {% block title %}{% trans "My profile" %}{% endblock %}
@@ -13,30 +15,23 @@
 </style>
 
 <div class="container p-5 m-2">
-    <section id="section">
         <div class="container">
             <div class="row mb-5">
                 <div class="col">
-                    <h1>Profile</h1>
+                    <h1>Mi perfil</h1>
                 </div>
             </div>
-            <div class="row cards">
-                <div class="col-md-6">
+            <div class="row">
+                <div class="col float-left">
                     <!-- Peer card -->
                     <div class="card">
-                        <h5 class="card-title pb-2">
-                            Peer Information
-                        </h5>
+                        <h5 class="card-header text-info">Institución</h5>
                         <div class="card-body">
                             {% for peer in peers %}
-                            <p class="card-text">
-                                    {{peer}}
-                                    <br> Networks:
-                            </p>
-                            <p class="card-text">
-                                <small class="text-muted">
+                            <p class="card-text">{{peer}} <br>
+                        <small class="text-muted">
                             {% for network in peer.networks.all %}
-                                {{network}}<br>
+                                {{network}}
                                 {% empty %}
                                 <span style="color:red">{% blocktrans %}Ooops! Seems you have no networks associated with your peer. Contact Helpdesk to resolve this issue.{% endblocktrans %}</span>
                             {% endfor %}
@@ -49,40 +44,45 @@
                 </div>
                 <!-- End of PeerCard -->
                 <!--User Card -->
-                <div class="col-md-6">
+                <div class="col float-right">
                 <div class="card">
-                    <h5 class="card- mb-3">
-                        User Information
-                    </h5>
+                    <h5 class="card-header text-info">Usuario</h5>
                     <div class="card-body">
                         {% if user.username %}<p class="card-text">Username: {{user.username}} {% endif %}  </p>
                         {% if user.first_name %}<p class="card-text">First name: {{user.first_name}}</p> {% endif %}
                         {% if user.last_name %}<p class="card-text">Last name: {{user.last_name}}</p> {% endif %}
                         {% if user.email %} <p class="card-text">Email: {{user.email}}</p> {% endif %}
-                        <a class="btn btn-dark btn-sm float-right" id="routebutton" href="{% url 'account_change_password' %}">Change password</a>
+                    </div>
+                    <div class="card-footer">
+                        <a class="btn btn-outline-dark btn-sm float-right text-danger" id="routebutton" href="{% url 'account_change_password' %}">Change password</a>
                     </div>
                 </div>
             </div>
-            <div class="col-sm-6">
-                <div class="card">
-                            <h5 class="card-title text-dark">Shortcuts</h5>
-                            <div class="card-body">
-                                {% if request.COOKIE.token %}
-                                <a class="btn btn-info btn-sm float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM">A<i class="bi bi-shield-plus"></i> dd Route</a>
+            <!-- End of UserCard-->
+        <div class="row">
+            <div class="col">
+                <div class="card float-right pt-2 mt-5">
+                            <h5 class="card-header text-left text-info">Shortcuts</h5>
+                            <div class="card-body btn-group">
+                              <div class="card-text btn-group">
+                                {% if not request.COOKIES.token %}
+                                <a class="btn btn-sm btn-outline-dark float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
                                 {% else %}
-                                <a class="btn btn-info btn-sm float-left" id="routebutton" href="{% url 'add' %}"><i class="bi bi-shield-plus"></i> Add Route</a>
+                                <a href="{% url 'add' %}" class="btn btn-outline-dark btn-sm float-left" id="routebutton"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
                                 {% endif %}
-                                <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}"><i class="bi bi-table"></i> User Routes</a>
-                                <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'user-profile' %}"><i class="bi bi-person"></i> Profile</a>
-                                <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'dashboard' %}"><i class="bi bi-clipboard"></i> Dashboard</a>
-                              </div>
+                                <a class="btn btn-sm btn-outline-dark float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table text-secondary mr-1"></i>Reglas</a>
+                                <a href="{% url 'pending-routes' %}" type="button" class="btn btn-outline-dark btn-sm float-left ml-2"> <i class="bi-clipboard text-danger mr-1"></i>Reglas propuestas</a>
+                                <a class="btn btn-outline-dark btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard text-info mr-1"></i>Dashboard</a>
                             </div>
-                    </div>
-                <!-- End of UserCard-->
+                          
+                  </div>
+            </div>
+      </div>
+                </div>
+                
             </div>
         </div>
     </div>
-    </section>
 </div>   
 
 
