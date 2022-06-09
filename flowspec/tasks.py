@@ -479,11 +479,10 @@ def post(anomaly_info, id_event):
                         m_protocol = check_protocol(p1)
                         dic2 = {'name':dic_regla2['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla2['ip_dest'],'ipsrc':dic_regla2['ip_src'],'protocol':m_protocol.pk,'tcpflag':dic_regla2['tcp_flag'],'port':dic_regla2['port']}
                         create_route(id_event,dic2,peer.peer_tag)
-<<<<<<< HEAD
                         send_message(f"El ataque DDoS con id {dic_regla2['id_attack']}  a la institución {dic_regla2['institution_name']} persiste y hemos actualizado los datos del ataque. Consulte nuestra <https://remedios.redimadrid.es/|web> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link1}.", peer=peer.peer_tag,superuser=False)
-=======
-                        send_message(f"El ataque DDoS con id {dic_regla2['id_attack']} a la institución {dic_regla2['institution_name']} persiste y hemos actualizado los datos del ataque. Consulte nuestra <https://remedios.redimadrid.es/|web> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link1}.", peer=peer.peer_tag,superuser=False)
->>>>>>> 86a6c7eb8a1379d85ec9da1754f1f52bca553d39
+
+                        
+
                         recovered = True 
                         while recovered:
                             time.sleep(300)
