@@ -45,7 +45,6 @@ from flowspec.junos import create_junos_name
 
 from utils.randomizer import id_generator as id_gen
 
-import flowspec.tasks
 from flowspec.tasks import *
 
 import json
