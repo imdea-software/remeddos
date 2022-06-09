@@ -20,7 +20,8 @@
 <div class="row pt-3">
     <div class="col">
         <table id="golemtable" class="table table-hover table-responsive compact w-100">
-        <thead class="bg-dark text-white">
+        <!-- <thead class="bg-dark text-white"> -->
+          <thead>
            <tr>
                <th><small>ID </small></th><th><small>Type</small></th><th><small>Recieved at</small></th><th><small>Institution</small></th><th><small>Important Data</small></th> <th><small>Status</small></th> 
                <th><small>Max Value</small></th> <th><small>Threshold </small></th><th><small>More Information</small></th> <th><small>Actions</small></th>
@@ -70,23 +71,26 @@
 
 </div>
 
-<section>
-<div class="col-sm-6 mt-5" id="section">
-    <div class="card">
-                <h5 class="card-title text-left">Shortcuts</h5>
+
+<div class="row p-2 mt-3">
+  <div class="col">
+    <div class="card float-right">
+                <h5 class="card-header text-left text-info">Shortcuts</h5>
                 <div class="card-body btn-group">
+                  <div class="card-text btn-group">
                     {% if not request.COOKIES.token %}
-                    <a href="#" class="btn btn-info btn-sm float-left" data-bs-toggle="modal" data-bs-target="#addRouteM" id="submitButton1"><i class="bi bi-shield-plus"></i> Add Route</a>
+                    <a class="btn btn-sm btn-outline-dark float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
                     {% else %}
-                      <a href="{% url 'add' %}"  class="btn btn-info btn-sm float-left" id="submitButton1"><i class="bi bi-shield-plus"></i> Add Route</a> 
+                    <a href="{% url 'add' %}" class="btn btn-sm btn-outline-dark float-left" id="routebutton"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
                     {% endif %}
-                    <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table"></i> User Routes</a>
-                    <a href="{% url 'pending-routes' %}" type="button" class="btn btn-info btn-sm float-left ml-2"> <i class="bi-clipboard"></i> Proposed Routes</a>
-                    <a class="btn btn-info btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard"></i> Dashboard</a>
+                    <a class="btn btn-sm btn-outline-dark float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table text-secondary mr-1"></i>Reglas</a>
+                    <a href="{% url 'pending-routes' %}" type="button" class="btn btn-outline-dark btn-sm float-left ml-2"> <i class="bi-clipboard text-danger mr-1"></i>Reglas propuestas</a>
+                    <a class="btn btn-outline-dark btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard text-info mr-1"></i>Dashboard</a>
                 </div>
+              </div>
             </div>
       </div>
-</section>
+</div>
 </div>
 
 </div>
