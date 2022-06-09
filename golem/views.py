@@ -10,7 +10,7 @@ from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 
 from .models import *
 
-from flowspec.tasks import post
+from flowspec.tasks import post 
 from peers.models import *
 from .helpers import *
 import json
@@ -24,7 +24,11 @@ class ProcessWebHookView(CsrfExemptMixin, View):
         id_event = message['event']['id']
         anomaly_ticket, anomaly_info = petition_geni(id_event)
         print('New webhook event, ', id_event)
-        post.apply_async((anomaly_info, id_event))
+        try:
+            post.apply_async((anomaly_info, id_event))
+        except Exception as e:
+            print('WTF: ',e)
+        print('after post')
         #post(anomaly_info, id_event) 
         return HttpResponse()
 

@@ -469,7 +469,9 @@ def get_edit_route(applier,rname=None):
     'URJC' : Route_URJC,
   } 
   if rname != None:
+    print('should be here')
     peer_tag = get_peer_with_name(rname)
+
   else:
     peer_tag = get_peer_tag(applier)
   user_routes = routes[peer_tag]
@@ -817,37 +819,37 @@ def find_peer(peer_name):
   for peer in peers:
     if peer_name == 'punch.software.imdea.org':
       return Peer.objects.get(peer_name='Punch')
-    elif peer_name == 'CASA VELAZQUEZ':
+    elif peer_name == 'CASA VELAZQUEZ' or peer_name == 'CASA VELAZQUEZ(2)' :
       return Peer.objects.get(peer_tag='CV')
-    elif peer_name == 'IMDEA NETWORKS':
+    elif peer_name == 'IMDEA NETWORKS' or peer_name == 'IMDEA NETWORKS(2)':
       return Peer.objects.get(peer_name='IMDEA NETWORKS')
-    elif peer_name == 'REDIMADRID':
+    elif peer_name == 'REDIMADRID' or peer_name == 'REDIMADRID(2)':
       return Peer.objects.get(peer_name='REM_IMDEA')
     elif peer_name == 'CEU(2)' or peer_name == 'CEU':
       return Peer.objects.get(peer_name='CEU')
-    elif peer_name == 'UEM':
+    elif peer_name == 'UEM' or peer_name == 'UEM(2)':
       return Peer.objects.get(peer_tag='UEM')
-    elif peer_name == 'URJC':
+    elif peer_name == 'URJC' or peer_name == 'URJC(2)':
       return Peer.objects.get(peer_tag='URJC')
-    elif peer_name == 'UNED':
+    elif peer_name == 'UNED' or peer_name == 'UNED(2)':
       return Peer.objects.get(peer_tag='UNED')
-    elif peer_name == 'UAH':
+    elif peer_name == 'UAH' or peer_name == 'UAH(2)':
       return Peer.objects.get(peer_tag='UAH')
-    elif peer_name == 'CSIC':
+    elif peer_name == 'CSIC' or peer_name == 'CSIC(2)':
       return Peer.objects.get(peer_tag='CSIC')
-    elif peer_name == 'CIB':
+    elif peer_name == 'CIB' or peer_name == 'CIB(2)':
       return Peer.objects.get(peer_tag='CIB')
-    elif peer_name == 'CUNEF':
+    elif peer_name == 'CUNEF' or peer_name == 'CUNEF(2)':
       return Peer.objects.get(peer_tag='CUNEF')
-    elif peer_name == 'UC3M':
+    elif peer_name == 'UC3M' or peer_name == 'UC3M(2)':
       return Peer.objects.get(peer_tag='UC3M')
-    elif peer_name == 'CSIC':
+    elif peer_name == 'CSIC' or peer_name == 'CSIC(2)':
       return Peer.objects.get(peer_tag='CSIC')
-    elif peer_name == 'UCM':
+    elif peer_name == 'UCM' or peer_name == 'UCM(2)':
       return Peer.objects.get(peer_tag='UCM')
-    elif peer_name == 'UAM':
+    elif peer_name == 'UAM' or peer_name == 'UAM(2)':
       return Peer.objects.get(peer_tag='UAM')
-    elif peer_name == 'UPM':
+    elif peer_name == 'UPM' or peer_name == 'UPM(2)':
       return Peer.objects.get(peer_tag='UPM')
     elif peer == pn:
       return Peer.objects.get(peer_name=peer) 

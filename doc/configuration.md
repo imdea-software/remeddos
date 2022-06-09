@@ -14,7 +14,7 @@ Its time to configure `settings.py` in order to connect flowspy with a database,
 So lets edit settings.py file.
 
 It is strongly advised that you do not change the following to False
-values unless, you want to integrate FoD with you CRM or members
+values unless, you want to integrate REMeDDoS with you CRM or members
 database. This implies that you are able/have the rights to create
 database views between the two databases:
 
@@ -52,7 +52,7 @@ Subnets for which source or destination address will prevent rule creation and n
 
 	DATABASES = {
 	    'default': {
-	        'ENGINE': 'django.db.backends.mysql',
+	        'ENGINE': 'django.db.backends.postgresql_psycopg2',
 	        'NAME': 'flowspy',
 	        'USER': '<db user>',
 	        'PASSWORD': '<db password>',
@@ -89,19 +89,13 @@ We have to inform django about the device we set up earlier.
 	NETCONF_PORT = 830
 
 
-### Beanstalkd
-Beanstalk configuration (as a broker for celery)
 
-	BROKER_HOST = "localhost"
-	BROKER_PORT = 11300
-	POLLS_TUBE = 'polls'
-	BROKER_URL = "beanstalk://localhost:11300//"
 
 ### Notifications
 Outgoing mail address and prefix.
 
-	SERVER_EMAIL = "Example FoD Service <noreply@example.com>"
-	EMAIL_SUBJECT_PREFIX = "[FoD] "
+	SERVER_EMAIL = "Example REMeDDoS Service <noreply@example.com>"
+	EMAIL_SUBJECT_PREFIX = "[REMeDDoS] "
 	NOTIFY_ADMIN_MAILS = ["admin@example.com"]
 
 
@@ -136,20 +130,8 @@ Fill your company's information in order to show it in flowspy.
 	}
 
 
-### Shibboleth
-Flowspy supports shibboleth authentication.
-
-	SHIB_AUTH_ENTITLEMENT = 'urn:mace'
-	SHIB_ADMIN_DOMAIN = 'example.com'
-	SHIB_LOGOUT_URL = 'https://example.com/Shibboleth.sso/Logout'
-	SHIB_USERNAME = ['HTTP_EPPN']
-	SHIB_MAIL = ['mail', 'HTTP_MAIL', 'HTTP_SHIB_INETORGPERSON_MAIL']
-	SHIB_FIRSTNAME = ['HTTP_SHIB_INETORGPERSON_GIVENNAME']
-	SHIB_LASTNAME = ['HTTP_SHIB_PERSON_SURNAME']
-	SHIB_ENTITLEMENT = ['HTTP_SHIB_EP_ENTITLEMENT']
-
 ### Syncing the database
-To create all the tables needed by FoD we have to run the following commands:
+To create all the tables needed by REMeDDoS we have to run the following commands:
 
 	cd /srv/flowspy
 	./manage.py syncdb --noinput
@@ -170,7 +152,7 @@ folder:
     python manage.py loaddata initial_data/fixtures_manual.xml
 
 ### Celery
-Celery is a distributed task queue, which helps FoD run some async tasks, like applying a flowspec rule to a router.
+Celery is a distributed task queue, which helps REMeDDoS run some async tasks, like applying a flowspec rule to a router.
 
 `Note` In order to check if celery runs or even debug it, you can run:
 
@@ -218,13 +200,13 @@ welcome.html with your own images, carousel, videos, etc.
 ## Usage
 
 ### Web interface
-FoD comes with a web interface, in which one can edit and apply new routes.
+REMeDDoS comes with a web interface, in which one can edit and apply new routes.
 
 ### Rest Api
-FoD provides a rest api. It uses token as authentication method.
+REMeDDoS provides a rest api. It uses token as authentication method.
 
 ### Generating Tokens
-A user can generate a token for his account on "my profile" page from FoD's
+A user can generate a token for his account on "my profile" page from REMeDDoS's
 UI. Then by using this token in the header of the request he can list, retrieve,
 modify and create rules.
 
@@ -234,11 +216,11 @@ Here are some examples:
 #### GET items
 - List all the rules your user has created (admin users can see all the rules)
 
-            curl -X GET https://fod.example.com/api/routes/ -H 'Authorization: Token <Your users token>'
+            curl -X GET https://remeddos.example.com/api/routes/ -H 'Authorization: Token <Your users token>'
 
 - Retrieve a specific rule:
 
-            curl -X GET https://fod.example.com/api/routes/<rule_id>/ -H 'Authorization: Token <Your users token>'
+            curl -X GET https://remeddos.example.com/api/routes/<rule_id>/ -H 'Authorization: Token <Your users token>'
 
 - In order to create or modify a rule you have to use POST/PUT methods.
 
@@ -262,10 +244,10 @@ Same with Fragmentypes in `/api/fragmenttypes/<fragmenttype_id>/`, protocols in 
 Since we have the urls we want to connect with the rule we want to create, we can make a POST request like the following:
 
 
-      curl -X POST -H 'Authorization: Token <Your users token>' -F "name=Example" -F "comments=Description" -F "source=0.0.0.0/0" -F "sourceport=https://fod.example.com/api/ports/7/" -F "destination=203.0.113.12" https://fod.example.com/api/routes/
+      curl -X POST -H 'Authorization: Token <Your users token>' -F "name=Example" -F "comments=Description" -F "source=0.0.0.0/0" -F "sourceport=https://remeddos.example.com/api/ports/7/" -F "destination=203.0.113.12" https://remeddos.example.com/api/routes/
 
 And here is a PUT request example:
 
-      curl -X PUT -F "name=Example" -F "comments=Description" -F "source=0.0.0.0/0" -F "sourceport=https://fod.example.com/api/ports/7/" -F "destination=83.212.9.93" https://fod.example.com/api/routes/12/ -H  'Authorization: Token <Your users token>'
+      curl -X PUT -F "name=Example" -F "comments=Description" -F "source=0.0.0.0/0" -F "sourceport=https://remeddos.example.com/api/ports/7/" -F "destination=83.212.9.93" https://remeddos.example.com/api/routes/12/ -H  'Authorization: Token <Your users token>'
 
 

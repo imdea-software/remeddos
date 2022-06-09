@@ -61,7 +61,7 @@ DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
-    ('AdminName', 'admin@example.com'),
+    ('Remadmin', 'admin@example.com'),
 )
 MANAGERS = ADMINS
 here = lambda x: os.path.join(os.path.abspath(os.path.dirname(__file__)), x)
@@ -330,8 +330,8 @@ EMAIL_USE_TLS=True
 EMAIL_PORT=587
 
 DISABLE_EMAIL_NOTIFICATION = False
-SERVER_EMAIL = "RediMadrid FoD Service (TEST) <redimadridalicia@gmail.com>"
-EMAIL_SUBJECT_PREFIX = "[FoD] "
+SERVER_EMAIL = "REMeDDOS Service (TEST) <redimadridalicia@gmail.com>"
+EMAIL_SUBJECT_PREFIX = "[REMeDDoS] "
 EXPIRATION_NOTIFY_DAYS = 4
 PREFIX_LENGTH = 29
 POLL_SESSION_UPDATE = 60.0
@@ -383,7 +383,7 @@ BRANDING = {
     'twitter': '//twitter.com/',
     'phone': '800-example-com',
     'email': 'helpdesk@example.com',
-    'logo': 'fodlogo2.png',
+    'logo': 'logo.png',
     'favicon': 'favicon.ico',
 }
 

@@ -205,7 +205,6 @@ def group_routes_ajax(request):
         return render(request,'error.html',{'error': error})
     jresp = {}
     routes = build_routes_json(all_group_routes, request.user.is_superuser)
-    print('routes ', routes)
     jresp['aaData'] = routes
     return JsonResponse(jresp)
 
@@ -461,48 +460,46 @@ def verify_edit_user(request,route_slug):
     if 'token' in request.COOKIES:
         url = reverse('edit', kwargs={'route_slug':route_slug})
         response = HttpResponseRedirect(url)
+        return response     
+    if (request.method =='GET') and (not 'token' in request.COOKIES): 
+        num = get_code()
+        user= request.user.username
+        peer = get_peers(user)
+        route = get_specific_route(applier=user,peer=None, route_slug=route_slug)
+        msg = "El usuario {user} ha solicitado el siguiente código para editar la regla: {route_slug}. Código:  '{code}'.".format(user=user,code=num,route_slug=route_slug)
+        code = Validation(value=num,user=request.user)
+        code.save()
+        if request.user.is_superuser:
+            send_message(msg,peer,superuser=True)
+        else:
+            send_message(msg,peer,superuser=False)
+        form = ValidationForm(request.GET)
+        message = ""
+        response = render(request,'values/add_value.html', {'form': form, 'message':message,'status':'edit', 'route':route})
+        try:
+            response.set_cookie('token',value=num,max_age=900) 
+        except Exception as e:
+            print('There was an exception when trying to assign the token, ',e)
         return response
-    else:     
-        if request.method =='GET' and not 'token' in request.COOKIES: 
-            num = get_code()
-            user= request.user.username
-            peer = get_peers(user)
-            print('trace1')
-            route = get_specific_route(applier=user,peer=None, route_slug=route_slug)
-            msg = "El usuario {user} ha solicitado el siguiente código para editar la regla: {route_slug}. Código:  '{code}'.".format(user=user,code=num,route_slug=route_slug)
-            code = Validation(value=num,user=request.user)
-            code.save()
-            if request.user.is_superuser:
-                send_message(msg,peer,superuser=True)
-            else:
-                send_message(msg,peer,superuser=False)
-            form = ValidationForm(request.GET)
-            message = ""
-            response = render(request,'values/add_value.html', {'form': form, 'message':message,'status':'edit', 'route':route})
-            try:
-                response.set_cookie('token',value=num,max_age=900) 
-            except Exception as e:
-                print('There was an exception when trying to assign the token, ',e)
-            return response
             
-        if request.method=='POST':
-            form = ValidationForm(request.POST)
-            if form.is_valid():
-                code = form.cleaned_data.get('value')
-                value = Validation.objects.latest('id')
-                try:
-                    if str(value) == str(code):
-                        url = reverse('edit', kwargs={'route_slug': route_slug})
-                        return HttpResponseRedirect(url)
-                    else:
-                        form = ValidationForm(request.GET)
-                        message = "El código introducido es erróneo porfavor introduzca el último código enviado."
-                        return render(request,'values/add_value.html', {'form': form, 'message':message})
-
-                except Exception as e:
+    if request.method=='POST':
+        form = ValidationForm(request.POST)
+        if form.is_valid():
+            code = form.cleaned_data.get('value')
+            value = Validation.objects.latest('id')
+            try:
+                if str(value) == str(code):
+                    url = reverse('edit', kwargs={'route_slug': route_slug})
+                    return HttpResponseRedirect(url)
+                else:
                     form = ValidationForm(request.GET)
-                    message = "Ha sucedido un error, porfavor introduzca el último código enviado.", e
+                    message = "El código introducido es erróneo porfavor introduzca el último código enviado."
                     return render(request,'values/add_value.html', {'form': form, 'message':message})
+
+            except Exception as e:
+                form = ValidationForm(request.GET)
+                message = "Ha sucedido un error, porfavor introduzca el último código enviado.", e
+                return render(request,'values/add_value.html', {'form': form, 'message':message})
 
 @verified_email_required
 @login_required
@@ -538,13 +535,9 @@ def edit_route(request, route_slug):
             except:
                 pass
         form = find_edit_post_route(username, request_data, route_edit)
-        print('isnide post petition')
         critical_changed_values = ['source', 'destination', 'sourceport', 'destinationport', 'port', 'protocol', 'then', 'packetlenght','tcpflags']
-        print('t3, route og: ', route_original)
-        print('form valid: ', form.is_valid())
         try:
-            if form.is_valid():
-                print('first t')
+            if form.is_valid():            
                 changed_data = form.changed_data
                 route = form.save(commit=False)
                 route.name = route_original.name
@@ -568,6 +561,7 @@ def edit_route(request, route_slug):
                 if bool(set(changed_data) and set(critical_changed_values)) or (not route_original.status== 'ACTIVE'):
                     form.save_m2m()
                     route.commit_edit()
+                    return HttpResponseRedirect(reverse("group-routes"))
         except Exception as e:
             print('There has been an exception when trying to add a route: ', e)
             return HttpResponseRedirect(reverse("group-routes"))
@@ -922,10 +916,14 @@ def ajax_graphs(request):
 @login_required
 @never_cache
 def display_graphs(request,route_slug):
-    uname = request.user.username 
-    print('traza1')
-    route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
-    return render(request,'graphs.html',{'route':route})
+    uname = request.user.username
+    try:
+        route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
+        return render(request,'graphs.html',{'route':route})
+    except Exception as e:
+        logger.info('There was an exception when trying to display the graph. Error: ', e)
+        return HttpResponseRedirect(reverse('dashboard'))
+    
     
 
 """ PENDING ROUTES """
@@ -1161,6 +1159,9 @@ def restore_complete_db(request):
 
 
 
-
+"""  
+            celery -A flowspy worker -l INFO --logfile=/var/log/fod/celery_jobs.log --concurrency=10 -n worker1@%h 
+            celery -A flowspy worker --loglevel=INFO --logfile=/var/log/fod/celery_jobs.log  --concurrency=10 -n worker2@%h 
+            celery -A flowspy worker --loglevel=INFO --logfile=/var/log/fod/celery_jobs.log  --concurrency=10 -n worker3@%h" """
 
 
