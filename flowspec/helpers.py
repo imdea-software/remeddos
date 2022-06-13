@@ -220,7 +220,6 @@ def assemble_dic(traffic_event,event_info):
   # organise all info collected from rem_golem, also we assemble here the route based on the attack
   # for example which port to use depending on the traffic
   try:
-    print('hellorrr')
     ip_dest = traffic_event[1]['data'][0][0]; 
     ip_src = traffic_event[0]['data'][0][0] 
     source_port = traffic_event[2]['data'][0][0]; fd = source_port.find(':') ; src_port = source_port[fd+1::] 
@@ -251,7 +250,8 @@ def get_ip_address(ip):
   process = subprocess.Popen(["nslookup", ip], stdout=subprocess.PIPE)
   output = str(process.communicate()[0]).split("'")
   try:
-    helper = output[1].split("\\t"); h = helper[1].split("\\n")
+    helper = output[1].split("\\t")
+    h = helper[1].split("\\n")
     address = h[0].split("=")
     return address[1]
   except Exception as e:

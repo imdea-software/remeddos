@@ -14,7 +14,7 @@ from flowspec.helpers import *
 # through django-simple-history we will keep track of the changes and propose to change the route to a previous version
 
 class GolemAttack(models.Model):
-    id_name = models.CharField(max_length=50)
+    id_name = models.CharField(max_length=50,unique=True)
     peer = models.ForeignKey(Peer,blank=True,on_delete=models.CASCADE,null=True)
     #fk to route (we we'll create here a new proposition of route where it is just commited to the db)
     ip_src = models.GenericIPAddressField(default='0.0.0.0')
