@@ -1,5 +1,0 @@
-cgi-bin-test/test.cgi
-sites-enabled/000-default.conf
-sites-enabled/100-default-https.conf
-apache2.conf
-sites-available/000-default.conf
