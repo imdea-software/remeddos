@@ -351,7 +351,6 @@ $(document).ready( function(){
                      if (status == 'EXPIRED' || status == 'ADMININACTIVE' || status == 'INACTIVE' || status == 'DEACTIVATED' ){
                      	btn = '<a href="'+editurl+'" class="btn btn-outline-warning m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Reactivar" %}" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>';
                         btn = btn +'<a href="'+deleteroute+'" class="btn btn-outline-danger m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Eliminar regla de REM-E-DDOS" %}"><i class="bi-shield-fill-x text-dark"></i></a>';
-                        console.log('traza');
                      }
                      if (status == "OUTOFSYNC" ){
                      	btn = '<a href="'+editurl+'" class="btn btn btn-sm btn-outline-danger id="edit_button_{{route.pk}}">{% trans "Resincronizar" %}</a>';

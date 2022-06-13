@@ -23,10 +23,8 @@ from golem.helpers import *
 
 LOG_FILENAME = os.path.join(settings.LOG_FILE_LOCATION, 'celery_jobs.log')
 
-#slack channel 
-
-# FORMAT = '%(asctime)s %(levelname)s: %(message)s'
-# logging.basicConfig(format=FORMAT)
+FORMAT = '%(asctime)s %(levelname)s: %(message)s'
+logging.basicConfig(format=FORMAT)
 formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
 
 logger = logging.getLogger(__name__)
@@ -431,24 +429,28 @@ def post(anomaly_info, id_event):
     from golem.helpers import petition_geni
     import time
 
-    logger.info('Inside post task')
         # first we filter out the attack, it could belong to a registered peer or not, also there will be false positives (bursts attacks)
     if not anomaly_info['institution_name'] == 'Non-Home':
-        if anomaly_info['status'] == 'Open' or anomaly_info == 'Ongoing':
+        if anomaly_info['status'] == 'Open' or anomaly_info['status'] == 'Ongoing':
             # wait 90 sec for a get request, information won't be ready until a 1.30 min has passed
             time.sleep(90)
+            logger.info('right after the if sleep 90 sg ')
             event_ticket, event_info = petition_geni(id_event)
             traffic_event = event_ticket['response']['result']['data'][0]['traffic_characteristics']
             dic_regla = assemble_dic(traffic_event,event_info)
+            logger.info('diccionario regla: ', dic_regla)
+            logger.info('Inside post task 1')
             if not event_info['status'] == 'Recovered' and not event_info['status']=='Burst':
                  # get together all the relevant information into one dictionary in order to create the proposed route
                  # also registered the attack and the proposed route to the DB
+                logger.info('Inside post task 2')
                 peer = find_peer(dic_regla['institution_name'])
                 prt = traffic_event[4]['data'][0][0]
                 protocol = get_protocol(prt)
                 ip = get_ip_address(event_info['ip_attacked'])
                 link = get_link(dic_regla['id_attack'])
-                send_message(message = (f"Nuevo ataque DDoS contra el recurso '{ip}' con id {dic_regla['id_attack']}.. Consulte nuestra <https://remedios.redimadrid.es/|*web*> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link}."), peer=peer.peer_tag,superuser=False)  
+                logger.info('Inside post task 3x')
+                send_message(message = (f"Nuevo ataque DDoS contra el recurso '{ip}' con id {dic_regla['id_attack']} de tipo {dic_regla['typeofattack']}. Consulte nuestra <https://remedios.redimadrid.es/|*web*> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link}."), peer=peer.peer_tag,superuser=False)  
 
                 route_dic = {'name':dic_regla['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla['ip_dest'],'ipsrc':dic_regla['ip_src'],'protocol':protocol.pk,'tcpflag':dic_regla['tcp_flag'],'port':dic_regla['port']}
                 if peer:
@@ -479,10 +481,7 @@ def post(anomaly_info, id_event):
                         m_protocol = check_protocol(p1)
                         dic2 = {'name':dic_regla2['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla2['ip_dest'],'ipsrc':dic_regla2['ip_src'],'protocol':m_protocol.pk,'tcpflag':dic_regla2['tcp_flag'],'port':dic_regla2['port']}
                         create_route(id_event,dic2,peer.peer_tag)
-                        send_message(f"El ataque DDoS con id {dic_regla2['id_attack']}  a la institución {dic_regla2['institution_name']} persiste y hemos actualizado los datos del ataque. Consulte nuestra <https://remedios.redimadrid.es/|web> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link1}.", peer=peer.peer_tag,superuser=False)
-
-                        
-
+                        send_message(f"El ataque DDoS con id {dic_regla2['id_attack']} de tipo {dic_regla2['typeofattack']} a la institución {dic_regla2['institution_name']} persiste y hemos actualizado los datos del ataque. Consulte nuestra <https://remedios.redimadrid.es/|web> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link1}.", peer=peer.peer_tag,superuser=False)
                         recovered = True 
                         while recovered:
                             time.sleep(300)
@@ -499,7 +498,7 @@ def post(anomaly_info, id_event):
                                 attack.save()
                                 dic3 = {'name':dic_regla3['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla3['ip_dest'],'ipsrc':dic_regla3['ip_src'],'port':dic_regla3['port'],'protocol':m_protocol.pk,'tcpflag':dic_regla3['tcp_flag']}
                                 create_route(id_event,dic3,peer.peer_tag)
-                                send_message(message=(f"El ataque DDoS con id {dic_regla3['id_attack']} a la institución {institution_name} persiste y hemos actualizado los datos del ataque. Consulte nuestra <https://remedios.redimadrid.es/|web> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información siga el siguiente link: {link2}."),peer=peer.peer_tag,superuser=False)
+                                send_message(message=(f"El ataque DDoS con id {dic_regla3['id_attack']} de tipo {dic_regla3['typeofattack']} a la institución {institution_name} persiste y hemos actualizado los datos del ataque. Consulte nuestra <https://remedios.redimadrid.es/|web> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información siga el siguiente link: {link2}."),peer=peer.peer_tag,superuser=False)
                                 recovered = True
                             elif attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':
                                 id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']

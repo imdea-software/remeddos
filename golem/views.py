@@ -16,6 +16,20 @@ from .helpers import *
 import json
 import threading
 from flowspec.forms import *
+import logging
+
+
+LOG_FILENAME = os.path.join(settings.LOG_FILE_LOCATION, 'celery_jobs.log')
+
+FORMAT = '%(asctime)s %(levelname)s: %(message)s'
+logging.basicConfig(format=FORMAT)
+formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+handler = logging.FileHandler(LOG_FILENAME)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 # Create your views here.
 class ProcessWebHookView(CsrfExemptMixin, View):
@@ -27,9 +41,7 @@ class ProcessWebHookView(CsrfExemptMixin, View):
         try:
             post.apply_async((anomaly_info, id_event))
         except Exception as e:
-            print('WTF: ',e)
-        print('after post')
-        #post(anomaly_info, id_event) 
+            logger.info('Error while trying to analyze the golem event. Error: ',e)
         return HttpResponse()
 
 @verified_email_required
