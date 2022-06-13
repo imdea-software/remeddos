@@ -140,18 +140,18 @@
                 <div class="modal-body">
                   <div class="row">
                       <div class="col text-wrap">
-                      <p class="lh-base">Would you like to create a back up copy from the actual database?</p>  
+                      <p class="lh-base">¿Le gustaría crear una copia de la base de datos actual?</p>  
                       </div>
                   </div>
                 </div>
                 <div class="modal-footer m-2">
                   {% if user.is_authenticated %}
-                  <button type="button" class="btn btn-outline secondary" data-bs-dismiss="modal">Close</button>
+                  <button type="button" class="btn btn-outline secondary" data-bs-dismiss="modal">Cerrar</button>
                   <form action="{% url 'backup' %}">
                     <button type="submit" class="btn btn-outline-primary">Yes</button>
                   </form>
                     {% else %}
-                    <p>You need to identify yourelf first before performing any further actions.</p>
+                    <p>Necesita identificarse antes de realizar ninguna acción.</p>
                     {% endif %}
         </div>
       </div>

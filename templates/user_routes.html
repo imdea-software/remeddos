@@ -44,14 +44,14 @@
                         <thead class="">
                     <tr>
                         <th>Id</th>
-                        <th>Name</th>
-                        <th>Información</th>
-                        <th>Acción</th>
-                        <th>Estado</th>
-                        <th>Pertenece a</th>
-                        <th>Expira</th>
-                        <th>Respuesta</th>
-                        <th>Otros</th>
+                        <th><big>Nombre</big></th>
+                        <th><big>Información</big></th>
+                        <th><big>Acción</big></th>
+                        <th><big>Estado</big></th>
+                        <th><big>Pertenece a</big></th>
+                        <th><big>Estado</big></th>
+                        <th><big>Respuesta</big></th>
+                        <th><big>Otros</big></th>
                     </tr>
                 </thead>
 
@@ -216,7 +216,7 @@ $(document).ready( function(){
                      "mRender": function (data, type, full) {
                         if (full.comments !== null) {
                             if (!full.comments.trim()) {
-                               return '<small>' + data + '</small>';
+                               return  data;
                             }
                             
                             {% if request.COOKIES.token %}
@@ -232,12 +232,12 @@ $(document).ready( function(){
                      },
                      {"mData":"match", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
-                     	return '<small>'+data+'</small>';
+                     	return data;
                      }
                      },
                      {"mData":"then", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
-                     	return '<small>'+data+'</small>';
+                     	return data;
                      }
                      },
                      {"mData":"status", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
