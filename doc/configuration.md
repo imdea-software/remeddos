@@ -62,8 +62,7 @@ Subnets for which source or destination address will prevent rule creation and n
 	}
 
 ### Localization
-By default Flowspy has translations for English and Greek. In case you want to add
-another language, or remove one of the existing, you can change the `LANGUAGES`
+In case you want to add another language, or remove one of the existing, you can change the `LANGUAGES`
 variable and follow [django's localization documentation](https://docs.djangoproject.com/en/1.4/topics/i18n/translation/#localization-how-to-create-language-files)
 
 You might want to change `TIME_ZONE` setting too. Here is a [list](http://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
@@ -171,83 +170,37 @@ By doing so, you can serve your application like gunicord does just to test that
 
 Of course you have to stop gunicorn and make sure that port 8081 is free.
 
-#### Gunicorn
-Just curl from the server http://localhost:8081
 
-#### Celery
-In order to check if celery is working properly one can start celery by typing:
-
-	./manage.py celeryd --loglevel=debug
-
-Again this is for debug purposes.
-
-
-#### Connectivity to flowspec device
-Just try to connect with the credentials you entered in settings.py from the host that will be serving flowspy.
-
-
-#### General Test
-Log in to the admin interface via https://<hostname>/admin. Go to Peer ranges and add a new range (part of/or a complete subnet), eg. 10.20.0.0/19 Go to Peers and add a new peer, eg. id: 1, name: Test, AS: 16503, tag: TEST and move the network you have created from Available to Chosen. From the admin front, go to User, and edit your user. From the bottom of the page, select the TEST peer and save. Last but not least, modify as required the existing (example.com) Site instance (admin home->Sites). You are done. As you are logged-in via the admin, there is no need to go through Shibboleth at this time. Go to https://<hostname>/ and create a new rule. Your rule should be applied on the flowspec capable device after aprox. 10 seconds.
-
-## Footer
-Under the templates folder (templates), you can alter the footer.html
-file to include your own footer messages, badges, etc.
-
-## Welcome Page
-Under the templates folder (templates), you can alter the welcome page -
-welcome.html with your own images, carousel, videos, etc.
 
 ## Usage
 
 ### Web interface
 REMeDDoS comes with a web interface, in which one can edit and apply new routes.
 
-### Rest Api
-REMeDDoS provides a rest api. It uses token as authentication method.
 
-### Generating Tokens
-A user can generate a token for his account on "my profile" page from REMeDDoS's
-UI. Then by using this token in the header of the request he can list, retrieve,
-modify and create rules.
+### Docker - Commands
 
-### Example Usage
-Here are some examples:
+Build your docker-compose:
 
-#### GET items
-- List all the rules your user has created (admin users can see all the rules)
-
-            curl -X GET https://remeddos.example.com/api/routes/ -H 'Authorization: Token <Your users token>'
-
-- Retrieve a specific rule:
-
-            curl -X GET https://remeddos.example.com/api/routes/<rule_id>/ -H 'Authorization: Token <Your users token>'
-
-- In order to create or modify a rule you have to use POST/PUT methods.
-
-#### POST/PUT rules
-In order to update or create rules you can follow this example:
-
-##### Foreign Keys
-In order to create/modify a rule you have to connect the rule with some foreign keys:
-
-###### Ports, Fragmentypes, protocols, thenactions
-When creating a rule, one can specify:
-
-- source port
-- destination port
-- port (if source = destination)
-
-That can be done by getting the url of the desired port instance from `/api/ports/<port_id>/`
-
-Same with Fragmentypes in `/api/fragmenttypes/<fragmenttype_id>/`, protocols in `/api/matchprotocol/<protocol_id>/` and then actions in `/api/thenactions/<action_id>/`.
-
-Since we have the urls we want to connect with the rule we want to create, we can make a POST request like the following:
+	docker-compose build  // docker-compose up --build
 
 
-      curl -X POST -H 'Authorization: Token <Your users token>' -F "name=Example" -F "comments=Description" -F "source=0.0.0.0/0" -F "sourceport=https://remeddos.example.com/api/ports/7/" -F "destination=203.0.113.12" https://remeddos.example.com/api/routes/
+Run all services at once:
 
-And here is a PUT request example:
+	docker-compose up 
 
-      curl -X PUT -F "name=Example" -F "comments=Description" -F "source=0.0.0.0/0" -F "sourceport=https://remeddos.example.com/api/ports/7/" -F "destination=83.212.9.93" https://remeddos.example.com/api/routes/12/ -H  'Authorization: Token <Your users token>'
+Run an specific service:
 
+	docker-compose up <service_name>
+
+Create a new container to run a command for a specific service, the container will cease to exist once the command
+is executed.
+
+	docker-compose run --rm <service_name> <command> Example: docker-compose run --rm web python3 manage.py shell
+
+Stop a running docker-compose service: 
+
+	docker-compose stop 
+
+	If you want to stop an specific service you would specify it: docker-compose stop <service_name>
 
