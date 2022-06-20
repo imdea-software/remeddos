@@ -248,40 +248,6 @@
           </div>
         </div>
 
-
-         <!-- Commit to router Modal -->
-         <div class="modal fade" id="commitModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" role="dialog" aria-labelledby="commitModalLabel" aria-hidden="true">
-          <div class="modal-dialog" role="document">
-            <div class="modal-content">
-              <div class="modal-header">
-                    <h5 class="modal-title" id="commitModalLabel">Commit Route</h5>
-                        <button type="button" class="btn btn-sm close" data-bs-dismiss="modal" aria-label="Close">
-                          <span aria-hidden="true">&times;</span>
-                        </button>
-                      </div>
-                      <div class="modal-body">
-                        <div class="row">
-                            <div class="col text-wrap">
-                            <p class="lh-base">¿Estas seguro de querer activar esta regla de firewall?</p>  
-                            </div>
-                        </div>
-                      </div>
-                      <div class="modal-footer m-2">
-                        {% if user.is_authenticated %}
-                        <form action="{% url 'vcommit' %}" id="commit_route">
-                            {% csrf_token %}
-                              <button type="submit" class="btn btn-danger">Sí</button>
-                          </form>
-                          <button type="button" class="btn btn-dark" data-bs-dismiss="modal">No</button>
-                          {% else %}
-                          <p>Necesitas estar autenticado para poder realizar cualquier acción.</p>
-                          {% endif %}
-              </div>
-            </div>
-        </div>
-      </div>
-
-
 <!-- Core Scripts - Include with every page -->
 <!-- <script src="{% static 'theme/js/jquery-1.10.2.js' %}"></script>
 <script src="{% static 'js/jquery_csrf_protect.js' %}" type="text/javascript"></script> -->

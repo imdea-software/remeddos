@@ -96,7 +96,6 @@ def user_routes(request):
     user_routes = []
     for route in routes:
         if route.applier != None:
-            print(route)
             user_routes.append(route)
     return render(
         request,
@@ -274,7 +273,7 @@ def build_routes_json(groutes, is_superuser):
                             except UserProfile.DoesNotExist:
                                 rd['peer'] = ''
                         except Exception as e:
-                            print(e)
+                            logger.info('There has been an exception when building the routes json: ', e)
 
                     rd['expires'] = "%s" % r.expires
                     rd['response'] = "%s" % r.response
@@ -320,7 +319,7 @@ def build_routes_json(groutes, is_superuser):
                             except UserProfile.DoesNotExist:
                                 rd['peer'] = ''
                         except Exception as e:
-                            print(e)
+                            logger.info('There has been an exception when building the routes json: ', e)
                     rd['expires'] = "%s" % r.expires
                     rd['response'] = "%s" % r.response
                     group_routes.append(rd)
@@ -350,7 +349,7 @@ def verify_add_user(request):
                 try:
                     response.set_cookie('token',value=num,max_age=900) 
                 except Exception as e:
-                    print('There was an exception when trying to assign the token, ',e)
+                    logger.info('There was an exception when trying to assign the token, ',e)
                 return response      
         if request.method=='POST':
             form = ValidationForm(request.POST)
@@ -479,7 +478,7 @@ def verify_edit_user(request,route_slug):
         try:
             response.set_cookie('token',value=num,max_age=900) 
         except Exception as e:
-            print('There was an exception when trying to assign the token, ',e)
+            logger.info('There was an exception when trying to assign the token, ',e)
         return response
             
     if request.method=='POST':
@@ -508,7 +507,6 @@ def edit_route(request, route_slug):
     applier = request.user.pk
     username = request.user.username
     route_edit = get_specific_route(applier=request.user.username, peer=None, route_slug=route_slug)
-    print('A VER COJOJNES, ROUTE EDIT ',route_edit)
     applier_peer_networks = []
     if request.user.is_superuser:
         applier_peer_networks = PeerRange.objects.all()
@@ -563,7 +561,7 @@ def edit_route(request, route_slug):
                     route.commit_edit()
                     return HttpResponseRedirect(reverse("group-routes"))
         except Exception as e:
-            print('There has been an exception when trying to add a route: ', e)
+            logger.info('There has been an exception when trying to add a route: ', e)
             return HttpResponseRedirect(reverse("group-routes"))
         else:
             routename = route_edit.name  
@@ -1010,7 +1008,7 @@ def sync_router(request):
                         # check if the route is already in our DB
                 except Exception as e:                    
                     #message = 'Routes have already been syncronised.'
-                    print(f'Regla: {name_fw} ya ha está sincronizada con la base de datos.')
+                    logger.info(f'Regla: {name_fw} ya ha está sincronizada con la base de datos.')
             else:
                 # means that the route does not belong to the user's peer
                 pass

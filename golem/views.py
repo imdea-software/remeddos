@@ -43,18 +43,13 @@ class ProcessWebHookView(CsrfExemptMixin, View):
         id_event = message['event']['id']
         anomaly_ticket, anomaly_info = petition_geni(id_event)
         print('New webhook event, ', id_event)
-        print('anomaly ticket: ', anomaly_info)
         try:
             #post.apply_async((anomaly_info, id_event))
             task = Process(target=golem, args=(anomaly_info,id_event))
             task.start()
-            print('t1 ', id_event)
             
         except Exception as e:
-            print('t4 ', id_event)
             logger.info('Error while trying to analyze the golem event. Error: ',e)
-        #task.join()
-        print('t3 ', id_event)
         return HttpResponse()
 
 @verified_email_required
@@ -120,7 +115,7 @@ def delete_golem(request,golem_id):
 ##================= commit pending routes to router
 @verified_email_required
 @login_required
-def verify_commit_route(request):
+def verify_commit_route(request, route_slug):
     if request.is_ajax and request.method == "GET":
         if not 'token' in request.COOKIES:
             num = get_code()
@@ -133,7 +128,10 @@ def verify_commit_route(request):
                 send_message(msg,peer=None, superuser=True)
             else:
                 send_message(msg,peer,superuser=False)
-            response = JsonResponse({"valid":True}, status = 200)
+            form = ValidationForm(request.GET)
+            route = get_specific_route(applier=request.user.username,peer=None,route_slug=route_slug)
+            message = f"CUIDADO. Seguro que quiere aplicar la siguiente regla {route_slug}?"
+            response = render(request,'values/add_value.html', {'form': form, 'message':message,'status':'commit', 'route':route}) 
             try:
                 response.set_cookie('token',value=num,max_age=900) 
             except Exception as e:
@@ -146,7 +144,7 @@ def verify_commit_route(request):
             value = Validation.objects.latest('id')
             try:
                 if str(value) == str(code):
-                    url = reverse('commit')
+                    url = reverse('commit', kwargs={'route_slug': route_slug})
                     response = HttpResponseRedirect(url) 
                     return response
                 else:

@@ -28,8 +28,7 @@ def golem(anomaly_info, id_event):
 
     if not anomaly_info['institution_name'] == 'Non-Home':
         if anomaly_info['status'] == 'Open':
-            open_event(id_event)        
-
+            open_event(id_event)
     else:
         #event doesn't belong to peer
         pass

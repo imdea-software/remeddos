@@ -13,7 +13,7 @@
 
 <div class="row rows-cols-4 p-5">
     <div class="col">
-        <h5 class="fw-light text-right">Rules proposed for the attack <a href="{{link}}" class="text-danger" target="_blank" style="text-decoration:none;">  {{golem_name}}</a> </h5>
+        <h5 class="fw-light text-right">Reglas propuestas para mitigar el ataque: <a href="{{link}}" class="text-danger" target="_blank" style="text-decoration:none;">  {{golem_name}}</a> </h5>
     </div>
 </div>
 <div class="row">
@@ -48,8 +48,11 @@
                 <td>
                     <div class="col-2 btn-group d-inline">
                     {% if not route.status == 'ACTIVE' %}
-                    <a id="commitbutton" href="{% url 'commit' route.name %}" data-bs-toggle="modal" data-bs-target="#commitModal" data-name="{{route.name}}" class="btn m-1"><i class="bi bi-patch-plus text-warning"></i></a>  
-                    {% else %}
+                        {% if not request.COOKIES.token %}
+                            <a id="commitbutton" href="{% url 'vcommit' route.name %}" data-bs-toggle="tootltip" data-bs-placement="bottom" title="Commit Route" class="btn m-1"><i class="bi bi-patch-plus text-warning"></i></a>  
+                        {% else %}
+                            <a id="commitbutton" href="{% url 'commit' route.name %}" data-bs-toggle="tooltip"  data-bs-placement="bottom" title="Commit Route" class="btn m-1"><i class="bi bi-patch-plus text-warning"></i></a>  
+                    {% endif %}
                     {% endif %}
                     {% if not request.COOKIES.token %}
                     <a href="{% url 'edit-route' route.name  %}"  data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit rule" class="btn m-1"><i class="bi bi-pencil text-info"></i></a>

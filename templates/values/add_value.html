@@ -24,6 +24,9 @@
         {% if status == "delete" %}
         <h3 class="fw-light page-header ">Desea eliminar la siguiente regla de firewall:  <span class="text-info"> {{route.name}} </span> ?</h3>
         {% endif %}
+        {% if status == "commit" %}
+        <h3 class="fw-light page-header ">Desea configurar la siguiente regla de firewall:  <span class="text-info"> {{route.name}} </span> ?</h3>
+        {% endif %}
     </div>
 </div>
 

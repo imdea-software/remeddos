@@ -111,16 +111,18 @@ function avoidMultipleSubmitting(){
 </script>
 {% endblock %}
 {% block contentplaceholder %}
-<div class="container">
-            <div class="row p-5">
+<div class="container p-5">
+            <div class="row">
                 <div class="col">
-                    <h3 class="text-center"> {% if edit %}{% trans "Editar regla" %}: {{routename}} {% else %}{% trans "Configurar una nueva regla firewall" %}{% endif %}</h3>
+                    <h3 class="font-monospace text-left"> {% if edit %}{% trans "Editar regla" %}: {{routename}} {% else %}{% trans "Configurar una nueva regla firewall" %}{% endif %}</h3>
                 </div>
             </div>
 
     <div class="row">
-        <div class="col text-end">
-            <i class="fa fa-shield fa-fw "></i> <p class="text-monospace float-right"> Reglas de Firewall, aquellos campos marcados con (*) son obligatorios. </p>
+        <div class="col">
+			<div class="form-text">
+				<p class="text-info"> Reglas de Firewall, aquellos campos marcados con (*) son obligatorios. <i class="fa fa-shield fa-fw text-info"></i> </p>
+			</div>
         </div>
     </div>
     
@@ -146,6 +148,9 @@ function avoidMultipleSubmitting(){
                         {% if form.name.errors %} <span class="help-block"> {{ form.name.errors|join:", " }} </span>
                         {% endif %}
                         </div>
+						
+					</div>
+					<div class="form-text">
 						<p class="font-italic">No introducir un guión bajo (_) en el nombre.</p>
 					</div>
 			{% endif %}
@@ -187,8 +192,10 @@ function avoidMultipleSubmitting(){
 						{% render_field form.source class+="form-control form-control-md" placeholder=form.source.help_text %}
 						{% if form.source.errors %} <span class="help-block"> {{ form.source.errors|join:", " }} </span>
 						{% endif %}</div>
-					<div class="col col-3"><img src="{% static 'threat_source.png' %}" style="height: 30px;"/></div>
-					<p class="font-italic">Para aplicar una regla con un origen '0.0.0.0/0' dejar el campo vacio o introducir '0.0.0.0'</p> 					
+					<div class="col col-3"><img src="{% static 'threat_source.png' %}" style="height: 30px;"/></div>					
+					</div>
+					<div class="form-text">
+						<p class="font-italic">Para aplicar una regla con un origen '0.0.0.0/0' dejar el campo vacio o introducir '0.0.0.0'</p> 
 					</div>
                     
                     <div class="row p-1 mt-2">
@@ -214,8 +221,10 @@ function avoidMultipleSubmitting(){
                           	{% endif %}
 					</div>
 					</div>	
-					<p class="font-italic">Para seleccionar más de un protocolo utilizar Ctrl.</p>
                 </div>
+				<div class="form-text">
+					<p class="font-italic">Para seleccionar más de un protocolo utilizar Ctrl.</p>
+				</div>
 				
                 <div class="row p-1 mt-2">        
 						<div class="form-text {% if form.packetlength.errors %} has-error {% endif %}"></div>
@@ -310,8 +319,10 @@ function avoidMultipleSubmitting(){
 		            {% endif %}
 		        </div>
 				</div>
-				<p class="font-italic">Si no quieres que una regla caduque dejar el campo vacío, la duración debe ser mínimo de 1 día. </p>
 		        </div>
+				<div class="form-text">
+					<p class="font-italic">Si no quieres que una regla caduque dejar el campo vacío, la duración debe ser mínimo de 1 día. </p>
+				</div>
 
 
 			
