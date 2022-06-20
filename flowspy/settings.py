@@ -54,7 +54,7 @@ NETCONF_PORT=os.environ.get('NETCONF_PORT')
 
 
 
-DEBUG = True
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (

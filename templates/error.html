@@ -1,87 +1,177 @@
-{% extends "base.html" %}
-{% load widget_tweaks %}
 
-{% load i18n %}
-   {% block sidenav %}{% endblock %}
-   {% block extraheadbottom %}
-<style>
-	@media (min-width: 768px) {
-		#page-wrapper {
-		    border-left: none;
-		    margin: 0;
-		}
-}
-</style>
-{% endblock %}
-
-{% block title %}{% if error %}{% if inactive %}{% trans "Activation Pending" %}{% else %}{% trans "Error" %}{% endif %}{% endif %}{% endblock %}
-
-{% block pagejsbottom %}
-	<script type="text/javascript">
-	$(document).ready(function(){
-		$("#ttip").tooltip();
-		});
-	</script>
-{% endblock %}
-
-{% block contentplaceholder %}
-       <div class="container-fluid p-5">
-       <div class="row">
-                <div class="col">
-                    <h1 class="fw-light">{% if error %}{% if inactive %}{% trans "Activation Pending" %}{% else %}{% trans "Error" %}{% endif %}{% endif %}</h1>
-                </div>
-                <!-- /.col-lg-12 -->
-            </div>
-
-            <div class="row">
-                <div class="col">
-                	<div class="panel  {% if error %}{% if inactive %}panel-primary{% else %}panel-danger{% endif %}{% endif %}">
-                        <div class="panel-heading">
-                            <i class="fa fa-info-circle"></i> {% if error %}{% if inactive %}{% trans "Activation Pending" %}{% else %}{% trans "Error" %}{% endif %}{% endif %}
-                        </div>
-                        <!-- /.panel-heading -->
-                        <div class="panel-body">
-                        						<div class="alert {% if missing_attributes %}alert-danger{% else %}alert-info{% endif %}">
-					{% if missing_attributes %}
-						<p>{% trans "One or more required shibboleth attributes were not released towards this service" %}</p>
-						{% endif %}
-						<p>{% autoescape off %}{{error}}{% endautoescape %}</p>
-						{% if missing_attributes %}
-						<p>
-						{% trans "Required shibboleth attributes" %}:<br>
-						<ul>
-              {% if required_attributes_attribute_info__list %}
-                {% for attribute_info in required_attributes_attribute_info__list %}
-            <li>{{ attribute_info }}</li>
-                {% endfor %}
-              {% else %}
-						<li>eduPersonPrincipalName</li>
-						<li>mail</li>
-						<li>eduPersonEntitlement</li>
-              {% endif %}
-						</ul>
-						{% trans "Optional" %}:
-						<ul>
-              {% if optional_attributes_attribute_info__list %}
-                {% for attribute_info in optional_attributes_attribute_info__list %}
-            <li>{{ attribute_info }}</li>
-                {% endfor %}
-              {% else %}
-						<li>givenName</li>
-						<li>sn</li>
-              {% endif %}
-						</ul>
-						</p>
-						{% endif %}
+<style type="text/css">
+	* {
+		font-family: arial, freesans, clean, sans-serif;
+		font-size: 12px;
+	}
+	
+	html {
+		height: 100%;
+		color: black;
+	}
+	
+	#page_wrapper {
+		margin-left: auto;
+		margin-right: auto;
+		width: 1000px;
+		padding-top: 1em;
+	}
+	
+	
+	
+	a {
+		color: #4183C4;
+		text-decoration: none;
+		font-weight: bold;
+	}
+	
+	a:hover {
+		text-decoration: underline;
+	}
+	
+	
+	#header {
+		height: 85px;
+		margin: 0 auto;
+		width: 990px;
+	}
+	
+	.logoimg {
+		border: 0 none;
+		position: absolute;
+		left: 0;
+		top: 0;
+	}
+	
+	#header .grnetlogo {
+		left: 10px;
+		top: 18px;
+		position: relative;
+	}
+	
+	
+	
+	
+	.topmenuuser{
+		padding: 4px;
+	}
+	
+	
+	
+	body {
+		padding-bottom: 2em;
+		background: white;
+		margin: 0;
+	}
+	
+	#content {
+		width: 990px;
+		margin-left: auto;
+		margin-right: auto;
+		clear: both;
+		background: #fafafa;
+		 border: 2px solid #FFFFFF;
+		-moz-border-radius: 10px 10px 10px 10px;
+		border-raduis: 10px;
+		-webkit-border-radius: 10px;
+		-moz-box-shadow: 0 0 3px #AAAAAA;
+		-webkit-box-shadow: 0 0 3px #AAAAAA;
+		box-shadow: 0 0 3px #AAAAAA;
+		background-color: #F9F9F9;
+		overflow: hidden;
+		padding-bottom: 5px;
+		padding-left: 5px;
+		min-height: 200px;
+	}
+	
+	#title, #title a {
+		font-size: 18px;
+		font-weight: bold;
+		color: #656565;
+		top: 25px;
+		left: 50px;
+		position: relative;
+		width: 300px;	
+	}
+	
+	#menu {
+		height: 28px;
+		padding-top: 5px;
+	}
+	
+	#menu ul {
+		padding: 0;
+		margin: 0;
+		list-style-type: none;
+		display: inline;
+	}
+	
+	
+	
+	#footer, #footer a {
+		clear: both;
+		padding-top: 1em;
+		font-size: 0.9em;
+		text-align: center;
+	}
+	
+	#formcontent {
+		padding: 2px;
+		margin-bottom: 0;
+	}
+	
+	#formcontent a {
+		color: #4183C4;
+	}
+	
+	#formcontent input {
+		width: 6em;
+	
+	}
+	
+	
+	h3 {
+		font-size: 1.2em;
+	}
+	
+	
+	
+	</style>
+	
+	
+	{% block contentplaceholder %}
+		<div id="main">
+				<div id="header">
+					<a class="grnetlogo" href="#">
+						
+					</a>
+	
+					<div id="title">
+						<a href="#"></a>
 					</div>
-                        	</div>
-                        </div>
-                       </div>
-                      </div>
-                     </div>
-
-	{% endblock %}
-
-
-
-
+			
+	
+				</div>
+				<div id="content">
+					
+					
+	<div id="welcome" style="text-align:center;">
+	<h3>Este servicio no está disponible actualmente - Internal error</h3>
+	<p>Nuestros administradores han sido informados. Nos disculpamos por cualquier inconveniente.</p>
+	<p>Si el error persistiese porfavor contacta con el equipo de redimadrid.</p>
+	
+	
+	</div>
+	
+	
+	
+				</div>
+				
+				<div id="footer">
+				
+				<a href="http://www.redimadrid.es/" class="text-danger<!--  -->">RediMadrid</a> | <a href="#">Info</a> | <a href="#">Service Terms</a>
+	
+				</div>
+		</div>
+		{% endblock %}
+	

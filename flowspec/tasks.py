@@ -434,9 +434,7 @@ def daily_backup():
         for peer in peers:
             if not peer.peer_tag == 'Punch':
                 call_command('dumpdata', f'flowspec', format='json',output=f'_backup/{peer.peer_tag}/{peer.peer_tag}_{current_date}-{current_time}.json')
-                message = 'Copia de seguridad creada con éxito.'
-                send_message(message,peer=None,superuser=True)
-            
+                logger.info('Copia de seguridad creada con éxito.')
             else:
                 pass
     except Exception as e:
@@ -495,10 +493,9 @@ def restore_backups():
 
 
 
-
-#task for deleting attacks and routes that are a week old and not relevant
 @shared_task
 def delete_expired_events():
+    # task for deleting attacks and routes that are a week old and not relevant since the info will be saved in the rem-golem app
     from golem.models import GolemAttack
     from django.utils import timezone
     import datetime
@@ -508,7 +505,6 @@ def delete_expired_events():
     for event in golem_events:
         expired_date = event.received_at  + datetime.timedelta(days=5)
         if today > expired_date:
-            print('Event: ', event.id_name,' deleted.')
             event.delete()
 
 
