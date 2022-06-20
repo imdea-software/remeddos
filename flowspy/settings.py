@@ -52,9 +52,6 @@ NETCONF_USER=os.environ.get('NETCONF_USER')
 NETCONF_PASS=os.environ.get('NETCONF_PASS')
 NETCONF_PORT=os.environ.get('NETCONF_PORT')
 
-EMAIL_HOST_USER=os.environ.get('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD=os.environ.get('EMAIL_HOST_PASSWORD')
-
 
 
 DEBUG = True
@@ -168,9 +165,8 @@ ROOT_URLCONF = 'flowspy.urls'
 WSGI_APPLICATION = 'flowspy.wsgi.application'
 
 AUTHENTICATION_BACKENDS = (
-    'djangobackends.shibauthBackend.shibauthBackend',
     'django.contrib.auth.backends.ModelBackend',
-        'allauth.account.auth_backends.AuthenticationBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
 )
 
 INSTALLED_APPS = (
@@ -323,14 +319,14 @@ imports = ("flowspec.tasks",)
 #ENABLE_SETUP_VIEW = True
 
 # Notifications
-EMAIL_HOST='smtp.gmail.com'
-EMAIL_HOST_USER=EMAIL_HOST_USER
-EMAIL_HOST_PASSWORD=EMAIL_HOST_PASSWORD
-EMAIL_USE_TLS=True
-EMAIL_PORT=587
+EMAIL_HOST = os.environ.get('EMAIL_HOST')
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
 
 DISABLE_EMAIL_NOTIFICATION = False
-SERVER_EMAIL = "REMeDDOS Service (TEST) <redimadridalicia@gmail.com>"
+SERVER_EMAIL = "REMeDDOS Service"
 EMAIL_SUBJECT_PREFIX = "[REMeDDoS] "
 EXPIRATION_NOTIFY_DAYS = 4
 PREFIX_LENGTH = 29

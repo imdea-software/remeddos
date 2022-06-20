@@ -1073,40 +1073,70 @@ def routes_sync(request):
 def backup(request):
     now = datetime.datetime.now()
     user = request.user
-    peer_tag = get_peer_tag(user.username)
     current_time = now.strftime("%H:%M")
-    current_date = now.strftime("%d-%B-%Y") 
-    try:
-        call_command('dumpdata', f'flowspec.Route_{peer_tag}', format='json',output=f'_backup/{peer_tag}/{peer_tag}_backup_{current_date}_{current_time}.json')
-        message = 'Copia de seguridad creada con éxito.'
-        send_message(message,peer=None,superuser=True)
-        return render(request,'routes_synced.html',{'message':message}) 
-    except Exception as e:
-        message = ('Ha ocurrido un error intentando crear la copia de seguridad. %s'%e)
-        send_message(message,peer=None,superuser=True)
-        return render(request,'routes_synced.html',{'message':message})
+    current_date = now.strftime("%d-%B-%Y")
+    if request.user.is_superuser:   
+        try:
+            call_command('dumpdata', f'flowspec', format='json',output=f'_backup/REM_REMEDIOS/REM_backup_{current_date}_{current_time}.json')
+            message = 'Copia de seguridad creada con éxito.'
+            send_message(message,peer=None,superuser=True)
+            return render(request,'routes_synced.html',{'message':message}) 
+        except Exception as e:
+            message = ('Ha ocurrido un error intentando crear la copia de seguridad. %s'%e)
+            send_message(message,peer=None,superuser=True)
+            return render(request,'routes_synced.html',{'message':message})
+    else:
+        try:
+            peer_tag = get_peer_tag(user.username)
+            call_command('dumpdata', f'flowspec.Route_{peer_tag}', format='json',output=f'_backup/{peer_tag}/{peer_tag}_backup_{current_date}_{current_time}.json')
+            message = 'Copia de seguridad creada con éxito.'
+            send_message(message,peer=None,superuser=True)
+            return render(request,'routes_synced.html',{'message':message}) 
+        except Exception as e:
+            message = ('Ha ocurrido un error intentando crear la copia de seguridad. %s'%e)
+            send_message(message,peer=None,superuser=True)
+            return render(request,'routes_synced.html',{'message':message})
 
 @verified_email_required
 @login_required
 def restore_backup(request):
     user = request.user
-    peer_tag = get_peer_tag(user.username)
-    backup_dir = (settings.BACK_UP_DIR+peer_tag+'/')
-    if request.method=='GET':
-        CHOICES_FILES = []
-        for f in os.listdir(backup_dir):
-            CHOICES_FILES.append(f)
-        return render(request,'backup_menu.html',{'files':CHOICES_FILES})    
-    if request.method=='POST':
-        filename = request.POST.get("value", "")
-        fixture_path = (backup_dir+filename)
-        try:
-            call_command(f"loaddata",fixture_path)
-            message = 'La copia de seguridad ha sido restaurada con éxito, recomendamos en caso de caida también sincronizar su router con la base de datos.'
-            send_message(message,peer_tag,superuser=True)
-            return render(request,'routes_synced.html',{'message':message}) 
-        except Exception as e:
-            return render(request,'routes_synced.html')
+    
+    if request.user.is_superuser:
+        backup_dir = (settings.BACK_UP_DIR+'REM_REMEDIOS'+'/')
+        if request.method=='GET':
+            CHOICES_FILES = []
+            for f in os.listdir(backup_dir):
+                CHOICES_FILES.append(f)
+            return render(request,'backup_menu.html',{'files':CHOICES_FILES})    
+        if request.method=='POST':
+            filename = request.POST.get("value", "")
+            fixture_path = (backup_dir+filename)
+            try:
+                call_command(f"loaddata",fixture_path)
+                message = 'La copia de seguridad ha sido restaurada con éxito, recomendamos en caso de caida también sincronizar su router con la base de datos.'
+                send_message(message,peer_tag,superuser=True)
+                return render(request,'routes_synced.html',{'message':message}) 
+            except Exception as e:
+                return render(request,'routes_synced.html')
+    else:
+        peer_tag = get_peer_tag(user.username)
+        backup_dir = (settings.BACK_UP_DIR+peer_tag+'/')
+        if request.method=='GET':
+            CHOICES_FILES = []
+            for f in os.listdir(backup_dir):
+                CHOICES_FILES.append(f)
+            return render(request,'backup_menu.html',{'files':CHOICES_FILES})    
+        if request.method=='POST':
+            filename = request.POST.get("value", "")
+            fixture_path = (backup_dir+filename)
+            try:
+                call_command(f"loaddata",fixture_path)
+                message = 'La copia de seguridad ha sido restaurada con éxito, recomendamos en caso de caida también sincronizar su router con la base de datos.'
+                send_message(message,peer_tag,superuser=True)
+                return render(request,'routes_synced.html',{'message':message}) 
+            except Exception as e:
+                return render(request,'routes_synced.html')
             
 @verified_email_required
 @login_required

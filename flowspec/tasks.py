@@ -320,246 +320,32 @@ def routes_sync():
     notsynced_routes = list(diff)
     if notsynced_routes:
         for route in notsynced_routes:
-            peer_tag = get_peer_with_name(route)
-            route = get_specific_route(applier=None,peer=peer_tag,route_slug=route)
             try:
-                if (route.status == 'PENDING' or route.status == 'DEACTIVATED' or route.status == 'OUTOFSYNC' or route.status == 'ERROR' or route.status == None) and route.applier == None:
+                peer_tag = get_peer_with_name(route)
+                route = get_specific_route(applier=None,peer=peer_tag,route_slug=route)
+                if (route is not None) and (route.status == 'PENDING' or route.status == 'DEACTIVATED' or route.status == 'OUTOFSYNC' or route.status == 'ERROR' or route.status == None) and route.applier == None:
                     route.status = 'PENDING'
                     route.save()
-                if (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):
+                if (route is not None) and (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):
                     route.commit_add()
                     message = ('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
                     send_message(message,peer_tag,superuser=False)
                 else:
                     if (route.has_expired()==True) or (route.status == 'EXPIRED' or route.status != 'ADMININACTIVE' or route.status != 'INACTIVE'):
-                        message = ('Route: %s route status: %s'%(route.status, route.name))
-                        send_message(message,peer_tag,superuser=False)
+                        #message = ('Route: %s route status: %s'%(route.status, route.name))
+                        #send_message(message,peer_tag,superuser=False)
                         route.check_sync()                  
             except Exception as e:
-                print('There was an exception when trying to sync the routes route: ', e)           
+                logger.info('There was an exception when trying to sync the routes route: ', e)           
     else:
-        message = ('There are no routes out of sync')
-        send_message(message, peer_tag,superuser=False)
+        pass
+        #message = ('There are no routes out of sync')
+        #send_message(message, peer_tag,superuser=False)
 
-
-@shared_task
-def check_golem_events():
-    from golem.models import GolemAttack
-    from golem.helpers import petition_geni
-
-    golem_events = GolemAttack.objects.all()
-    for golem in golem_events:
-        if golem.status == 'Ongoing' :
-            event_ticket, attack_info = petition_geni(id_event=golem.id_name)
-            post(attack_info,golem.id_name)
-        else:
-            pass
-
-
-@shared_task
-def create_route(golem_id,route_dic,peer):
-    from flowspec.helpers import get_route,find_routes
-    from golem.models import GolemAttack
-    from peers.models import Peer
-
-    #ip origen, ip destino, protocolo, puerto (que mas trafico tenga), la tcp flag q mas trafico que tenga, 
-    #el tcp-flag si el protocolo es udp debe ser descartado porque siempre va a ser 0
-    peers = Peer.objects.get(peer_tag=peer)
-    golem_routes = []
-    try:
-        routes = find_routes(applier=None, peer=peer)
-        route = get_route(applier=None,peer=peer)
-        for r in routes:
-            name = r.name
-            fd = name.find('_')
-            if golem_id == name[:fd] :
-                golem_routes.append(r)
-                #busqueda de todas las reglas, ver si alguna tiene el nombre del ataque
-                #cuantas hay, dependiendo de cuantas crear 1,2,3
-        if len(golem_routes)==0:
-            try: 
-                route.name = route_dic['name']+'_1'
-                route.peer = peers
-                route.status = 'PENDING'
-                if route_dic['protocol'] == 'tcp':
-                    tcpflag = golem_translate_tcpflag(route_dic['tcpflag'])
-                    route.source,route.destination,route.port,route.tcpflag = route_dic['ipsrc'],route_dic['ipdest'],route_dic['port'], tcpflag
-                    route.save()
-                else: 
-                    route.source,route.destination,route.port = route_dic['ipsrc'],route_dic['ipdest'],route_dic['port']
-                    route.save()
-                route.protocol.add(route_dic['protocol'])
-                g = GolemAttack.objects.get(id_name=golem_id)
-                g.set_route(route)
-                g.save()
-                return route
-            except Exception as e:
-                print('An exception happened: ',e)
-        else:
-            sorted_routes = [route.name for route in golem_routes]
-            last_element = sorted_routes[-1]
-            n = last_element[-1]
-            num = (int(n)+1)
-            dicname = route_dic['name']
-            name = str(f"{dicname}_{num}")
-            route.name = name
-            route.peer = peers
-            route.status = 'PENDING'
-            if route_dic['protocol'] == 'tcp':
-                tcpflag = golem_translate_tcpflag(route_dic['tcpflag'])
-                route.source,route.destination,route.port,route.tcpflag = route_dic['ipsrc'],route_dic['ipdest'],route_dic['port'], tcpflag
-                route.save()
-            else:
-                route.source,route.destination,route.port = route_dic['ipsrc'],route_dic['ipdest'],route_dic['port']
-                route.save()
-            route.protocol.add(route_dic['protocol'])
-            g = GolemAttack.objects.get(id_name=golem_id)
-            g.set_route(route)
-            g.save()
-            return route
-    except MultipleObjectsReturned:
-        print('Route has already being commited to the router')
-        return None
-
-
-@shared_task
-def post(anomaly_info, id_event):
-    from flowspec.models import MatchProtocol
-    from golem.models import GolemAttack
-    from golem.helpers import petition_geni
-    import time
-
-        # first we filter out the attack, it could belong to a registered peer or not, also there will be false positives (bursts attacks)
-    if not anomaly_info['institution_name'] == 'Non-Home':
-        if anomaly_info['status'] == 'Open' or anomaly_info['status'] == 'Ongoing':
-            # wait 90 sec for a get request, information won't be ready until a 1.30 min has passed
-            time.sleep(90)
-            logger.info('right after the if sleep 90 sg ')
-            event_ticket, event_info = petition_geni(id_event)
-            traffic_event = event_ticket['response']['result']['data'][0]['traffic_characteristics']
-            dic_regla = assemble_dic(traffic_event,event_info)
-            if not event_info['status'] == 'Recovered' and not event_info['status']=='Burst':
-                 # get together all the relevant information into one dictionary in order to create the proposed route
-                 # also registered the attack and the proposed route to the DB
-                peer = find_peer(dic_regla['institution_name'])
-                prt = traffic_event[4]['data'][0][0]
-                protocol = get_protocol(prt)
-                ip = get_ip_address(event_info['ip_attacked'])
-                link = get_link(dic_regla['id_attack'])
-                if peer:
-                    send_message(message = (f"Nuevo ataque DDoS contra el recurso '{ip}' con id {dic_regla['id_attack']} de tipo {dic_regla['typeofattack']}. Consulte nuestra <https://remedios.redimadrid.es/|*web*> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link}."), peer=peer.peer_tag,superuser=False)  
-                    route_dic = {'name':dic_regla['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla['ip_dest'],'ipsrc':dic_regla['ip_src'],'protocol':protocol.pk,'tcpflag':dic_regla['tcp_flag'],'port':dic_regla['port']}
-                    try:
-                        geni_attack = GolemAttack.objects.get(id_name=dic_regla['id_attack'])
-                        geni_attack.peer=peer; geni_attack.ip_src = dic_regla['ip_src']; geni_attack.port=dic_regla['port']; geni_attack.tcpflag=dic_regla['tcp_flag']; geni_attack.status = dic_regla['status']; geni_attack.max_value=dic_regla['max_value'];geni_attack.threshold_value=dic_regla['th_value']; geni_attack.typeof_attack=dic_regla['typeofattack'];geni_attack.typeof_value=dic_regla['typeofvalue'];geni_attack.link=link
-                        geni_attack.save()
-                    except GolemAttack.DoesNotExist:
-                        geni_attack = GolemAttack(id_name=dic_regla['id_attack'], peer=peer, ip_src = dic_regla['ip_src'], port=dic_regla['port'], tcpflag=dic_regla['tcp_flag'], status = dic_regla['status'], max_value=dic_regla['max_value'],threshold_value=dic_regla['th_value'], typeof_attack=dic_regla['typeofattack'],typeof_value=dic_regla['typeofvalue'],link=link)
-                        geni_attack.save()
-                    create_route(dic_regla['id_attack'],route_dic, peer.peer_tag)
-                    if isinstance(protocol,(list)):
-                        for p in protocol:
-                            fs = p.find('(')
-                            prot, created = MatchProtocol.objects.get_or_create(protocol=p[:fs].lower())
-                            geni_attack.protocol.add(prot.pk)
-                        geni_attack.save()
-                    else:
-                        p=get_protocol(protocol)
-                        geni_attack.protocol.add(p.pk)
-                        geni_attack.save()
-                    # wait a bit more to check if the attack is still going, if it is, the program will proposed another route
-                    time.sleep(210)
-                    event_data, info = petition_geni(id_event)
-                    if info['status'] != 'Recovered' and info['status'] !='Burst':
-                        tf_char = event_data['response']['result']['data'][0]['traffic_characteristics']
-                        dic_regla2 = assemble_dic(tf_char,info)
-                        link1 = get_link(id_event)
-                        attack = GolemAttack.objects.get(id_name=id_event)
-                        attack.status, attack.max_value, attack.threshold_value,attack.link = dic_regla2['status'], dic_regla2['max_value'], dic_regla2['th_value'], link1
-                        attack.save()
-                        p1 = tf_char[4]['data'][0][0]
-                        m_protocol = check_protocol(p1)
-                        dic2 = {'name':dic_regla2['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla2['ip_dest'],'ipsrc':dic_regla2['ip_src'],'protocol':m_protocol.pk,'tcpflag':dic_regla2['tcp_flag'],'port':dic_regla2['port']}
-                        create_route(id_event,dic2,peer.peer_tag)
-                        send_message(f"El ataque DDoS con id {dic_regla2['id_attack']} de tipo {dic_regla2['typeofattack']} a la institución {dic_regla2['institution_name']} persiste y hemos actualizado los datos del ataque. Consulte nuestra <https://remedios.redimadrid.es/|web> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link1}.", peer=peer.peer_tag,superuser=False)
-                        recovered = True 
-                        while recovered:
-                            time.sleep(300)
-                            attack_data, attack_info = petition_geni(id_event)
-                            if attack_info['status'] != 'Recovered' and attack_info != 'Burst':
-                                 # wait 4 min 
-                                # rule proposition and send email to user
-                                # repeat process every 5 min until status equals 'recovered'
-                                traffic_data = attack_data['response']['result']['data'][0]['traffic_characteristics']
-                                dic_regla3 = assemble_dic(traffic_data,attack_info)
-                                link2 = get_link(id_event)                                
-                                attack = GolemAttack.objects.get(id_name=id_event)
-                                attack.status, attack.max_value, attack.threshold_value,attack.link = dic_regla3['status'], dic_regla3['max_value'], dic_regla3['th_value'], link2
-                                attack.save()
-                                dic3 = {'name':dic_regla3['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla3['ip_dest'],'ipsrc':dic_regla3['ip_src'],'port':dic_regla3['port'],'protocol':m_protocol.pk,'tcpflag':dic_regla3['tcp_flag']}
-                                create_route(id_event,dic3,peer.peer_tag)
-                                send_message(message=(f"El ataque DDoS con id {dic_regla3['id_attack']} de tipo {dic_regla3['typeofattack']} a la institución {institution_name} persiste y hemos actualizado los datos del ataque. Consulte nuestra <https://remedios.redimadrid.es/|web> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información siga el siguiente link: {link2}."),peer=peer.peer_tag,superuser=False)
-                                recovered = True
-                            elif attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':
-                                id_attack, status, severity_type, max_value, th_value, attack_name, institution_name, initial_date, ip_attacked = attack_info['id'], attack_info['status'], attack_info['severity'], attack_info['max_value'], attack_info['threshold_value'] , attack_info['attack_name'], attack_info['institution_name'], attack_info['initial_date'], attack_info['ip_attacked']
-                                attack = GolemAttack.objects.get(id_name=id_event)
-                                attack.status, attack.max_value, attack.threshold_value = status, max_value, th_value
-                                attack.save()
-                                send_message(message=(f"El ataque DDoS con id {id_attack} a la institución {institution_name} ha terminado. Más información en <https://remedios.redimadrid.es/|REMeDDoS> o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
-                                recovered = False
-                                break
-                    else:
-                        if info['status'] == 'Recovered' or info['status']=='Burst':
-                            # send message to slack saying the attack has finished
-                            attack = GolemAttack.objects.get(id_name=id_event)
-                            if not attack.status == 'Recovered':
-                                id_att, status, max_value, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
-                                peer = find_peer(institution_name)                           
-                                send_message(message=(f"El ataque DDoS con id {id_att} a la institución {institution_name} ha terminado. Más información en <https://remedios.redimadrid.es/|REMeDDoS> o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
-                            else:
-                                pass                  
-                else:
-                    #The peer that has suffered the attack is not connected to REM-e-DDoS
-                    pass
-        elif anomaly_info['status']=='Burst':
-            try:
-                # check if it's recovered and already in database to inform the attack is over
-                attack = GolemAttack.objects.get(id_name=id_event)
-                if not attack.status == 'Recovered':
-                    event, info = petition_geni(id_event)
-                    id_att, status, max_value, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
-                    peer = find_peer(institution_name)
-                    attack.status = status
-                    attack.max_value = max_value
-                    attack.threshold_value = th_value
-                    attack.save()
-                    send_message(message=(f"El ataque DDoS con {info['id']} a la institución {institution_name} ha terminado. Más información en <https://remedios.redimadrid.es/|*REMeDDoS*> o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
-                else: 
-                    pass
-            except ObjectDoesNotExist: pass           
-        elif anomaly_info['status'] == 'Recovered': 
-            # check if it's recovered and already in database to inform the attack is over
-            try:
-                attack = GolemAttack.objects.get(id_name=id_event)
-                if not attack.status == 'Recovered':
-                    event, info = petition_geni(id_event)
-                    id_att, status, max_value, th_value, name, institution_name, initial_date, ip_att = info['id'], info['status'],  info['max_value'], info['threshold_value'] , info['attack_name'], info['institution_name'], info['initial_date'], info['ip_attacked']
-                    peer = find_peer(institution_name)
-                    attack.status = status
-                    attack.max_value = max_value
-                    attack.threshold_value = th_value
-                    attack.save()      
-                    send_message(message=(f"El ataque DDoS con id {id_att} a la institución {institution_name} ha terminado. Más información en <https://remedios.redimadrid.es/|*REMeDDoS*> o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
-                else: 
-                    pass
-            except ObjectDoesNotExist:
-                # the attack was not important to be saved inside the DB
-                pass     
-   
-
-   ## check that the routes that are configured on the router are found on the db
+ 
 @shared_task
 def sync_router():
+      ## check that the routes that are configured on the router are found on the db
     from peers.models import Peer
     from flowspec.models import MatchProtocol,ThenAction
     from flowspec.helpers import get_routes_router, get_route
@@ -568,14 +354,7 @@ def sync_router():
     peers = Peer.objects.all()
     users = UserProfile.objects.all()
     for peer in peers:
-        """ if not user.user.is_superuser:
-            username = user.user.username """
             # find what peer organisation does the user belong to
-        """peers = user.peers.all()
-            peer = [peer for peer in peers]
-            peer = peer[0]
-            applier = user.user;
-            """
             # first initialize all the needed vars    
         routes = get_routes_router() ; fw_rules = []; message = ''
             # for getting the route parameters is needed to run through the xml 
@@ -639,6 +418,83 @@ def sync_router():
                     pass
         print(f'Database syncronised {peer.peer_name}')
     
+
+
+@shared_task
+def daily_backup():
+    import datetime
+    from django.core.management import call_command
+    from peers.models import Peer
+
+    peers = Peer.objects.all()
+    now = datetime.datetime.now()
+    current_time = now.strftime("%H:%M")
+    current_date = now.strftime("%d-%B-%Y")
+    try:
+        for peer in peers:
+            if not peer.peer_tag == 'Punch':
+                call_command('dumpdata', f'flowspec', format='json',output=f'_backup/{peer.peer_tag}/{peer.peer_tag}_{current_date}-{current_time}.json')
+                message = 'Copia de seguridad creada con éxito.'
+                send_message(message,peer=None,superuser=True)
+            
+            else:
+                pass
+    except Exception as e:
+        message = ('Ha ocurrido un error intentando crear la copia de seguridad. from %s'%e)
+        send_message(message,peer=peer.peer_tag,superuser=False)
+
+@shared_task
+def expired_backups():
+    from django.core.management import call_command
+    from peers.models import Peer
+    from flowspy.settings import BACK_UP_DIR
+    import os
+    import datetime
+
+    peers = Peer.objects.all()
+    fixture = ''
+
+    for peer in peers: 
+        if not peer.peer_tag == 'Punch':
+            backup_dir = (f"{BACK_UP_DIR}{peer.peer_tag}/")
+            for f in os.listdir(backup_dir):
+                fixture = (backup_dir+f)
+                fd = f.find('_')
+                p1 = f[fd+1:]
+                fd2 = p1.find('.')        
+                date = p1[:fd2]            
+                date_obj = datetime.datetime.strptime(date, '%d-%B-%Y-%H:%M')
+                expired_date = date_obj + datetime.timedelta(days=30)
+                if date_obj > expired_date:
+                    os.remove(fixture)
+                else:
+                    pass                    
+        else:
+            pass
+
+@shared_task 
+def restore_backups():
+    from django.core.management import call_command
+    from peers.models import Peer
+    from flowspy.settings import BACK_UP_DIR
+    import os
+    import datetime
+
+    peers = Peer.objects.all()
+    backup_files = []
+    fixture = ''
+
+    for peer in peers: 
+        backup_dir = (BACK_UP_DIR+{peer.peer_tag}+'/')
+        for f in os.listdir(backup_dir):
+            backup_files.append(f)
+        for files in backup_files:
+            fixture = (backup_dir+files)
+            call_command(f"loaddata",fixture)
+            message = 'BBDD restaurada'
+
+
+
 
 #task for deleting attacks and routes that are a week old and not relevant
 @shared_task

@@ -43,7 +43,12 @@ services:
     worker:
         build: .
         command: >
-            sh -c "celery --app=flowspy worker -l INFO --logfile=/var/log/fod/celery_jobs.log -c 2 -n worker_service"
+            sh -c "
+            celery -A flowspy worker -l INFO --logfile=/var/log/fod/celery_jobs.log &&
+            celery -A flowspy worker --concurrency=100 &&
+            celery -A flowspy worker --concurrency=100 -P gevent &&
+            celery worker --autoscale=10,0"
+
         restart: always
         depends_on: 
             - redis

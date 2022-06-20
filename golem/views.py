@@ -1,3 +1,4 @@
+from asyncio import tasks
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.views.generic import View 
@@ -7,10 +8,14 @@ from allauth.account.decorators import verified_email_required
 from django.views.decorators.cache import never_cache
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 
+from multiprocessing import Process
+
+from golem.tasks import golem
+
 
 from .models import *
 
-from flowspec.tasks import post 
+
 from peers.models import *
 from .helpers import *
 import json
@@ -38,10 +43,18 @@ class ProcessWebHookView(CsrfExemptMixin, View):
         id_event = message['event']['id']
         anomaly_ticket, anomaly_info = petition_geni(id_event)
         print('New webhook event, ', id_event)
+        print('anomaly ticket: ', anomaly_info)
         try:
-            post.apply_async((anomaly_info, id_event))
+            #post.apply_async((anomaly_info, id_event))
+            task = Process(target=golem, args=(anomaly_info,id_event))
+            task.start()
+            print('t1 ', id_event)
+            
         except Exception as e:
+            print('t4 ', id_event)
             logger.info('Error while trying to analyze the golem event. Error: ',e)
+        #task.join()
+        print('t3 ', id_event)
         return HttpResponse()
 
 @verified_email_required

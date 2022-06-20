@@ -44,14 +44,14 @@
                         <thead class="">
                     <tr>
                         <th>Id</th>
-                        <th>Name</th>
-                        <th>Información</th>
-                        <th>Acción</th>
-                        <th>Estado</th>
-                        <th>Pertenece a</th>
-                        <th>Expira</th>
-                        <th>Respuesta</th>
-                        <th>Otros</th>
+                        <th><big>Nombre</big></th>
+                        <th><big>Información</big></th>
+                        <th><big>Acción</big></th>
+                        <th><big>Estado</big></th>
+                        <th><big>Pertenece a</big></th>
+                        <th><big>Estado</big></th>
+                        <th><big>Respuesta</big></th>
+                        <th><big>Otros</big></th>
                     </tr>
                 </thead>
 
@@ -69,7 +69,7 @@
                         <div class="card-body">
                             <div class="card-text btn-group">
                             {% if not request.COOKIES.token %}
-                            <a class="btn btn-sm btn-outline-dark float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
+                            <a class="btn btn-sm btn-outline-dark float-left addbutton" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
                             {% else %}
                             <a href="{% url 'add' %}" class="btn btn-outline-dark btn-sm float-left" id="routebutton"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
                             {% endif %}
@@ -93,7 +93,7 @@
 
 <script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.3/datatables.min.js"></script>
 <script type="text/javascript">
-$('#addbutton').click(function(){
+$('.addbutton').click(function(){
       $.ajax({
               url: "{% url 'add-route' %}",
               type: "GET",
@@ -216,7 +216,7 @@ $(document).ready( function(){
                      "mRender": function (data, type, full) {
                         if (full.comments !== null) {
                             if (!full.comments.trim()) {
-                               return '<small>' + data + '</small>';
+                               return  data;
                             }
                             
                             {% if request.COOKIES.token %}
@@ -232,17 +232,18 @@ $(document).ready( function(){
                      },
                      {"mData":"match", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
-                     	return '<small>'+data+'</small>';
+                     	return data;
                      }
                      },
                      {"mData":"then", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
-                     	return '<small>'+data+'</small>';
+                     	return data;
                      }
                      },
                      {"mData":"status", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
                      	var status = data;
+                         console.log('THIS IS THE STATUS: '+ data)
                      	if (status == "EXPIRED" ||status == "ADMININACTIVE" || status == "INACTIVE" || status == "OUTOFSYNC"){
                      		if (status == "EXPIRED" ||status == "ADMININACTIVE" || status == "INACTIVE" ){
                      			return '<span class="badge pill bg-dark">DESACTIVADA</span>';

@@ -42,12 +42,11 @@ def send_new_mail(subject, message, from_email, recipient_list, bcc_list):
 
 
 def send_message(message, peer=None, superuser=False):
-  slack_channels = {'CEU':'C03GQM0MN0K','CIB':'C03GA4HK8FR','CSIC':'C03HEF23RAL','CUNEF':'C03H3B3G3G9','CV':'C03GQMFQ519','IMDEA':'C03H3B7GBND','IMDEA_NET':'C03GJ3M124E',
+  slack_channels = {'CEU':'C03GQM0MN0K','CIB':'C03GA4HK8FR','CSIC':'C03HEF23RAL','CUNEF':'C03H3B3G3G9','CV':'C03GQMFQ519','IMDEA':'C03H3B7GBND','IMDEANET':'C03GJ3M124E',
   'Punch':'C03H3B7GBND','UAH':'C03H3B9BTGR','UAM':'C03GQML0JP5','UC3M':'C03GQN6P9MG','UCM':'C03GJ3RENLE','UEM':'C03H3BE7EBB',
   'UNED':'C03GA56STTR','UPM':'C03GJ3W32KY', 'URJC':'C03GJ3X931C'}
   # if there is no peer, the message will be sent to the default testing slack channel, the one used for redimadrid staff
   if not peer or superuser:
-    print('vars : ', settings.SLACK_CHANNEL, settings.SLACK_TOKEN)
     client = slack.WebClient(token=settings.SLACK_TOKEN)
     client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
   else:
@@ -374,7 +373,7 @@ def find_route_pk(applier, pk):
   from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   route = {
     'Punch': Route.objects.get(id=pk), 'IMDEA': Route_IMDEA.objects.get(id=pk), 'CV': Route_CV.objects.get(id=pk), 'CIB' : Route_CIB.objects.get(id=pk),'CSIC' : Route_CSIC.objects.get(id=pk),
-  'CEU' : Route_CEU.objects.get(id=pk),'CUNEF' : Route_CUNEF.objects.get(id=pk),'IMDEA_NET': Route_IMDEANET.objects.get(id=pk), 'UAM' : Route_UAM.objects.get(id=pk),'UC3M' : Route_UC3M.objects.get(id=pk),
+  'CEU' : Route_CEU.objects.get(id=pk),'CUNEF' : Route_CUNEF.objects.get(id=pk),'IMDEANET': Route_IMDEANET.objects.get(id=pk), 'UAM' : Route_UAM.objects.get(id=pk),'UC3M' : Route_UC3M.objects.get(id=pk),
     'UCM' : Route_UCM.objects.get(id=pk),'UAH' : Route_UAH.objects.get(id=pk),'UEM' : Route_UEM.objects.get(id=pk),'UNED' : Route_UNED.objects.get(id=pk),'UPM' : Route_UPM.objects.get(id=pk),'URJC' : Route_URJC.objects.get(id=pk),
   }
   peer_tag = get_peer_tag(applier)
@@ -391,7 +390,7 @@ def find_routes(applier=None, peer=None):
     'CSIC' : Route_CSIC.objects.all(),
     'CEU' : Route_CEU.objects.all(),
     'CUNEF' : Route_CUNEF.objects.all(),
-    'IMDEA_NET': Route_IMDEANET.objects.all(),
+    'IMDEANET': Route_IMDEANET.objects.all(),
     'UAM' : Route_UAM.objects.all(),
     'UC3M' : Route_UC3M.objects.all(),
     'UCM' : Route_UCM.objects.all(),
@@ -433,7 +432,7 @@ def get_route(applier,peer):
     'CSIC' : Route_CSIC(),
     'CEU' : Route_CEU(),
     'CUNEF' : Route_CUNEF(),
-    'IMDEA_NET': Route_IMDEANET(),
+    'IMDEANET': Route_IMDEANET(),
     'UAM' : Route_UAM(),
     'UC3M' : Route_UC3M(),
     'UCM' : Route_UCM(),
@@ -461,7 +460,7 @@ def get_edit_route(applier,rname=None):
     'CSIC' : Route_CSIC,
     'CEU' : Route_CEU,
     'CUNEF' : Route_CUNEF,
-    'IMDEA_NET': Route_IMDEANET,
+    'IMDEANET': Route_IMDEANET,
     'UAM' : Route_UAM,
     'UC3M' : Route_UC3M,
     'UCM' : Route_UCM,
@@ -500,7 +499,7 @@ def find_edit_post_route(applier, data, route_edit):
     'CSIC' : Route_CSICForm(data, instance=route_edit),
     'CEU' : Route_CEUForm(data, instance=route_edit),
     'CUNEF' : Route_CUNEFForm(data, instance=route_edit),
-    'IMDEA_NET': Route_IMDEANETForm(data, instance=route_edit),
+    'IMDEANET': Route_IMDEANETForm(data, instance=route_edit),
     'UAM' : Route_UAMForm(data, instance=route_edit),
     'UC3M' : Route_UC3MForm(data, instance=route_edit),
     'UCM' : Route_UCMForm(data, instance=route_edit),
@@ -524,7 +523,7 @@ def find_get_form(applier):
     'CSIC' : Route_CSICForm(),
     'CEU' : Route_CEUForm(),
     'CUNEF' : Route_CUNEFForm(),
-    'IMDEA_NET': Route_IMDEANETForm(),
+    'IMDEANET': Route_IMDEANETForm(),
     'UAM' : Route_UAMForm(),
     'UC3M' : Route_UC3MForm(),
     'UCM' : Route_UCMForm(),
@@ -548,7 +547,7 @@ def find_post_form(applier, data):
     'CSIC' : Route_CSICForm(data),
     'CEU' : Route_CEUForm(data),
     'CUNEF' : Route_CUNEFForm(data),
-    'IMDEA_NET': Route_IMDEANETForm(data),
+    'IMDEANET': Route_IMDEANETForm(data),
     'UAM' : Route_UAMForm(data),
     'UC3M' : Route_UC3MForm(data),
     'UCM' : Route_UCMForm(data),
@@ -573,7 +572,7 @@ def get_instance_form(applier, route):
     'CSIC' : Route_CSICForm(instance=route),
     'CEU' : Route_CEUForm(instance=route),
     'CUNEF' : Route_CUNEFForm(instance=route),
-    'IMDEA_NET': Route_IMDEANETForm(instance=route),
+    'IMDEANET': Route_IMDEANETForm(instance=route),
     'UAM' : Route_UAMForm(instance=route),
     'UC3M' : Route_UC3MForm(instance=route),
     'UCM' : Route_UCMForm(instance=route),
@@ -628,7 +627,7 @@ def get_specific_route(applier,peer, route_slug):
         return route
       except ObjectDoesNotExist:
         logger.info('There has been an error when trying to find the route')
-    elif peer_tag == 'IMDEA_NET':
+    elif peer_tag == 'IMDEANET':
       try:
         route = Route_IMDEANET.objects.get(name=route_slug)
         return route
@@ -741,7 +740,7 @@ def get_specific_route_pk(username, pk):
           return route
         except ObjectDoesNotExist:
           check = True
-      elif peer_tag == 'IMDEA_NET':
+      elif peer_tag == 'IMDEANET':
         try:
           route = Route_IMDEANET.objects.get(id=pk)
           check = False
@@ -818,16 +817,16 @@ def find_peer(peer_name):
   find = peer_name.find('_')
   pn = peer_name[find+1::]
   print('pn: ',pn,' peer_name: ',peer_name)
-  peers = ['CV', 'CIB', 'CSIC', 'CEU', 'CUNEF', 'IMDEA_NET', 'IMDEA', 'UAM', 'UC3M', 'UCM', 'UAH', 'UEM', 'UNED', 'UPM', 'URJC']
+  peers = ['CV', 'CIB', 'CSIC', 'CEU', 'CUNEF', 'IMDEANET', 'IMDEA', 'UAM', 'UC3M', 'UCM', 'UAH', 'UEM', 'UNED', 'UPM', 'URJC']
   for peer in peers:
-    if peer_name == 'punch.software.imdea.org':
+    if peer_name == 'punch.software.imdea.org' or peer_name == 'punch2.software.imdea.org' or peer_name == 'punch2.software.imdea.org(2)':
       return Peer.objects.get(peer_name='Punch')
     elif peer_name == 'CASA VELAZQUEZ' or peer_name == 'CASA VELAZQUEZ(2)' :
       return Peer.objects.get(peer_tag='CV')
     elif peer_name == 'IMDEA NETWORKS' or peer_name == 'IMDEA NETWORKS(2)':
       return Peer.objects.get(peer_name='IMDEA NETWORKS')
     elif peer_name == 'REDIMADRID' or peer_name == 'REDIMADRID(2)':
-      return Peer.objects.get(peer_name='REM_IMDEA')
+      return Peer.objects.get(peer_name='IMDEA')
     elif peer_name == 'CEU(2)' or peer_name == 'CEU':
       return Peer.objects.get(peer_name='CEU')
     elif peer_name == 'UEM' or peer_name == 'UEM(2)':
