@@ -4,7 +4,8 @@
 <html>
 <head>    
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Type" content="text/html">
   <title>{{ BRANDING.name }} :: {% block title %}{% endblock %}</title>
 	<META HTTP-EQUIV="Pragma" CONTENT="no-cache">
 	<META HTTP-EQUIV="expires" CONTENT="Wed, 26 Feb 1997 08:21:57 GMT">
@@ -51,7 +52,7 @@
         <nav class="nav">
             <div class=""> 
                 {% if user.is_authenticated %}
-                <a href="{% url 'dashboard' %}" class="nav_logo text-decoration-none text-wrap"> <i class="nav_icon bi bi-shield text-danger"></i></a>
+                <a href="{% url 'group-routes' %}" class="nav_logo text-decoration-none text-wrap"> <i class="nav_icon bi bi-shield text-danger"></i></a>
                 <!-- <button type="button" class="btn btn-outline btn-light close" data-bs-dismiss="offcanvas" aria-label="Close"><span aria-hidden="true">&times;</span></button> -->
                 <div class="nav_list text-wrap">
                   <a href="{% url 'dashboard' %}" class="nav_link text-white text-decoration-none font-weight-light text-wrap"> <i class='bi-clipboard nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Dashboard"></i> <span class="nav_name">Dashboard</span></a>

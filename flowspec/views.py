@@ -773,17 +773,10 @@ def overview(request):
     else:
         return HttpResponseRedirect(reverse("altlogin"))
 
-@never_cache
+""" @never_cache
 def load_jscript(request,file):
     long_polling_timeout = int(settings.POLL_SESSION_UPDATE) * 1000 + 10000
-    return render(request,'%s.js' % file, {'timeout': long_polling_timeout})
-
-def lookupShibAttr(attrmap, requestMeta):
-    for attr in attrmap:
-        if (attr in requestMeta.keys()):
-            if len(requestMeta[attr]) > 0:
-                return requestMeta[attr]
-    return ''
+    return render(request,'%s.js' % file, {'timeout': long_polling_timeout}) """
 
 
 @verified_email_required

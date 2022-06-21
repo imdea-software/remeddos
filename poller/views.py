@@ -156,27 +156,10 @@ class Msgs(object):
                     self.user_cursor[user] = self.user_cache[user][-1]['id']
         return HttpResponseRedirect(reverse('group-routes'))
 
-    """ def monitor_polls(self):
-        b = beanstalkc.Connection()
-        b.watch(settings.POLLS_TUBE)
-        while True:
-            job = b.reserve()
-            msg = json.loads(job.body)
-            job.bury()
-            logger.info("Got New message")
-            self.message_new(msg)
-
-    def start_polling(self):
-        logger.info("Start Polling")
-        gevent.spawn(self.monitor_polls) """
-
-
 msgs = Msgs()
 main = msgs.main
 
 message_updates = msgs.message_updates
 message_existing = msgs.message_existing
 
-""" 
-poll = msgs.start_polling
-poll() """
+

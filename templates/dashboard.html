@@ -20,10 +20,11 @@
 					  <div class="row mb-5">
 						<div class="col">
 						  <h1 class="font-monospace">REM-e-DDOS</h1>
-						  <p>Here you can see the routes that you have been configured to protect for your insitution. <br> 
-							For more information about the routes that have been created for the REM-Golem attacks or the events themselves please follow one of the next links:</p>
+						  <p>REM-e-DDOS es una aplicación diseñada para la mitigación de ataques, aquí podrá configurar reglas de firewall que le ayude a proteger su red. <br> 
+							Está aplicación también recoge información desde REM-Golem para informarle a través de Slack sobre los últimos ataques que haya recibido, proponiendo a su vez
+							distintas reglas que usted podrá personalizar a su gusto. Para más información:</p>
 						  <div class="col-md-3  align-items-center" style="display:inline-block;">
-						  <a href="{% url 'pending-routes' %}" type="button" class="btn btn-outline-dark btn-sm  float-left">Proposed Routes</a>
+						  <a href="{% url 'pending-routes' %}" type="button" class="btn btn-outline-dark btn-sm  float-left">Reglas propuestas</a>
 						  <a href="{% url 'attack-list' %}" type="button" class="btn btn-outline-dark btn-sm float-right">REM-GOLEM</a>
 						</div>
 						</div>
@@ -33,7 +34,7 @@
 						  <div class="card" style="width: 18rem;">
 							<div class="card-body">
 								<p class="card-text"> Status: <span class="badge bg-success">ACTIVE</span><br>
-							 When a route is active it means that it has been saved on your database and configured in your router.</p>
+							 Cuando el estado de una regla es 'ACTIVE' significa que ha sido guardada en su base de datos y configurada en el router.</p>
 							</div>
 						  </div>
 						</div>
@@ -42,7 +43,7 @@
 						  <div class="card" style="width: 18rem;">
 							<div class="card-body">
 								<p class="card-text"> Status: <span class="badge bg-info">PENDING</span><br>
-							 A route will be pending when it was automatically created for a REM-GOLEM event. If you commit the route it will become ACTIVE.</p>
+									Cuando el estado de una regla es 'PENDING' significa que ha sido propuesta por REM-e-DDOS, está guardada en la base de datos y está a la espera de ser aplicada al router.
 							</div>
 						  </div>
 						</div>
@@ -51,7 +52,8 @@
 							<div class="card" style="width: 18rem;">
 							  <div class="card-body">
 								  <p class="card-text"> Status: <span class="badge bg-danger">ERROR</span><br>
-							   When a route status is error it means that there was an error when trying to configure the route into the router, please talk to your adminsitrator if this is the case.</p>
+									Cuando el estado de una regla es 'ERROR' significa que ha habido un error a la hora de configurar o eliminar una regla del router, en ese caso 
+									porfavor contacte con los administradores de la aplicación. </p>
 							  </div>
 							</div>
 						  </div>
