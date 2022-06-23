@@ -54,7 +54,7 @@ NETCONF_PORT=os.environ.get('NETCONF_PORT')
 
 
 
-DEBUG = True
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -143,13 +143,13 @@ TEMPLATES = [
             'context_processors': [
                 'django.contrib.auth.context_processors.auth',
                 'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.i18n',
                 'django.template.context_processors.media',
                 'django.template.context_processors.static',
                 'django.template.context_processors.tz',
-                'django.contrib.messages.context_processors.messages',
                 "context.global_vars.settings_vars",
-                'django.template.context_processors.request',
             ],
             'loaders': [
                 'django.template.loaders.filesystem.Loader',
@@ -202,8 +202,17 @@ DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
 BACK_UP_DIR = os.path.join(BASE_DIR,'_backup/')
 
 #---STATIC 
-STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
-STATIC_URL = "/static/"
+
+if DEBUG:
+    STATICFILES_DIRS = [os.path.join(BASE_DIR, "static"),]
+else:
+    STATIC_ROOT = os.path.join(BASE_DIR, "static")
+    
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+]
+STATIC_URL = "static/"
 
 #----MEDIA
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
@@ -460,19 +469,5 @@ STATISTICS_PER_RULE = True
 STATISTICS_PER_RULE__ADD_INITIAL_ZERO = True
 
 
-
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
-##############################################################################
-##############################################################################
-
-#MYSETTING1="default"
-#from settings_local import *
-#from flowspy.settings_local import *
-
-#print "MYSETTING1="+MYSETTING1
-#print("MYSETTING1="+MYSETTING1, file=sys.stderr)
-#print "debug settings.NOTIFY_ADMIN_MAILS="+str(NOTIFY_ADMIN_MAILS)
-
-##############################################################################
-##############################################################################
 

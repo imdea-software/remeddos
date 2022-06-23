@@ -53,12 +53,6 @@ urlpatterns = [
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-""" if 'graphs' in settings.INSTALLED_APPS:
-    from graphs import urls as graphs_urls
-    urlpatterns += [
-        re_path(r'^graphs/', include(graphs_urls))]
-
-
 try:
     if settings.DEBUG:
         # only for development / testing mode:
@@ -66,7 +60,6 @@ try:
         urlpatterns += staticfiles_urlpatterns()
 except:
     pass
- """
  
 
 

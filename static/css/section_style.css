@@ -1,0 +1,50 @@
+section {
+    padding-top: 50px;
+    padding-bottom: 50px;
+  }
+  section h5 {
+    text-transform: uppercase;
+    /* font-weight: 900; */
+    text-align: left;
+    margin-bottom: 20px;
+  }
+  section h1{
+    text-transform: uppercase;
+    /* font-weight: 900; */
+    color: #990033;
+    text-align: left;
+    margin-bottom: 20px;
+  }
+  section p {
+    font-size: 16px;
+    font-weight: 300;
+  }
+#section .col {
+    justify-content: center; 
+    flex-direction: column;
+    display: flex;
+  }
+  #section .img-col {
+    justify-content: flex-end; 
+    margin-top: 100px;
+  }
+  #section img {
+    max-width: 130% !important;
+    width: 130%;
+  }
+  #section .card {
+    box-shadow: 11px 7px 16px #f9f9f9;
+    /* border: 0; */
+    text-align: center; 
+  }
+  #section .icon {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 20px;
+  }
+
+  #section{
+    border: 1px;
+    /* background-color: none !important; */
+    
+  }
