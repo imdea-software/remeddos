@@ -19,6 +19,7 @@ RUN mkdir -p /etc/redis/ && \
 RUN chown -R remedios /etc/redis/ 
 RUN echo "vm.overcommit_memory = 1" >> /etc/sysctl.conf
 
+
 COPY ./id_rsa /home/remedios/.ssh/id_rsa 
 
 RUN mkdir -p /var/log/fod/ && \
@@ -26,13 +27,11 @@ RUN mkdir -p /var/log/fod/ && \
     cd /var/log/fod && \
     touch celery_jobs.log poller.log && \
     cd error.log && \
-    touch celery_jobs.log touch poller.log 
+    touch celery_jobs.log poller.log 
 
 RUN chown remedios /var/log/fod/error.log && \
         chown remedios  /var/log/fod/celery_jobs.log && \
         chown remedios /var/log/fod/poller.log
-
-
 
 RUN cd /srv/redifod/ 
 RUN python3.6 -m pip install --upgrade pip
@@ -58,3 +57,4 @@ RUN export PATH=$PATH:/usr/lib/postgresql/13/bin/psql
 
 
 EXPOSE 8000
+

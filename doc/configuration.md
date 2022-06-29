@@ -1,4 +1,4 @@
-Time to configure flowspy.
+ Time to configure flowspy.
 
 First of all you have to copy the dist files to their proper position:
 
@@ -170,7 +170,9 @@ By doing so, you can serve your application like gunicord does just to test that
 
 Of course you have to stop gunicorn and make sure that port 8081 is free.
 
+Start the gunicorn server: 
 
+	docker-compose run --rm web gunicorn --bind 0.0.0.0:8000 flowspy.wsgi:application
 
 ## Usage
 
@@ -203,4 +205,6 @@ Stop a running docker-compose service:
 	docker-compose stop 
 
 	If you want to stop an specific service you would specify it: docker-compose stop <service_name>
+
+Create a backup from the database 
 

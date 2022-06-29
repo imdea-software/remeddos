@@ -237,7 +237,7 @@ def assemble_dic(traffic_event,event_info):
       'attack_name':event_info['attack_name'],'institution_name':event_info['institution_name'],'typeofvalue':event_info['typeof_value'],
       'ip_dest':ip_dest,'ip_src':ip_src,'source_port':src_port,'dest_port':dest_port,'tcp_flag':tcpflag,'port':destport}
     return dic
-  except Exception as e:
+  except IndexError as e:
     logger.info('There was an exception when trying to assemble the dictionary for a proposed route. Error: ', e)
     
   
@@ -823,8 +823,8 @@ def find_peer(peer_name):
       return Peer.objects.get(peer_name='Punch')
     elif peer_name == 'CASA VELAZQUEZ' or peer_name == 'CASA VELAZQUEZ(2)' :
       return Peer.objects.get(peer_tag='CV')
-    elif peer_name == 'IMDEA NETWORKS' or peer_name == 'IMDEA NETWORKS(2)':
-      return Peer.objects.get(peer_name='IMDEA NETWORKS')
+    elif peer_name == 'IMDEA_NETWORK' or peer_name == 'IMDEA_NETWORK(2)':
+      return Peer.objects.get(peer_name='IMDEA Networks')
     elif peer_name == 'REDIMADRID' or peer_name == 'REDIMADRID(2)':
       return Peer.objects.get(peer_name='IMDEA')
     elif peer_name == 'CEU(2)' or peer_name == 'CEU':

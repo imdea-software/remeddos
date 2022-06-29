@@ -3,6 +3,8 @@
 {% load i18n %}
 
 
+
+
 {% block extrahead %}
 <link rel="stylesheet" href="{% static 'css/dashboard_style.css' %}">
 <link rel="stylesheet" href="{% static 'css/section_style.css' %}">
@@ -147,10 +149,7 @@
 				  </div>
 			</div>
 		</div>
-	</section>
-<section>
-
-</section>		
+	</section>		
 
 </div>   
 {% endblock %}
@@ -162,7 +161,6 @@
               type: "GET",
               dataType: "json",
               success: (data) => {
-                console.log('it worked');
               },
               error: (error) => {
                 console.log(error);

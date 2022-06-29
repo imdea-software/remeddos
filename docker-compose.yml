@@ -21,7 +21,7 @@ services:
             python3.6 manage.py migrate &&
             python3.6 manage.py runserver 0.0.0.0:8000"
         volumes: 
-            - .:/srv/redifod/
+            - ./:/srv/redifod/
         environment:
             - DB_HOST=db
             - DB_NAME=flowspy
@@ -31,7 +31,7 @@ services:
             - db
         ports:
             - 22:22
-            - 8000:8000   
+            - 8000:8000  
     
     redis:
         image: redis:alpine

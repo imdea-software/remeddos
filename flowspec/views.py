@@ -129,8 +129,7 @@ def dashboard(request):
         route_name = Route.objects.filter(applier=request.user).values_list('name',flat=True)
     except UserProfile.DoesNotExist:
         error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
-        return render(
-            request,'error.html',{'error': error})
+        return render(request,'error.html',{'error': error})
     if peers:
         if request.user.is_superuser:
             all_group_routes = find_all_routes()
@@ -141,6 +140,7 @@ def dashboard(request):
                         if (group_route.applier == None and group_route.status=='ACTIVE') or group_route.applier!=None: 
                             group_route.has_expired()
                             all_routes.append(group_route)
+                print('dashboard traza 1')
                 return render(request,'dashboard.html',{'routes': all_routes,'messages': message,'file' : '','route_slug':route_name},)
             else:
                 message = 'You have not added any rules yet'
@@ -328,7 +328,7 @@ def build_routes_json(groutes, is_superuser):
 @verified_email_required
 @login_required
 def verify_add_user(request):
-    if 'token' in request.COOKIES:
+    if 'token' in request.COOKIES != None:
         url = reverse('add')
         response = HttpResponseRedirect(url)
         return response 
@@ -456,7 +456,7 @@ def add_route(request):
 @verified_email_required
 @login_required             
 def verify_edit_user(request,route_slug):
-    if 'token' in request.COOKIES:
+    if 'token' in request.COOKIES != None:
         url = reverse('edit', kwargs={'route_slug':route_slug})
         response = HttpResponseRedirect(url)
         return response     
@@ -590,7 +590,7 @@ def edit_route(request, route_slug):
 @login_required
 @never_cache
 def verify_delete_user(request, route_slug):
-    if not 'token' in request.COOKIES:
+    if not 'token' in request.COOKIES != None:
         if request.method =='GET':
             num = get_code()
             user = request.user
@@ -773,10 +773,10 @@ def overview(request):
     else:
         return HttpResponseRedirect(reverse("altlogin"))
 
-""" @never_cache
+@never_cache
 def load_jscript(request,file):
     long_polling_timeout = int(settings.POLL_SESSION_UPDATE) * 1000 + 10000
-    return render(request,'%s.js' % file, {'timeout': long_polling_timeout}) """
+    return render(request,'%s.js' % file, {'timeout': long_polling_timeout})
 
 
 @verified_email_required
@@ -1062,7 +1062,7 @@ def routes_sync(request):
 @login_required
 @never_cache 
 def backup(request):
-    now = datetime.datetime.now()
+    """ now = datetime.datetime.now()
     user = request.user
     current_time = now.strftime("%H:%M")
     current_date = now.strftime("%d-%B-%Y")
@@ -1086,7 +1086,11 @@ def backup(request):
         except Exception as e:
             message = ('Ha ocurrido un error intentando crear la copia de seguridad. %s'%e)
             send_message(message,peer=None,superuser=True)
-            return render(request,'routes_synced.html',{'message':message})
+            return render(request,'routes_synced.html',{'message':message}) """
+    daily_backup()
+    message = 'Copia de seguridad creada con éxito.'
+    send_message(message,peer=None,superuser=True)
+    return render(request,'routes_synced.html',{'message':message})
 
 @verified_email_required
 @login_required
@@ -1128,7 +1132,9 @@ def restore_backup(request):
                 return render(request,'routes_synced.html',{'message':message}) 
             except Exception as e:
                 return render(request,'routes_synced.html')
-            
+
+
+
 @verified_email_required
 @login_required
 @never_cache 
@@ -1150,7 +1156,7 @@ def create_db_backup(request):
             return render(request,'routes_synced.html',{'message':message})
     else:
         return render(request,'routes_synced.html',{'message':'Esta opción solo puede ser usada por un superusuario, disculpe las molestias.'})
-    pass
+
 
 @verified_email_required
 @login_required

@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('', views.dashboard, name="dashboard"),
-    path('group_routes/',views.group_routes, name="group-routes"),
+    path('group_routes',views.group_routes, name="group-routes"),
     path('pending_routes/',views.pending_routes, name="pending-routes"),
     re_path(r'^routes_ajax/?$', views.group_routes_ajax, name="group-routes-ajax"),
     re_path(r'^overview_ajax/?$', views.overview_routes_ajax, name="overview-ajax"),    
@@ -20,7 +20,7 @@ urlpatterns = [
     path('display_graphs/<slug:route_slug>/',views.display_graphs,name="display-graphs"),
     re_path(r'^welcome/?', views.welcome, name="welcome"),
     re_path(r'^selectinst/?$', views.selectinst, name="selectinst"),
-  #  path('load_js/<str:file>', views.load_jscript, name="load-js"),
+    path('load_js/<str:file>', views.load_jscript, name="load-js"),
     re_path(r'^overview/?$', views.overview, name="overview"),
     path('routes_sync/', views.routes_sync, name="rsync"),
     path('sync_router/', views.sync_router, name="router-sync"),
@@ -34,5 +34,5 @@ urlpatterns = [
     path('restoredb/',views.restore_complete_db, name='db-restore'),
     path('route_update/<slug:route_slug>',views.routes_update,name='route-updates'),
     path('delete_route/<slug:route_slug>',views.exterminate_route, name="exterminate")
-]
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

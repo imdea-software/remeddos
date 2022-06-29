@@ -2,8 +2,8 @@
 {% load static %}
 {% load i18n %}
 {% block extrahead %}
-<!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css"> -->
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.3/datatables.min.css"/>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="{% static 'css/dataTable_style.css' %}">
 <link rel="stylesheet" href="{% static 'css/table_style.css' %}">
 <link rel="stylesheet" href="{% static 'css/section_style.css' %}">
 {% endblock %}
@@ -14,7 +14,7 @@
 <div class="container">
 <div class="row rows-cols-4 p-5">
     <div class="mb-2">
-      <i class="fa fa-shield"></i><span class="font-weight-light font-monospace">Ataques recibidos desde <span class="text-danger">REM-GOLEM</span></span>
+      <i class="fa fa-shield"></i><span class="font-weight-light font-monospace">  Ataques recibidos desde <span class="text-danger">REM-GOLEM</span></span>
     </div>
 </div>
 <div class="row pt-3">
@@ -56,9 +56,9 @@
                     <td>
                     <div class="row">
                         <div clas="col col-2 btn-group d-inline">
-                            <a href="{% url 'golem-routes' attack.id_name %}"  data-bs-toggle="tooltip" data-bs-placement="top" title="View rules" class="btn btn-sm btn-outline btn-dark m-1"><i class="bi bi-bookmark-plus"></i></a>
+                            <a href="{% url 'golem-routes' attack.id_name %}"  data-bs-toggle="tooltip" data-bs-placement="top" title="View rules" class="btn btn-sm btn-outline-dark m-1"><i class="bi bi-bookmark-plus"></i></a>
                             <!-- <a href="{% url 'golem-updates' attack.id_name %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Updates" class="btn btn-outline btn-sm btn-dark m-1"><i class="bi bi-gear-fill"></i></a> -->
-                            <a href="{% url 'golem-delete' attack.id_name %}"  data-bs-toggle="tooltip" data-bs-placement="top" title="Delete golem event" data-bs-toggle="modal" data-bs-target="#deleteconfirmModal" class="btn btn-outline btn-sm btn-dark m-1"><i class="bi bi-trash"></i></a>
+                            <a href="{% url 'golem-delete' attack.id_name %}"  data-bs-toggle="tooltip" data-bs-placement="top" title="Delete golem event" data-bs-toggle="modal" data-bs-target="#deleteconfirmModal" class="btn btn-sm btn-outline-dark m-1"><i class="bi bi-trash"></i></a>
                         </div>    
                     </div>
                     </td>

@@ -31,6 +31,8 @@ import os
 from celery.schedules import crontab
 from dotenv import load_dotenv, find_dotenv
 
+import mimetypes
+mimetypes.add_type("text/css", ".css", True)
 
 load_dotenv(find_dotenv())
 
@@ -55,6 +57,7 @@ NETCONF_PORT=os.environ.get('NETCONF_PORT')
 
 
 DEBUG = False
+DEBUG_PROPAGATE_EXCEPTIONS = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -122,6 +125,7 @@ USE_TZ = True
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -129,37 +133,36 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'simple_history.middleware.HistoryRequestMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    
 ]
 
 # Templates
 
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [            
-            os.path.join(BASE_DIR, 'templates'),
-        ],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates/'),
+            ],
+        'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
-                'django.contrib.auth.context_processors.auth',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                
                 'django.template.context_processors.i18n',
                 'django.template.context_processors.media',
                 'django.template.context_processors.static',
                 'django.template.context_processors.tz',
                 "context.global_vars.settings_vars",
             ],
-            'loaders': [
-                'django.template.loaders.filesystem.Loader',
-                'django.template.loaders.app_directories.Loader',
-            ]
         },
     },
 ]
-
-APPEND_SLASH=False
 
 ROOT_URLCONF = 'flowspy.urls'
 WSGI_APPLICATION = 'flowspy.wsgi.application'
@@ -170,6 +173,7 @@ AUTHENTICATION_BACKENDS = (
 )
 
 INSTALLED_APPS = (
+    'whitenoise.runserver_nostatic',
     'longerusername',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -203,16 +207,12 @@ BACK_UP_DIR = os.path.join(BASE_DIR,'_backup/')
 
 #---STATIC 
 
-if DEBUG:
-    STATICFILES_DIRS = [os.path.join(BASE_DIR, "static"),]
-else:
-    STATIC_ROOT = os.path.join(BASE_DIR, "static")
-    
-STATICFILES_FINDERS = [
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-]
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATIC_URL = "static/"
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+
 
 #----MEDIA
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')

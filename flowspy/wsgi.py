@@ -14,6 +14,16 @@ framework.
 
 """
 import os
+import sys
+
+from whitenoise import WhiteNoise
+
+
+
+
+
+
+sys.path.append('/srv/redifod')
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "flowspy.settings")
 os.environ['HTTPS'] = "on"
@@ -24,6 +34,8 @@ os.environ['wsgi.url_scheme'] = 'https'
 # setting points here.
 from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()
+""" application = WhiteNoise(application, root="/srv/redifod/static")
+application.add_files("/srv/redifod/static", prefix="static/") """
 
 # Apply WSGI middleware here.
 # from helloworld.wsgi import HelloWorldApplication

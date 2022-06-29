@@ -1,38 +1,46 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load static %}
+
+
 {% block extrahead %}
-   <!--  <link href="{% static 'theme/css/plugins/dataTables/dataTables.bootstrap.css' %}" rel="stylesheet"> -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.3/datatables.min.css"/>
-    <link rel="stylesheet" href="{% static 'css/section_style.css' %}">
+    <!-- <link href="{% static 'theme/css/plugins/dataTables/dataTables.bootstrap.css' %}" rel="stylesheet"> -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="{% static 'css/dataTable_style.css' %}">
     <link rel="stylesheet" href="{% static 'css/table_style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/section_style.css' %}">
+    <!-- <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.3/datatables.min.css"> -->
+    <!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.jqueryui.min.css"> -->
+<style>
+body{
+    line-height: 0.8rem !important;
+    }
+
+small > a{
+    pointer-events: none !important;
+    text-decoration: none !important;
     
-    <style>
-        body{
-            line-height: 0.8rem !important;
-        }
-        small > a{
-            pointer-events: none !important;
-            text-decoration: none !important;
-            /* color: black !important; */
-        }
-        .page-item.active .page-link {
-        background-color: lightgrey !important;
-        border: 1px solid lightgrey;
-        }
-    .page-link {
-        color: black !important;
-        background-color: white !important;
-        }
-    </style>
+    }
+.page-item.active .page-link {
+    background-color: lightgrey !important;
+    border: 1px solid lightgrey;
+    }
+
+.page-link {
+    color: black !important;
+    background-color: white !important;
+    }
+</style>
+
 {% endblock %}
 {% block title %}{% trans "Mis reglas" %}{% endblock %}
 {% block contentplaceholder %}
 {% csrf_token %}
+
 <div class="container">
     <div class="row rows-cols-4 p-5">
         <div class="col">
-            <div class="panel-heading"> <span class="font-monospace">Reglas de Firewall</span><i class="fa fa-shield"></i>
+            <div class="panel-heading"> <span class="font-monospace">  Reglas de Firewall</span> <i class="fa fa-shield"></i>
         </div>
         </div>
     </div>
@@ -81,9 +89,6 @@
 
 
 </div>
-
-
-
 {% endblock %}
 
 {% block pagejsbottom %} 
@@ -96,7 +101,6 @@ $('.addbutton').click(function(){
               type: "GET",
               dataType: "json",
               success: (data) => {
-                console.log('it worked');
               },
               error: (error) => {
                 console.log(error);
@@ -105,10 +109,10 @@ $('.addbutton').click(function(){
      });
 
 var filterbtns = '<div class="btn-group d-block gap-4">\
-    <button type="button" class="btn btn-outline btn-sm btn-success" name="status_filter" value="ACTIVE" id="show_active">ACTIVE</button>\
-    <button type="button" class="btn btn-outline btn-sm btn-info" name="status_filter" value="PENDING" id="show_pending">PENDING</button>\
-    <button type="button" class="btn btn-outline btn-sm btn-warning" name="status_filter" value="ERROR" id="show_error">ERROR</button>\
-    <button type="button" class="btn btn-outline btn-sm btn-dark" name="status_filter" value="DEACTIVATED" id="show_deactivated">DEACTIVATED</button>\
+    <button type="button" class="btn btn-outline-success btn-sm" name="status_filter" value="ACTIVE" id="show_active">ACTIVE</button>\
+    <button type="button" class="btn btn-outline-info btn-sm" name="status_filter" value="PENDING" id="show_pending">PENDING</button>\
+    <button type="button" class="btn btn-outline-warning btn-sm" name="status_filter" value="ERROR" id="show_error">ERROR</button>\
+    <button type="button" class="btn btn-outline-dark btn-sm" name="status_filter" value="DEACTIVATED" id="show_deactivated">DEACTIVATED</button>\
     </div>';
 
 
@@ -213,7 +217,7 @@ $(document).ready( function(){
                      "mRender": function (data, type, full) {
                         if (full.comments !== null) {
                             if (!full.comments.trim()) {
-                               return  data;
+                               return  '<small>'+data+'</small>';
                             }
                             
                             {% if request.COOKIES.token %}
@@ -223,13 +227,13 @@ $(document).ready( function(){
                             {% endif %}
                             return '<a rel="tooltip" href="'+displayurl+'" data-bs-toggle="tooltip" data-bs-placement="top" title='+full.comments+'><small>'+data+'</small>'
                         } else {
-                            return 'No comments'
+                            return 'No comments';
                         }
                      }
                      },
                      {"mData":"match", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
-                     	return data;
+                     	return '<small>'+data+'</small>';
                      }
                      },
                      {"mData":"then", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
@@ -240,7 +244,6 @@ $(document).ready( function(){
                      {"mData":"status", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
                      	var status = data;
-                         console.log('THIS IS THE STATUS: '+ data)
                      	if (status == "EXPIRED" ||status == "ADMININACTIVE" || status == "INACTIVE" || status == "OUTOFSYNC"){
                      		if (status == "EXPIRED" ||status == "ADMININACTIVE" || status == "INACTIVE" ){
                      			return '<span class="badge pill bg-dark">DESACTIVADA</span>';

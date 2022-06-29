@@ -434,9 +434,11 @@ def daily_backup():
         for peer in peers:
             if not peer.peer_tag == 'Punch':
                 call_command('dumpdata', f'flowspec', format='json',output=f'_backup/{peer.peer_tag}/{peer.peer_tag}_{current_date}-{current_time}.json')
-                logger.info('Copia de seguridad creada con éxito.')
+                logger.info(f'Copia de seguridad creada con éxito para: {peer.peer_tag}')
             else:
                 pass
+        call_command('dumpdata', format='json',output=f'_backup/REM_REMEDIOS/backup_{current_date}-{current_time}.json')
+        logger.info(f'Copia de seguridad de toda la BBDD creada con éxito.')
     except Exception as e:
         message = ('Ha ocurrido un error intentando crear la copia de seguridad. from %s'%e)
         send_message(message,peer=peer.peer_tag,superuser=False)
