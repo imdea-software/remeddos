@@ -181,6 +181,9 @@ REMeDDoS comes with a web interface, in which one can edit and apply new routes.
 
 
 ### Docker - Commands
+See what container are running:
+
+	docker ps
 
 Build your docker-compose:
 
@@ -196,9 +199,16 @@ Run an specific service:
 	docker-compose up <service_name>
 
 Create a new container to run a command for a specific service, the container will cease to exist once the command
-is executed.
+is executed. In order for this command to work, a cointainer must be already running so if I wanted to execute something within the web cointainer
+it is mandatory that there's at least one web running.
 
 	docker-compose run --rm <service_name> <command> Example: docker-compose run --rm web python3 manage.py shell
+
+If for example you would like to open a bash terminal within a container that is already running the command is:
+
+	docker exec -it <container_name> bash
+
+	Ex: docker exec -it redifod_web_1 bash
 
 Stop a running docker-compose service: 
 
@@ -207,4 +217,20 @@ Stop a running docker-compose service:
 	If you want to stop an specific service you would specify it: docker-compose stop <service_name>
 
 Create a backup from the database 
+
+		docker-compose run --rm web python3 manage.py dumpdata --format=json -o='<path>/<to_file>/<file_name>.json'
+	
+		Ex: docker-compose run --rm web python3 manage.py dumpdata --format=json -o='_backup/REM_REMEDIOS/_backup_test.json'
+
+Create a back_up for an specific solution:
+
+		docker-compose run --rm web python3 manage.py dumpdata <app_name>.<table_name> --format=json -o='<path>/<to_file>/<file_name>.json'
+
+		Ex: docker-compose run --rm web python3 manage.py dumpdata flowspec.ROUTE_CV --format=json -o='_backup/CV/_backup1_test.json'
+		
+
+Load data from a backup copy:
+		docker-compose run --rm web python3 manage.py loaddata <fixture>
+
+		Ex: docker-compose run --rm web python3 manage.py loaddata /srv/redifod/_backup/REM_REMEDIOS/_backup_test.json
 

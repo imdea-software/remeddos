@@ -515,11 +515,7 @@ def edit_route(request, route_slug):
         for peer in user_peers:
             applier_peer_networks.extend(peer.networks.all())
     if not applier_peer_networks:
-        messages.add_message(
-            request,
-            messages.WARNING,
-            ('Insufficient rights on administrative networks. Cannot add rule. Contact your administrator')
-        )
+        messages.add_message(request,messages.WARNING,('Insufficient rights on administrative networks. Cannot add rule. Contact your administrator') )
         return HttpResponseRedirect(reverse("group-routes"))    
     route_original = deepcopy(route_edit)
     if request.POST:
@@ -1062,31 +1058,6 @@ def routes_sync(request):
 @login_required
 @never_cache 
 def backup(request):
-    """ now = datetime.datetime.now()
-    user = request.user
-    current_time = now.strftime("%H:%M")
-    current_date = now.strftime("%d-%B-%Y")
-    if request.user.is_superuser:   
-        try:
-            call_command('dumpdata', f'flowspec', format='json',output=f'_backup/REM_REMEDIOS/REM_backup_{current_date}_{current_time}.json')
-            message = 'Copia de seguridad creada con éxito.'
-            send_message(message,peer=None,superuser=True)
-            return render(request,'routes_synced.html',{'message':message}) 
-        except Exception as e:
-            message = ('Ha ocurrido un error intentando crear la copia de seguridad. %s'%e)
-            send_message(message,peer=None,superuser=True)
-            return render(request,'routes_synced.html',{'message':message})
-    else:
-        try:
-            peer_tag = get_peer_tag(user.username)
-            call_command('dumpdata', f'flowspec.Route_{peer_tag}', format='json',output=f'_backup/{peer_tag}/{peer_tag}_backup_{current_date}_{current_time}.json')
-            message = 'Copia de seguridad creada con éxito.'
-            send_message(message,peer=None,superuser=True)
-            return render(request,'routes_synced.html',{'message':message}) 
-        except Exception as e:
-            message = ('Ha ocurrido un error intentando crear la copia de seguridad. %s'%e)
-            send_message(message,peer=None,superuser=True)
-            return render(request,'routes_synced.html',{'message':message}) """
     daily_backup()
     message = 'Copia de seguridad creada con éxito.'
     send_message(message,peer=None,superuser=True)

@@ -433,7 +433,7 @@ def daily_backup():
     try:
         for peer in peers:
             if not peer.peer_tag == 'Punch':
-                call_command('dumpdata', f'flowspec', format='json',output=f'_backup/{peer.peer_tag}/{peer.peer_tag}_{current_date}-{current_time}.json')
+                call_command('dumpdata', f'flowspec.Route_{peer.peer_tag}', format='json',output=f'_backup/{peer.peer_tag}/{peer.peer_tag}_{current_date}-{current_time}.json')
                 logger.info(f'Copia de seguridad creada con éxito para: {peer.peer_tag}')
             else:
                 pass
