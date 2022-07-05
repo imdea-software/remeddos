@@ -46,10 +46,16 @@ def add(route, callback=None):
     try:
         applier = PR.Applier(route_object=route)
         commit, response = applier.apply()
+        
+        backup_applier = PR.Backup_Applier(route_object=route)
+        commit_b,response_b = backup_applier.apply()
+        
         if commit:            
             status = "ACTIVE"
         else:
             status = "ERROR"
+        if commit_b:
+            send_message('commit en el segundo router',peer=None, superuser=True)
         route.status = status
         route.response = response
         route.save()
@@ -89,6 +95,10 @@ def edit(route, callback=None):
     try:
         applier = PR.Applier(route_object=route)
         commit, response = applier.apply(operation="replace")
+
+        backup_applier = PR.Backup_Applier(route_object=route)
+        commit_b,response_b = backup_applier.apply(operation="replace")
+
         if commit:
             status = "ACTIVE"
         else:
@@ -127,7 +137,11 @@ def delete(route, **kwargs):
     try:
         applier = PR.Applier(route_object=route)
         commit, response = applier.apply(operation="delete")
-        reason_text = ''
+        
+        backup_applier = PR.Backup_Applier(route_object=route)
+        commit_b,response_b = backup_applier.apply(operation="delete")
+
+        
         if commit:
             status = "INACTIVE"
             if "reason" in kwargs and kwargs['reason'] == 'EXPIRED':
@@ -240,14 +254,13 @@ def notify_expired():
         today = datetime.date.today()
         for route in routes:
             if route.expires != None:
-                if route.status not in ['EXPIRED', 'ADMININACTIVE', 'INACTIVE', 'ERROR']:
+                if route.status not in ['EXPIRED', 'ADMININACTIVE','PENDING', 'OUTOFSYNC', 'INACTIVE', 'ERROR']:
                     expiration_days = (route.expires - today).days
                     if expiration_days < settings.EXPIRATION_NOTIFY_DAYS and expiration_days > 0:
                         try:
                             fqdn = Site.objects.get_current().domain
                             admin_url = "https://%s%s" % \
-                            (fqdn,
-                            "/edit/%s"%route.name)
+                            (fqdn, "/edit/%s" % route.name)
                             mail_body = render_to_string("rule_action.txt", {"route": route, 'expiration_days':expiration_days, 'action':'expires', 'url':admin_url})
                             days_num = ' days'
                             expiration_days_text = "%s %s" %('in',expiration_days)
@@ -264,10 +277,9 @@ def notify_expired():
                                     [route.applier.email])
                         except Exception as e:
                             logger.info("Exception: %s"%e)
-                            #send_message(message=message,peer=peer.peer_tag)
             else:
                 message = ("Route: %s, won't expire." % route.name)
-                logger.info(message,peer)
+                logger.info(message)
                 pass
 
 @shared_task
@@ -524,7 +536,6 @@ def delete_expired_proposed_routes():
             if route.status == 'OUTOFSYNC' and route.applier == None:
                 expired_date = route.filed + datetime.timedelta(days=5)
                 if today > expired_date:
-                    logger.info('Route: ', route.name,' is about to expired')
+                    logger.info(f"Route: {route.name} is about to expired")
                     route.delete()
-                    pass
 

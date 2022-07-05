@@ -54,6 +54,10 @@ NETCONF_USER=os.environ.get('NETCONF_USER')
 NETCONF_PASS=os.environ.get('NETCONF_PASS')
 NETCONF_PORT=os.environ.get('NETCONF_PORT')
 
+NETCONF_DEVICE_B=os.environ.get('NETCONF_DEVICE_B')
+NETCONF_USER_B=os.environ.get('NETCONF_USER_B')
+NETCONF_PASS_B=os.environ.get('NETCONF_PASS_B')
+NETCONF_PORT_B=os.environ.get('NETCONF_PORT_B')
 
 
 DEBUG = False
