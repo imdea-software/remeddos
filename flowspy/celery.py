@@ -10,11 +10,12 @@ from celery.schedules import crontab
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'flowspy.settings')
 
-#using celerys broker or rabbitmq
-app = Celery('flowspy',backend='redis://redis:6379')
-
-app.config_from_object('django.conf:settings', namespace='CELERY')
-
+#using celerys broker or redis
+app = Celery('flowspy')
+app.config_from_object('django.conf:settings')
+app.conf.timezone = 'UTC'
+app.conf.redbeat_redis_url = 'redis://redis:6379'
+app.autodiscover_tasks()
 app.conf.beat_schedule = {
     "every-day-route-sync": {
         "task": "flowspec.tasks.routes_sync",
@@ -51,7 +52,11 @@ app.conf.beat_schedule = {
         "schedule": crontab(minute=0, hour=0), 
         "args": (),
     },
+    "check":{
+        "task":"flowspec.tasks.check_beat_working",
+        "schedule":crontab(minute=1,hour=1),
+        "args":(),
+    }
     
 }
 
-app.autodiscover_tasks()

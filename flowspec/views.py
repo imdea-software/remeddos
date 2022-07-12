@@ -679,7 +679,7 @@ def exterminate_route(request,route_slug):
     peer_tag = route_slug[fd+1:-2]
     route = get_specific_route(applier=None,peer=peer_tag,route_slug=route_slug)
     route.delete()
-    return HttpResponseRedirect(reverse("dashboard"))
+    return HttpResponseRedirect(reverse("group-routes"))
 
 
 
@@ -789,10 +789,17 @@ def routes_update(request, route_slug):
 @login_required
 @never_cache
 def routedetails(request, route_slug):
-    uname = request.user.username
+    """ uname = request.user.username
     route = get_specific_route(applier=uname,peer=None,route_slug=route_slug)
     now = datetime.datetime.now()
-    return render(request, 'flowspy/route_details.html', {'route': route,'mytime': now,'tz' : settings.TIME_ZONE,'is_superuser' : request.user.is_superuser,'route_comments_len' : len(str(route.comments))})
+    return render(request, 'flowspy/route_details.html', {'route': route,'mytime': now,'tz' : settings.TIME_ZONE,'is_superuser' : request.user.is_superuser,'route_comments_len' : len(str(route.comments))}) """
+    uname = request.user.username
+    try:
+        route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
+        return render(request,'graphs.html',{'route':route})
+    except Exception as e:
+        logger.info('There was an exception when trying to display the graph. Error: ', e)
+        return HttpResponseRedirect(reverse('dashboard'))
 
 @login_required
 def routestats(request, route_slug):
@@ -932,27 +939,27 @@ def pending_routes(request):
 
 
 
-@verified_email_required
-@login_required
-@never_cache 
+
 #synchronize routes from the router to the database 
 def sync_router(request):
-    username = request.user.username
     # find what peer organisation does the user belong to
-    peer = get_peer_tag(username)
+    peers = Peer.objects.all()
     # first initialize all the needed vars    
-    applier = User.objects.get(pk=request.user.pk); routes = get_routes_router() ; fw_rules = []; message = ''
+    applier = User.objects.get(pk=request.user.pk)
+    routes = get_routes_router()
+    fw_rules = []
+    message = ''
     # for getting the route parameters is needed to run through the xml 
     for children in routes:
         then = '' ; then_action = '' ; protocol = [] ; destination = [] ; source = '' ; src_port =  '' ; dest_port = '' ; tcpflags = '' ; icmpcode = ''; icmptype = ''; packetlength = ''; prot = '';  name_fw = ''
         for child in children:
             if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
                 name_fw = child.text
-                if (peer in name_fw):
-                    name_peer = child.text
+                peer = get_peer_with_name(name_fw)
+                if peers.filter(peer_name__icontains = peer):
+                    #name_peer = child.text
                     fw_rules.append(child.text)                              
             # if the user peer organisation is found on the router the program will collect all the vars info
-            if (peer in name_fw):  
                 for child in children:
                     if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}then':
                         for thenaction in child:                    
@@ -969,9 +976,9 @@ def sync_router(request):
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type': icmptype = c.text 
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length' and c.text != '': packetlength = c.text
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source': source = c.text
-            if (peer in name_fw):
                 try:
-                    route = get_route(username)
+                    #route = get_route(username)
+                    route = get_specific_route(applier=None, peer=None, route_slug = name_fw)
                     route.name = name_fw
                     route.applier = applier
                     route.source = source
@@ -1000,7 +1007,7 @@ def sync_router(request):
                     logger.info(f'Regla: {name_fw} ya ha está sincronizada con la base de datos.')
             else:
                 # means that the route does not belong to the user's peer
-                pass
+                pass 
     return render(request,'routes_synced.html',{'message':message})
 
 @verified_email_required
@@ -1008,51 +1015,52 @@ def sync_router(request):
 @never_cache 
 #synchronize routes from the database to the router
 def routes_sync(request):
-    
-    username = request.user.username
-    routes = find_routes(username); route = get_routes_router()
-    peer = get_peer_tag(username); names = []
-    for children in route:
+    routes = find_all_routes()
+    router = get_routes_router()
+    router_routes = []
+    peers = Peer.objects.all()
+    for children in router:
         for child in children:
             if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
-                if child.text.endswith('_%s'%peer):
-                    names.append(child.text)                   
-            else:
-                pass  
-    routenames = [x.name for x in routes]
+                #if child.text.endswith('_%s'%peer):
+                router_routes.append(child.text)  
+    routes_db = []
+    for x in routes:
+        for route in x:
+            if route.status == 'ACTIVE':
+                routes_db.append(route.name)
     message = ''
-    diff = (set(routenames).difference(names))
-    notsynced_routes = list(diff)
-    if notsynced_routes:
-        for route in notsynced_routes:
-            route = get_object_or_404(get_edit_route(username), name=route)
-            if (route.has_expired()==False) and (route.status== 'ACTIVE' or route.status== 'OUTOFSYNC'):
-                route.save()
-                message = ('Estado: %s, regla de firewall no sincronizada: %s, guardando regla de firewall.' %(route.status, route.name))
-                if request.user.is_superuser:
-                    send_message(message,peer=None,superuser=True)
-                else:
-                    send_message(message,peer,superuser=False)
-            else:
-                if (route.has_expired()==True) or (route.status== 'EXPIRED' and route.status!= 'ADMININACTIVE' and route.status!= 'INACTIVE'):
-                    route.check_sync() 
-                    message = ('Estado: %s, regla de firewall  %s, comprobando regla.' %(route.status, route.name))
-                    if request.user.is_superuser:
+    if router_routes:
+        diff = (set(routes_db).difference(router_routes))
+        notsynced_routes = list(diff)
+        if notsynced_routes:
+            for notsynced_route in notsynced_routes:
+                route = get_specific_route(applier=None, peer=None,route_slug=notsynced_route)
+                try:
+                    if (route.has_expired()==False) and (route.status=='ACTIVE'):
+                        add(route)
+                        message = ('Estado: %s, regla de firewall no sincronizada: %s, guardando regla de firewall.' %(route.status, route.name))
                         send_message(message,peer=None,superuser=True)
                     else:
-                        send_message(message,peer,superuser=False)
-        message = 'Reglas sincronizadas.'
-        if request.user.is_superuser:
+                        if (route.has_expired()==True) or (route.status== 'EXPIRED' and route.status!= 'ADMININACTIVE' and route.status!= 'INACTIVE'): 
+                            logger.info('Estado: %s, regla de firewall  %s, comprobando regla.' %(route.status, route.name))
+                            print('here4?')
+                            route.check_sync()
+                except Exception as e:
+                    logger.info(f"Ha ocurrido una excepción cuando se intentaban sincronizar las reglas: ", e)
+            message = 'Reglas sincronizadas.'
             send_message(message,peer=None,superuser=True)
         else:
-            send_message(message,peer,superuser=False)
+            print('there are not syncroutes: ',diff, notsynced_routes)
     else:
-        message = 'No hay reglas sin sincronizar.'
-        if request.user.is_superuser:
-            send_message(message,peer=None,superuser=True)
-        else:
-            send_message(message,peer,superuser=False)
-    return render(request,'routes_synced.html',{'message':message})
+        if router_routes == [] and routes_db:
+            for route_db in routes_db:
+                route = get_specific_route(applier=None, peer=None,route_slug=route_db)
+                add(route)
+                message = ('Estado: %s, regla de firewall no sincronizada: %s, guardando regla de firewall.' %(route.status, route.name))
+                send_message(message,peer=None,superuser=True)
+                print('plis no')
+    return HttpResponseRedirect(reverse('group-routes'))
 
 @verified_email_required
 @login_required

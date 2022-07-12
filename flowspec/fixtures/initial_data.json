@@ -1,5 +1,69 @@
 [
     {
+        "pk": 11,
+        "model": "flowspec.thenaction",
+        "fields": {
+            "action": "rate-limit",
+            "action_value": "2g"
+        }
+    },
+    {
+        "pk": 10,
+        "model": "flowspec.thenaction",
+        "fields": {
+            "action": "rate-limit",
+            "action_value": "1g"
+        }
+    },
+    {
+        "pk": 9,
+        "model": "flowspec.thenaction",
+        "fields": {
+            "action": "rate-limit",
+            "action_value": "700Mb"
+        }
+    },
+    {
+        "pk": 8,
+        "model": "flowspec.thenaction",
+        "fields": {
+            "action": "rate-limit",
+            "action_value": "500Mb"
+        }
+    },
+    {
+        "pk": 7,
+        "model": "flowspec.thenaction",
+        "fields": {
+            "action": "rate-limit",
+            "action_value": "300Mb"
+        }
+    },
+    {
+        "pk": 6,
+        "model": "flowspec.thenaction",
+        "fields": {
+            "action": "rate-limit",
+            "action_value": "100Mb"
+        }
+    },
+    {
+        "pk": 5,
+        "model": "flowspec.thenaction",
+        "fields": {
+            "action": "rate-limit",
+            "action_value": "10Mb"
+        }
+    },
+    {
+        "pk": 2,
+        "model": "flowspec.thenaction",
+        "fields": {
+            "action": "rate-limit",
+            "action_value": "1Mb"
+        }
+    },
+    {
         "pk": 3,
         "model": "flowspec.thenaction",
         "fields": {

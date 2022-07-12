@@ -254,9 +254,10 @@ def notify_expired():
         today = datetime.date.today()
         for route in routes:
             if route.expires != None:
-                if route.status not in ['EXPIRED', 'ADMININACTIVE','PENDING', 'OUTOFSYNC', 'INACTIVE', 'ERROR']:
-                    expiration_days = (route.expires - today).days
-                    if expiration_days < settings.EXPIRATION_NOTIFY_DAYS and expiration_days > 0:
+                expiration_days = (route.expires - today).days
+                if route.status == 'ACTIVE' :
+                    if expiration_days < settings.EXPIRATION_NOTIFY_DAYS or expiration_days > 0:
+                        print('traza 1 ', route.name)
                         try:
                             fqdn = Site.objects.get_current().domain
                             admin_url = "https://%s%s" % \
@@ -269,6 +270,7 @@ def notify_expired():
                                 expiration_days_text = ''
                             if expiration_days == 1:
                                 days_num = ' day'
+                            print('traza 2 ', route.name)
                             message = ('Route %s expires %s%s. Notifying %s (%s)' %(route.name, expiration_days_text, days_num, route.applier, route.applier.email))
                             send_message(message=message,peer=peer.peer_tag,superuser=False)
                             send_mail(settings.EMAIL_SUBJECT_PREFIX + "Rule %s expires %s%s" %
@@ -539,3 +541,14 @@ def delete_expired_proposed_routes():
                     logger.info(f"Route: {route.name} is about to expired")
                     route.delete()
 
+
+@shared_task
+def check_beat_working():
+    send_message('Testing beating', peer=None, superuser=True)
+    logger.info('Testing the waters with logger')
+
+
+@shared_task
+def sync_routers():
+    
+    pass

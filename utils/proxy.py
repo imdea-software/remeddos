@@ -366,8 +366,6 @@ class Applier(object):
                             cause_user="NETCONF connection failed"
                             return False, cause_user
 
-
-
 class Backup_Retriever(object):
     def __init__(self, device=settings.NETCONF_DEVICE_B, username=settings.NETCONF_USER_B, password=settings.NETCONF_PASS_B, filter=settings.ROUTES_FILTER, port=settings.NETCONF_PORT_B, route_name=None, xml=None):
         self.device = device

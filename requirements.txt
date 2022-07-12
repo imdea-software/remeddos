@@ -92,3 +92,4 @@ dj-webhooks==0.2.1
 django-braces==1.14.0
 django-sass==1.1.0
 django-simple-history==3.0.0
+celery-redbeat==2.0.0

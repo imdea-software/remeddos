@@ -16,22 +16,23 @@ services:
         build: .
         command: >
             sh -c "
-            python3.6 manage.py wait_for_db &&
-            python3.6 manage.py makemigrations &&
-            python3.6 manage.py migrate &&
-            python3.6 manage.py runserver 0.0.0.0:8000"
+            python3.8 manage.py wait_for_db &&
+            python3.8 manage.py makemigrations &&
+            python3.8 manage.py migrate &&
+            python3.8 manage.py runserver 0.0.0.0:8000"
         volumes: 
             - ./:/srv/redifod/
         environment:
             - DB_HOST=db
             - DB_NAME=flowspy
             - DB_USER=fod
-            - DB_PASS=heix6ieG  
+            - DB_PASS=heix6ieG 
         depends_on: 
             - db
         ports:
             - 22:22
-            - 8000:8000  
+            - 8000:8000
+            - 6379:6379  
     
     redis:
         image: redis:alpine
@@ -42,35 +43,26 @@ services:
         
     worker:
         build: .
-        command: >
-            sh -c "
-            celery -A flowspy worker -l INFO --logfile=/var/log/fod/celery_jobs.log &&
-            celery -A flowspy worker --concurrency=100 &&
-            celery -A flowspy worker --concurrency=100 -P gevent &&
-            celery worker --autoscale=10,0"
+        command: "celery -A flowspy worker --concurrency=8 -E -l INFO --logfile=/var/log/fod/celery_jobs.log"
 
         restart: always
         depends_on: 
             - redis
-            - web
             - db
-        environment:
-            - DB_HOST=db
-            - DB_NAME=flowspy
-            - DB_USER=fod
-            - DB_PASS=heix6ieG     
+        volumes: 
+            - ./:/srv/redifod/
+        links:
+            - redis  
     beat:
         build: .
-        command: >
-            sh -c "celery -A flowspy beat -l INFO"
+        command: "celery -A flowspy beat -l INFO -S redbeat.RedBeatScheduler"
         depends_on: 
             - redis
-            - web
-        environment:
-            - DB_HOST=db
-            - DB_NAME=flowspy
-            - DB_USER=fod
-            - DB_PASS=heix6ieG             
+            - db
+        volumes: 
+            - ./:/srv/redifod/
+        links:
+            - redis        
 networks:
     default:
         name: redifod_network

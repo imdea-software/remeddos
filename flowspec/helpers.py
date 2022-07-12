@@ -422,6 +422,7 @@ def get_routes_router():
         routes = flow_nodes   
     return routes
 
+
 def get_route(applier,peer):
   from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   routes = {
@@ -471,7 +472,6 @@ def get_edit_route(applier,rname=None):
     'URJC' : Route_URJC,
   } 
   if rname != None:
-    print('should be here')
     peer_tag = get_peer_with_name(rname)
 
   else:

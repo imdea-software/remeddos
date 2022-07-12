@@ -312,22 +312,20 @@ EXPIRATION_DAYS_OFFSET = 30
 
 USE_X_FORWARDED_HOST = True
 
-# broker configuration for celery
-POLLS_TUBE = 'polls'
-CELERY_BROKER_URL = "redis://redis:6379"
-RESULT_BACKEND = "redis://redis:6379"
-CELERY_CONCURRENCY = 1
-POLL_SESSION_UPDATE = 60.0
-##
-accept_content = ['application/json']
-result_serializer = 'json'
-task_serializer='json'
-
-
-
-
 # List of modules to import when celery starts.
 imports = ("flowspec.tasks",)
+
+# broker configuration for celery
+POLLS_TUBE = 'polls'
+BROKER_URL = "redis://redis:6379"
+CELERY_RESULT_BACKEND = "redis://redis:6379"
+CELERY_CONCURRENCY = 8
+POLL_SESSION_UPDATE = 60.0
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER ='json'
+
+
 
 #ENABLE_SETUP_VIEW = True
 
@@ -339,7 +337,7 @@ EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 
 DISABLE_EMAIL_NOTIFICATION = False
-SERVER_EMAIL = "REMeDDOS Service"
+SERVER_EMAIL = os.environ.get('EMAIL_HOST_USER')
 EMAIL_SUBJECT_PREFIX = "[REMeDDoS] "
 EXPIRATION_NOTIFY_DAYS = 4
 PREFIX_LENGTH = 29

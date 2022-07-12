@@ -170,6 +170,6 @@ def commit_to_router(request,route_slug):
     route.applier = request.user
     route.save()
     route.commit_add()
-    return HttpResponseRedirect(reverse("attack-list"))
+    return HttpResponseRedirect(reverse("group-routes"))
 
 
