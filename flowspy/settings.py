@@ -72,11 +72,11 @@ here = lambda x: os.path.join(os.path.abspath(os.path.dirname(__file__)), x)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
-ALLOWED_HOSTS = ['redidock.redimadrid.es','remedios.redimadrid.es','127.0.0.1','localhost','193.145.15.172','10.10.4.90','db','logs.redimadrid.es']
+ALLOWED_HOSTS = ['redidock.redimadrid.es','remedios.redimadrid.es','localhost','193.145.15.172','10.10.4.90','db','logs.redimadrid.es']
 SITE_ID = 1
 
 # Place a sequence of random chars here
-SECRET_KEY = '@sa@5234#$%345345^@#$%*()123^@12!&!()$JMNDF#$@(@#8FRNJWX_'
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # Set up database
 
@@ -201,6 +201,7 @@ INSTALLED_APPS = (
     'allauth.socialaccount',
     'dbbackup',
     'django_sass',
+    'django_celery_results',
     'simple_history',
     'golem',
 )
@@ -319,11 +320,11 @@ imports = ("flowspec.tasks",)
 POLLS_TUBE = 'polls'
 BROKER_URL = "redis://redis:6379"
 CELERY_RESULT_BACKEND = "redis://redis:6379"
-CELERY_CONCURRENCY = 8
 POLL_SESSION_UPDATE = 60.0
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_SERIALIZER ='json'
+CELERY_TIMEZONE = 'Europe/Madrid'
 
 
 
@@ -473,3 +474,11 @@ STATISTICS_PER_RULE__ADD_INITIAL_ZERO = True
 
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
+# HTTPS settings  
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+# HSTS settings
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_PRELOAD = True
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True

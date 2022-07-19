@@ -48,14 +48,16 @@ def add(route, callback=None):
         commit, response = applier.apply()
         
         backup_applier = PR.Backup_Applier(route_object=route)
-        commit_b,response_b = backup_applier.apply()
+        try: 
+            backup_applier.apply()
+        except Exception as e:
+            message = (f"There was an error when trying to add the route on to the second router {e}")
+            send_message(message,peer,superuser=False)
         
         if commit:            
             status = "ACTIVE"
         else:
             status = "ERROR"
-        if commit_b:
-            send_message('commit en el segundo router',peer=None, superuser=True)
         route.status = status
         route.response = response
         route.save()
@@ -97,8 +99,11 @@ def edit(route, callback=None):
         commit, response = applier.apply(operation="replace")
 
         backup_applier = PR.Backup_Applier(route_object=route)
-        commit_b,response_b = backup_applier.apply(operation="replace")
-
+        try: 
+            backup_applier.apply(operation="replace")
+        except Exception as e:
+            message = (f"There was an error when trying to edit the route on to the second router {e}")
+            send_message(message,peer,superuser=False)
         if commit:
             status = "ACTIVE"
         else:
@@ -139,8 +144,11 @@ def delete(route, **kwargs):
         commit, response = applier.apply(operation="delete")
         
         backup_applier = PR.Backup_Applier(route_object=route)
-        commit_b,response_b = backup_applier.apply(operation="delete")
-
+        try: 
+            backup_applier.apply(operation="delete")
+        except Exception as e:
+            message = (f"There was an error when trying to delete the route on to the second router {e}")
+            send_message(message,peer,superuser=False)
         
         if commit:
             status = "INACTIVE"
@@ -444,16 +452,20 @@ def daily_backup():
     now = datetime.datetime.now()
     current_time = now.strftime("%H:%M")
     current_date = now.strftime("%d-%B-%Y")
+    send_message('Testing backup 1', peer=None, superuser=True)
     try:
         for peer in peers:
             if not peer.peer_tag == 'Punch':
+                send_message('Testing backup before', peer=None, superuser=True)
                 call_command('dumpdata', f'flowspec.Route_{peer.peer_tag}', format='json',output=f'_backup/{peer.peer_tag}/{peer.peer_tag}_{current_date}-{current_time}.json')
+                send_message('Testing backup after', peer=None, superuser=True)
                 logger.info(f'Copia de seguridad creada con éxito para: {peer.peer_tag}')
             else:
                 pass
         call_command('dumpdata', format='json',output=f'_backup/REM_REMEDIOS/backup_{current_date}-{current_time}.json')
         logger.info(f'Copia de seguridad de toda la BBDD creada con éxito.')
     except Exception as e:
+        send_message(f"Testing backup error: {e}", peer=None, superuser=True)
         message = ('Ha ocurrido un error intentando crear la copia de seguridad. from %s'%e)
         send_message(message,peer=peer.peer_tag,superuser=False)
 

@@ -6,9 +6,13 @@
 {% block extrahead %}
     <!-- <link href="{% static 'theme/css/plugins/dataTables/dataTables.bootstrap.css' %}" rel="stylesheet"> -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
-    <link rel="stylesheet" href="{% static 'css/dataTable_style.css' %}">
+    <!-- <link rel="stylesheet" href="{% static 'css/dataTable_style.css' %}"> -->
     <link rel="stylesheet" href="{% static 'css/table_style.css' %}">
     <link rel="stylesheet" href="{% static 'css/section_style.css' %}">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.12.1/datatables.min.css"/>
+ 
+
+
     <!-- <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.3/datatables.min.css"> -->
     <!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.jqueryui.min.css"> -->
 <style>
@@ -40,19 +44,18 @@ small > a{
 <div class="container">
     <div class="row rows-cols-4 p-5">
         <div class="col">
+            
             <div class="panel-heading"> <span class="font-monospace">  Reglas de Firewall</span> <i class="fa fa-shield"></i>
         </div>
         </div>
     </div>
-    {{data}}
         <div class="panel-body table-responsive">
                     	<table class="table table-hover table-responsive compact w-100" id="routes_table">
                         <thead class="">
                     <tr>
-                        <th>Id</th>
                         <th><big>Nombre</big></th>
+                        <th><big>Creada</big></th>
                         <th><big>Información</big></th>
-                        <th><big>Acción</big></th>
                         <th><big>Estado</big></th>
                         <th><big>Pertenece a</big></th>
                         <th><big>Caduca</big></th>
@@ -61,8 +64,45 @@ small > a{
                     </tr>
                 </thead>
 
-                    <tbody>
+                <tbody>
+                    {% for route in routes %}
+                    <tr>
+                        <td class="text-danger"><small>{{route.name}}</small></td>
+                        <td><small>{{route.filed|time:"H:i"}}, {{route.filed|date:"d M Y"}}</small></td>
+                        <td>
+                            {% if route.destination %} <small>{{route.destination}}</small><br> {% endif %}
+                             {% if route.source %} <small>{{route.source}}</small><br> {% endif %}  
+                            {% if route.protocol %} <small>Protocolo: {% for p in route.protocol.all %} {{p}} {% endfor %}</small><br> {% endif %} 
+                            {% if route.port %} <small>Port: {{route.port}}</small><br> {% endif %}
+                            {% if route.tcpflag %} <small>Tcpflag: {{route.tcpflag}}</small><br> {% endif %}
+                            {% if route.icmptype %} <small>Icmptype: {{route.icmptype}</small><br> {% endif %}
+                            {% if route.icmpcode %} <small>Icmpcode: {{route.icmpcode}}</small><br> {% endif %}
+                        </td>
+                        <td><small>{{route.status}}</small></td>
+                        <td><small>{% if route.applier %} {{route.applier}} {% else %}  {% endif %}</small></td>
+                        <td><small>{% if route.expires %} {{route.expires}} {% else %} No caduca {% endif %}</small></td>
+                        <td><small>{{route.response}}</small></td>
+                        <td>
+                            <div class="col-2 btn-group d-inline">
+                            {% if not route.status == 'ACTIVE' %}
+                                {% if not request.COOKIES.token %}
+                                    <a id="commitbutton" href="" data-bs-toggle="tootltip" data-bs-placement="bottom" title="Commit Route" class="btn m-1"><i class="bi bi-patch-plus text-warning"></i></a>  
+                                {% else %}
+                                    <a id="commitbutton" href="" data-bs-toggle="tooltip"  data-bs-placement="bottom" title="Commit Route" class="btn m-1"><i class="bi bi-patch-plus text-warning"></i></a>  
+                            {% endif %}
+                            {% endif %}
+                            {% if not request.COOKIES.token %}
+                            <a href="{% url 'edit-route' route.name  %}"  data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit rule" class="btn m-1"><i class="bi bi-pencil text-info"></i></a>
+                            {% else %}
+                            <a href="{% url 'edit' route.name  %}"  data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit rule" class="btn m-1"><i class="bi bi-pencil text-info"></i></a>
+                            {% endif %}
+                            <a href="{% url 'exterminate' route.name  %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete rule" class="btn m-1"><i class="bi bi-trash text-danger"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
                 </tbody>
+            
             </table>
             </div>
 
@@ -117,7 +157,7 @@ var filterbtns = '<div class="btn-group d-block gap-4">\
     </div>';
 
 
-$.fn.dataTableExt.oApi.fnReloadAjax = function ( oSettings, sNewSource, fnCallback, bStandingRedraw ){
+/* $.fn.dataTableExt.oApi.fnReloadAjax = function ( oSettings, sNewSource, fnCallback, bStandingRedraw ){
     if ( $.fn.dataTable.versionCheck ) {
         var api = new $.fn.dataTable.Api( oSettings );
         if ( sNewSource ) {
@@ -167,13 +207,12 @@ var oTable;
 var start;
 var end;
 var oldhtml;
-var last_element = false;
-var refreshUrl = "{% url 'group-routes-ajax' %}";
+var last_element = false; */
+var refreshUrl = "{% url 'group-routes-ajax' %}"; 
 
 
 $(document).ready( function(){
     oTable = $('#routes_table').dataTable( {
-        "order": [[ 0, "desc" ]],
         "bPaginate": true,
         "bFilter": true,
         "bResposive": {
@@ -230,140 +269,6 @@ $(document).ready( function(){
                         }
                      }
                      },
-                     {"mData":"match", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
-                     "mRender": function (data, type, full) {
-                     	return '<small>'+data+'</small>';
-                     }
-                     },
-                     {"mData":"then", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
-                     "mRender": function (data, type, full) {
-                     	return data;
-                     }
-                     },
-                     {"mData":"status", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
-                     "mRender": function (data, type, full) {
-                     	var status = data;
-                     	if (status == "EXPIRED" ||status == "ADMININACTIVE" || status == "INACTIVE" || status == "OUTOFSYNC"){
-                     		if (status == "EXPIRED" ||status == "ADMININACTIVE" || status == "INACTIVE" ){
-                     			return '<span class="badge pill bg-dark">DESACTIVADA</span>';
-                     		}
-                     		else
-                     		{
-                     			if (status == "OUTOFSYNC"){
-                     				return '<span class="badge pill bg-dark">DESACTIVADA</span>';
-                     			}
-                     			else{
-                     				return status;
-                     			}
-                     		}
-                     	}
-                     	else{
-                     		if (status == 'ACTIVE'){
-                     			return '<span class="badge pill bg-success">'+status+'</span>';
-                     		}
-                     		else{
-                     			if (status == 'PENDING'){
-                     				return '<span class="badge pill bg-info">'+status+'</span>';
-                     			}
-                                if (status == 'ERROR'){
-                                    return '<span class="badge pill bg-danger">'+status+'</span>';
-                                }
-                     			else{
-                     				return '<span class="badge pill bg-dark">'+status+'</span>';
-                     			}
-                     		}
-                     	}
-                     }
-                     },
-                     {"mData":"applier", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
-                     "mRender": function (data, type, full) {
-                         if(data==null){
-                            return '<small>Esta regla no pertenece a nadie hasta que no se haga un commit con el router.</small>';
-                         }else{
-                            return '<small>'+data+' ('+full.peer+')</small>';
-                         }
-                     	
-                     }
-                     },
-                     {"mData":"expires", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
-                     "mRender": function (data, type, full) {
-                        var parsedate = new Date(data).toLocaleDateString('es-ES',{
-                            year:'numeric',
-                            month:'long',
-                            day:'numeric',
-                        });
-                        if(parsedate=='Invalid Date'){
-                            parsedate = 'No expira'
-                        }
-                        if (parsedate==null){
-                            parsedate = 'No expira'
-                        }
-                     	return '<small>'+parsedate+'</small>';
-                     }},
-                     {"mData":"response", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
-                     "mRender": function (data, type, full) {
-                     	status = full.status;
-                     	toolt = '<a rel="tooltip" href="#" data-bs-toggle="tooltip" data-bs-placement="top"';
-   	                     	if (status == "EXPIRED" ||status == "ADMININACTIVE" || status == "INACTIVE" || status == "OUTOFSYNC"){
-	                     		if (status == "INACTIVE" ){
-	                     			title = "{% trans 'Desactivada por el usuario' %}";
-	                     		}
-	                     		if (status == "ADMININACTIVE" ){
-	                     			title = "{% trans 'Desactivada por el administrador' %}";
-	                     		}
-	                     		if (status == "EXPIRED" ){
-	                     			title = "{% trans 'Desactivada por caducación.' %}";
-	                     		}
-	                     		if (status == "OUTOFSYNC" ){
-	                     			title = "{% trans 'Error por sincronización. Hay diferente configuraciones en el router y base de datos.' %}";
-	                     		}
-	                     		return toolt+" title=\""+title+"\">"+"<small>{% trans 'Regla caducada' %}</small>"+"</a>";
-	                     	}
-                     		if (status == "PENDING"){
-                     				return "<img src={% static 'dots.gif' %}>";
-                     			}
-                     		return "<small>"+full.response+"</small>";
-
-                     }
-                     },
-                     {"mData":"comments", "bSearchable": true,"bSortable": true,
-                      "mRender": function (data, type, full) {
-                     status = full.status;
-                     btn = '';
-                    {% if not request.COOKIES.token %}
-                        editurl = "{% url 'edit-route' route_slug='routename'  %}".replace('routename', full.name.toString());
-                    {% else %}
-                        editurl = "{% url 'edit' route_slug='routename'  %}".replace('routename', full.name.toString());
-                    {% endif %}
-                    {% if not request.COOKIES.token %}
-                        deleteurl = "{% url 'delete-route' route_slug='routename'  %}".replace('routename', full.name.toString());
-                        deleteroute = "{% url 'exterminate' route_slug='routename' %}".replace('routename', full.name.toString());
-                    {% else %}
-                        deleteurl = "{% url 'delete' route_slug='routename'  %}".replace('routename', full.name.toString());
-                        deleteroute = "{% url 'exterminate' route_slug='routename' %}".replace('routename', full.name.toString());
-                    {% endif %}
-                     graphsurl = "{% url 'display-graphs' route_slug='routename'  %}".replace('routename', full.name.toString());
-                     if (status == "ACTIVE" ){
-                     	btn = '<div class="row"><div class="col col-2 btn-group d-inline"><a href="'+editurl+'" class="btn btn-outline-warning m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Editar" %}"><i class="bi-pencil text-dark"></i></a>';
-                        btn = btn +'<a href="'+deleteurl+'" class="btn btn-outline-danger m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Desactivar" %}"><i class="bi-shield-fill-x text-dark"></i></a>';
-                        btn = btn +'<a href="'+graphsurl+'" class="btn btn-outline-info m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Mostrar gráficos!" %}"><i class="bi-graph-up text-dark"></i></a></div></div>';
-                    }
-                     if (status == 'EXPIRED' || status == 'ADMININACTIVE' || status == 'INACTIVE' || status == 'DEACTIVATED' ){
-                     	btn = '<a href="'+editurl+'" class="btn btn-outline-warning m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Reactivar" %}" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>';
-                        btn = btn +'<a href="'+deleteroute+'" class="btn btn-outline-danger m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Eliminar regla de REM-E-DDOS" %}"><i class="bi-shield-fill-x text-dark"></i></a>';
-                     }
-                     if (status == "OUTOFSYNC" ){
-                     	btn = '<a href="'+editurl+'" class="btn btn btn-sm btn-outline-danger id="edit_button_{{route.pk}}">{% trans "Resincronizar" %}</a>';
-
-                     }
-                     if (status == "ERROR" ){
-                     	btn = '<div class="row"><div class="col col-2 btn-group d-inline"><a href="'+editurl+'" class="btn btn btn-sm btn-outline-danger" id="edit_button_{{route.pk}}">{% trans "Arreglar!" %}</a>';
-                        
-                     }
-                     return btn;
-                     },
-                    }
-
          ]
 } );
 $('#filterplaceholder').html(filterbtns);

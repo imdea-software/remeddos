@@ -43,22 +43,26 @@ services:
         
     worker:
         build: .
-        command: "celery -A flowspy worker --concurrency=8 -E -l INFO --logfile=/var/log/fod/celery_jobs.log"
+        command: "celery -A flowspy worker --pool=gevent --concurrency=4 --autoscale=10,4 -E -l INFO --logfile=/var/log/fod/celery_jobs.log"
 
         restart: always
         depends_on: 
             - redis
             - db
+        environment:
+            - DB_HOST=db
+            - DB_NAME=flowspy
+            - DB_USER=fod
+            - DB_PASS=heix6ieG 
         volumes: 
             - ./:/srv/redifod/
         links:
             - redis  
     beat:
         build: .
-        command: "celery -A flowspy beat -l INFO -S redbeat.RedBeatScheduler"
+        command: "celery -A flowspy beat -l INFO"
         depends_on: 
             - redis
-            - db
         volumes: 
             - ./:/srv/redifod/
         links:

@@ -16,8 +16,6 @@ RUN chown -R celery:celery /var/run/celery/ /var/log/celery/
 COPY ./config/celery/celery.service /etc/systemd/system/celery.service
 COPY ./config/celery/celeryd /etc/conf.d/celeryd
 COPY ./config/celery/celerybeat /etc/conf.d/celerybeat
-#COPY ./config/celery/default_celery /etc/default/celeryd 
-#COPY ./config/celery/default_celerybeat /etc/default/celerybeat 
 
 
 RUN chmod u+x /etc/conf.d/celeryd 

@@ -97,13 +97,7 @@ def user_routes(request):
     for route in routes:
         if route.applier != None:
             user_routes.append(route)
-    return render(
-        request,
-        'user_routes.html',
-        {
-            'routes': user_routes
-        },
-    )
+    return render(request,'user_routes.html',{'routes': user_routes})
 
 
 def welcome(request):
@@ -205,6 +199,7 @@ def group_routes_ajax(request):
     jresp = {}
     routes = build_routes_json(all_group_routes, request.user.is_superuser)
     jresp['aaData'] = routes
+    print('are we here? ')
     return JsonResponse(jresp)
 
 
@@ -237,6 +232,7 @@ def build_routes_json(groutes, is_superuser):
                 if (r.applier == None and r.status=='ACTIVE') or (r.applier == None and r.status=='ERROR') or r.applier!=None:
                     rd = {}
                     rd['id'] = r.pk
+                    rd['filed'] = r.filed
                     rd['port'] = r.port
                     rd['sourceport'] = r.sourceport
                     rd['destinationport'] = r.destinationport
@@ -284,6 +280,8 @@ def build_routes_json(groutes, is_superuser):
                     rd = {}
                     rd['id'] = r.pk
                     rd['port'] = r.port
+                    rd['filed'] = r.filed
+                    print('yes? ', rd['filed'])
                     rd['sourceport'] = r.sourceport
                     rd['destinationport'] = r.destinationport
                     # name with link to rule details
@@ -323,6 +321,7 @@ def build_routes_json(groutes, is_superuser):
                     rd['expires'] = "%s" % r.expires
                     rd['response'] = "%s" % r.response
                     group_routes.append(rd)
+    print('group routes: ', group_routes)
     return group_routes
 
 @verified_email_required
@@ -1000,7 +999,7 @@ def sync_router(request):
                         route.protocol.add(prot)
                     th_act, created = ThenAction.objects.get_or_create(action=then,action_value=then_action)
                     route.then.add(th_act.pk)
-                    message ='Todas las reglas ya han sido sincronizadas con la base de datos.' 
+                    print('Todas las reglas ya han sido sincronizadas con la base de datos.') 
                         # check if the route is already in our DB
                 except Exception as e:                    
                     #message = 'Routes have already been syncronised.'
