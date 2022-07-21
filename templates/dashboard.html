@@ -8,10 +8,42 @@
 {% block extrahead %}
 <link rel="stylesheet" href="{% static 'css/dashboard_style.css' %}">
 <link rel="stylesheet" href="{% static 'css/section_style.css' %}">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.12.1/datatables.min.css"/>
 {% endblock %}
 {% block title %}{% trans "Dashboard" %}{% endblock %}
 {% block contentplaceholder %}
 {% csrf_token %}
+<style>
+	.page-item.active .page-link {
+    background-color: lightgrey !important;
+    border: 1px solid lightgrey;
+    }
+  .page-link {
+    color: black !important;
+    background-color: white !important;
+    }
+table {
+      border-collapse:separate !important;
+      border:solid lightgrey 1px !important;
+      border-radius:15px !important;
+  }
+  
+  td {
+      border-left:solid lightgrey 1px !important;
+      border-top:solid lightgrey 1px !important;
+      border-bottom:none !important;
+      border-right: none !important;
+  }
+  
+th {
+    border-top: none !important;
+    border-top: none !important;
+  }
+  
+td:first-child, th:first-child {
+       border-left: none !important;
+  }
+</style>
 
         <div class="container">
 			<section id="projects">
@@ -64,74 +96,45 @@
 					</div>
 				  </section>
 				  <!--ENDINFO -->
-				<section id="projects">
-				  <div class="row align-items-left">
-					<div class="col-sm-6">
-				  {% for route in routes %}
-						{% if route.status == 'ACTIVE' %}
-						<div class="card mb-3">
-							<h5 class="card-header text-success">{{route.name}}</h5>
-						<div class="card-body">
-						  	<p class="card-text"> Status: <span class="badge bg-success">{{route.status}}</span>
-								{% if route.expires != NoneType %}
-								<span class="text-muted"> Expires: {{route.expires}}</span></p>
-							{% endif %}
-						  	<p class="card-text"><small class="text-muted">Last updated: {{route.last_updated}} by {{route.applier_username_nice}}. 
-								{% if route.expires != NoneType %}  
-								Days to expire: {{route.days_to_expire}} 
-							   {% endif %}
-							  </small></p>
-							<table class="table table-hover">
-								{{ route.get_table|safe|escape }}
-							</table>
-							</div>
-							<div class="card-footer">
-							{% if not request.COOKIES.token %}
-							<a href="{% url 'edit-route' route.name %}" class="btn btn-info btn-sm btn-warning" id="edit_button_{{route.pk}}">Editar reglas</a>
-							{% else %}
-							<a href="{% url 'edit' route.name%}"class="btn btn-info btn-sm btn-warning" id="edit_button_{{route.pk}}">Editar reglas</a>
-							{% endif %}
-							<a href="{% url 'display-graphs' route.name %}" class="btn btn-sm btn-info" id="display_button_{{route.pk}}">Mas información</a>
-						</div>
-					</div>
-						{% elif route.status == 'ERROR' %}
-						<div class="card mb-3">
-							<h5 class="card-header text-danger">{{route.name}}</h5>
-						<div class="card-body">						
-							<p class="card-text"> Status: <span class="badge bg-danger">{{route.status}}</span></p>
-							<table class="table table-hover">{{route.get_table | safe | escape}} </table>
-						</div>
-						<div class="card-footer">
-							{% if not request.COOKIES.token %}
-							<a href="{% url 'edit-route' route.name %}" class="btn btn-sm btn-outline-warning m-1" data-bs-toggle="tooltip" data-bs-placement="top"  id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up mr-2"></i>Resincronizar</a>
-							{% else %}
-							<a href="{% url 'edit' route.name %}" class="btn btn-sm btn-outline-warning m-1" data-bs-toggle="tooltip" data-bs-placement="top"  id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up mr-2"></i>Resincronizar</a>
-							{% endif %}	
-						</div>
-					</div>
-						{% elif route.status == 'EXPIRED' %}
-						<div class="card mb-3">
-							<h5 class="card-header text-dark">{{route.name}}</h5>
-						<div class="card-body">
-							<p class="card-text"> Status: <span class="badge bg-dark">{{route.status}}</span></p>
-							<table class="table table-hover">{{route.get_table | safe | escape}} </table>
-						</div>
-						<div class="card-footer">
-							{% if not request.COOKIES.token %}
-							<a href="{% url 'edit-route' route.name %}" class="btn btn-sm btn-outline-warning m-1" data-bs-toggle="tooltip" data-bs-placement="top"  id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up mr-2"></i>Resincronizar</a>
-							{% else %}
-							<a href="{% url 'edit' route.name %}" class="btn btn-sm btn-outline-warning m-1" data-bs-toggle="tooltip" data-bs-placement="top"  id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up mr-2"></i>Resincronizar</a>
-							{% endif %}
-						</div>
-					</div>
-						{% endif %}
-						
-				{% endfor %}
-
-			</div>
-
-			
-				<div class="row p-2 mt-3">
+				  
+				 
+				  <!--  TABLE -->
+				  <div class="row p-2 mt-3">
+				  <div class="col">
+					{% if routes != None %}
+        			<table id="routes_table" class="table table-hover table-responsive display compact w-100">
+						<thead class="">
+						<tr>
+							<th><small>Nombre</small></th>
+							<th><small>Creada</small></th>
+							<th><small>Mas información</small></th>
+							<th><small>Estado</small></th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for route in routes %}
+							<tr>
+								<td><small><a href="{% url 'route-details' route.name %}">{{route.name}}</a></small></td>
+								<td><small>{{route.filed|time:"H:i"}}, {{route.filed|date:"d M Y"}}</small></td>
+								<td> 
+									{% if route.destination %} <small>{{route.destination}}</small> {% endif %} <br> 
+									{% if route.source %} <small>{{route.source}}</small> {% endif %} <br>
+									{% if route.protocol %} <small>Protocolo: {% for p in route.protocol.all %} {{p}} {% endfor %}</small><br> {% endif %} 
+									{% if route.port %} <small>Port: {{route.port}}</small><br> {% endif %}
+									{% if route.tcpflag %} <small>Tcpflag: {{route.tcpflag}}</small><br> {% endif %}
+									{% if route.icmptype %} <small>Icmptype: {{route.icmptype}</small><br> {% endif %}
+									{% if route.icmpcode %} <small>Icmpcode: {{route.icmpcode}}</small><br> {% endif %}
+								</td>
+								<td><span class="badge pill bg-success">{{route.status}}</span></td>
+							</tr>
+							{% endfor %}
+							</tbody>
+        </table>
+        {% else %}
+        <p class="fw-light">No hay reglas asociadas a este ataque todavía. Porfavor contacte con RediMadrid en caso de que no se proponga ninguna regla antes de que finalice el ataque.</p>
+        {% endif %}
+				  </div>
+				
 					<div class="col">
 							<div class="card">
 										<h5 class="card-header text-left text-info ">Shortcuts</h5>
@@ -156,7 +159,9 @@
 </div>   
 {% endblock %}
 {% block pagejsbottom %}
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.5/af-2.3.7/b-2.2.2/datatables.min.js"></script>
 <script>
+	
 	$('#routebutton').click(function(){
       $.ajax({
               url: "{% url 'add-route' %}",
@@ -169,6 +174,13 @@
               }
             });
      });
+	 $(document).ready(function(){
+		$('#routes_table').DataTable({
+			"order": [[ 1, "desc" ]],
+			"AutoWidth": true,
+			"Processing": true, 
+    		});
+	 });
 </script>
 
 {% endblock %}

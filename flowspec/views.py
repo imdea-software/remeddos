@@ -131,10 +131,9 @@ def dashboard(request):
                 all_routes = []
                 for groute in all_group_routes:
                     for group_route in groute:
-                        if (group_route.applier == None and group_route.status=='ACTIVE') or group_route.applier!=None: 
+                        if group_route.status=='ACTIVE': 
                             group_route.has_expired()
                             all_routes.append(group_route)
-                print('dashboard traza 1')
                 return render(request,'dashboard.html',{'routes': all_routes,'messages': message,'file' : '','route_slug':route_name},)
             else:
                 message = 'You have not added any rules yet'
@@ -199,7 +198,6 @@ def group_routes_ajax(request):
     jresp = {}
     routes = build_routes_json(all_group_routes, request.user.is_superuser)
     jresp['aaData'] = routes
-    print('are we here? ')
     return JsonResponse(jresp)
 
 
@@ -281,7 +279,6 @@ def build_routes_json(groutes, is_superuser):
                     rd['id'] = r.pk
                     rd['port'] = r.port
                     rd['filed'] = r.filed
-                    print('yes? ', rd['filed'])
                     rd['sourceport'] = r.sourceport
                     rd['destinationport'] = r.destinationport
                     # name with link to rule details
@@ -321,7 +318,6 @@ def build_routes_json(groutes, is_superuser):
                     rd['expires'] = "%s" % r.expires
                     rd['response'] = "%s" % r.response
                     group_routes.append(rd)
-    print('group routes: ', group_routes)
     return group_routes
 
 @verified_email_required
@@ -793,6 +789,7 @@ def routedetails(request, route_slug):
     now = datetime.datetime.now()
     return render(request, 'flowspy/route_details.html', {'route': route,'mytime': now,'tz' : settings.TIME_ZONE,'is_superuser' : request.user.is_superuser,'route_comments_len' : len(str(route.comments))}) """
     uname = request.user.username
+    
     try:
         route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
         return render(request,'graphs.html',{'route':route})
@@ -1043,7 +1040,6 @@ def routes_sync(request):
                     else:
                         if (route.has_expired()==True) or (route.status== 'EXPIRED' and route.status!= 'ADMININACTIVE' and route.status!= 'INACTIVE'): 
                             logger.info('Estado: %s, regla de firewall  %s, comprobando regla.' %(route.status, route.name))
-                            print('here4?')
                             route.check_sync()
                 except Exception as e:
                     logger.info(f"Ha ocurrido una excepción cuando se intentaban sincronizar las reglas: ", e)
@@ -1058,7 +1054,6 @@ def routes_sync(request):
                 add(route)
                 message = ('Estado: %s, regla de firewall no sincronizada: %s, guardando regla de firewall.' %(route.status, route.name))
                 send_message(message,peer=None,superuser=True)
-                print('plis no')
     return HttpResponseRedirect(reverse('group-routes'))
 
 @verified_email_required

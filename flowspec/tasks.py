@@ -374,7 +374,6 @@ def sync_router():
     from accounts.models import UserProfile
 
     peers = Peer.objects.all()
-    users = UserProfile.objects.all()
     for peer in peers:
             # find what peer organisation does the user belong to
             # first initialize all the needed vars    
@@ -456,10 +455,7 @@ def daily_backup():
     try:
         for peer in peers:
             if not peer.peer_tag == 'Punch':
-                send_message('Testing backup before', peer=None, superuser=True)
                 call_command('dumpdata', f'flowspec.Route_{peer.peer_tag}', format='json',output=f'_backup/{peer.peer_tag}/{peer.peer_tag}_{current_date}-{current_time}.json')
-                send_message('Testing backup after', peer=None, superuser=True)
-                logger.info(f'Copia de seguridad creada con éxito para: {peer.peer_tag}')
             else:
                 pass
         call_command('dumpdata', format='json',output=f'_backup/REM_REMEDIOS/backup_{current_date}-{current_time}.json')
@@ -552,12 +548,6 @@ def delete_expired_proposed_routes():
                 if today > expired_date:
                     logger.info(f"Route: {route.name} is about to expired")
                     route.delete()
-
-
-@shared_task
-def check_beat_working():
-    send_message('Testing beating', peer=None, superuser=True)
-    logger.info('Testing the waters with logger')
 
 
 @shared_task

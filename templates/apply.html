@@ -38,8 +38,8 @@
     <script src="{% static 'datepicker/plugins/js/main.js' %}"></script>
 <script>
 	$(document).ready( function(){
-		$('id_sourceport').removeAttr('required');
-		$('id_destinationport').removeAttr('required');
+		$('#id_sourceport').removeAttr('required');
+		$('#id_destinationport').removeAttr('required');
 		$('#id_then').removeAttr("multiple");
 		$('#setFromAll').click(function(){
 			$("#id_source").val('0.0.0.0/0');

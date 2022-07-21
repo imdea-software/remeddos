@@ -64,6 +64,7 @@ def display(request):
         peer_name = get_peers(username)
         peer = Peer.objects.get(peer_name=peer_name)
         golem_attacks = GolemAttack.objects.filter(peer=peer.pk).all()[::-1]
+        ga = GolemAttack.objects.filter(peer=peer.pk).all()
         return render(request,'golem/display.html',{'attacks':golem_attacks})
 
 @verified_email_required

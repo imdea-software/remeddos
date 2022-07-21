@@ -268,30 +268,47 @@ $('document').ready(function(){
 </canvas>
 </section>
 <section>
-  <div class="row align-items-left">
-    <div class="col-sm-6">
-      <div class="card mb-3">
+  <div class="row p-2 mt-3">
+    <div class="col">
+      <div class="card">
         <h5 class="card-header text-success">{{route.name}}</h5>
         <div class="card-body">
             <p class="card-text"> Status: <span class="badge bg-success">{{route.status}}</span>
             {% if route.expires != None %}
             <span class="text-muted"> Expires: {{route.expires}}</span></p>
           {% endif %}
-            <p class="card-text"><small class="text-muted">Last updated: {{route.last_updated}} by {{route.applier_username_nice}}. 
+            <p class="card-text"><small class="text-muted">Última actualización: {{route.last_updated}} by {{route.applier_username_nice}}. 
             {% if route.expires != None %}  
             Days to expire: {{route.days_to_expire}} 
              {% endif %}
             </small></p>
-            <table class="table table-hover table-responsive">
-            {{ route.get_table|safe|escape }}
-          </table>
-        </div>
+            <div class="font-monospace">
+              {% if route.destination %} <small>Destino: {{route.destination}}</small> {% endif %} <br> 
+									{% if route.source %} <small>Origen: {{route.source}}</small> {% endif %} <br>
+									{% if route.protocol %} <small>Protocolo: {% for p in route.protocol.all %} {{p}} {% endfor %}</small><br> {% endif %} 
+									{% if route.port %} <small>Puerto(s): {{route.port}}</small><br> {% endif %}
+									{% if route.tcpflag %} <small>Tcpflag: {{route.tcpflag}}</small><br> {% endif %}
+									{% if route.icmptype %} <small>Icmptype: {{route.icmptype}</small><br> {% endif %}
+									{% if route.icmpcode %} <small>Icmpcode: {{route.icmpcode}}</small><br> {% endif %}
+                  {% if route.thenaction %} <small>Acción: {{route.thenaction}}</small><br> {% endif %}
+            </div>
         <div class="card-footer">
-          <a href="{% url 'edit-route' route.name %}" class="btn btn-info btn-sm btn-warning" id="edit_button_{{route.pk}}">Edit route</a>
+          {% if not request.COOKIES.token %}
+                <a href="{% url 'edit-route' route.name %}" class="btn btn-info btn-sm btn-warning">Editar regla</a>
+                    {% else %}
+                <a href="{% url 'edit' route.name %}" class="btn btn-info btn-sm btn-warning">Editar regla</a>
+                    {% endif %}
+              {% if not request.COOKIES.token %}
+              <a href="{% url 'delete-route' route.name %}" class="btn btn-info btn-sm btn-warning" >Eliminar regla</a>
+                    {% else %}
+              <a href="{% url 'delete' route.name %}" class="btn btn-info btn-sm btn-warning">Eliminar regla</a>
+                    {% endif %}
+          
         </div>
       </div>
     </div>
-    <div class="col-sm-6">
+    </div>
+    <div class="col">
       <div class="card float-right">
         <h5 class="card-header text-left text-info">
             Shortcuts
