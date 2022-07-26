@@ -366,7 +366,7 @@ def routes_sync():
 
  
 @shared_task
-def sync_router():
+def sync_router_with_db():
       ## check that the routes that are configured on the router are found on the db
     from peers.models import Peer
     from flowspec.models import MatchProtocol,ThenAction
@@ -377,7 +377,9 @@ def sync_router():
     for peer in peers:
             # find what peer organisation does the user belong to
             # first initialize all the needed vars    
-        routes = get_routes_router() ; fw_rules = []; message = ''
+        routes = get_routes_router() 
+        fw_rules = []
+        message = ''
             # for getting the route parameters is needed to run through the xml 
         for children in routes:
             then = '' ; then_action = '' ; protocol = [] ; destination = [] ; source = '' ; src_port =  '' ; dest_port = '' ; tcpflags = '' ; icmpcode = ''; icmptype = ''; packetlength = ''; prot = '';  name_fw = ''
@@ -387,6 +389,7 @@ def sync_router():
                     if (peer.peer_name in name_fw):
                             fw_rules.append(child.text)                              
                     # if the user peer organisation is found on the router the program will collect all the info
+                print('t1')
                 if (peer.peer_name in name_fw):  
                     for child in children:
                         if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}then':
@@ -404,40 +407,43 @@ def sync_router():
                                 if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type': icmptype = c.text 
                                 if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length' and c.text != '': packetlength = c.text
                                 if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source': source = c.text
-                if (peer.peer_name in name_fw):
-                    try: 
-                        route = get_route(applier=None,peer=peer.peer_tag)
-                        route.name = name_fw
-                            #route.applier = applier
-                        route.source = source
-                        route.sourceport = src_port
-                        route.destination = destination
-                        route.destinationport = dest_port
-                        route.icmpcode = icmpcode
-                        route.icmptype = icmptype
-                        route.packetlength = packetlength
-                        route.tcpflag = tcpflags
-                        route.status = 'ACTIVE'
-                        route.save()
-                        if isinstance(protocol,(list)):
-                            for p in protocol:
-                                prot, created = MatchProtocol.objects.get_or_create(protocol=p)
-                                route.protocol.add(prot.pk)
-                        else:
-                            prot, created = MatchProtocol.objects.get_or_create(protocol=protocol)
-                            route.protocol.add(prot)
-                        th_act, created = ThenAction.objects.get_or_create(action=then,action_value=then_action)
-                        route.then.add(th_act.pk)
-                        message ='Routes are syncronised with the database.' 
+                print('t2', name_fw , ' peer: ', peer.peer_name)
+                # loop through list checking f t name 
+                
+                print('hi ? ')
+                try: 
+                    route = get_route(applier=None,peer=peer.peer_tag)
+                    route.name = name_fw
+                        #route.applier = applier
+                    route.source = source
+                    route.sourceport = src_port
+                    route.destination = destination
+                    route.destinationport = dest_port
+                    route.icmpcode = icmpcode
+                    route.icmptype = icmptype
+                    route.packetlength = packetlength
+                    route.tcpflag = tcpflags
+                    route.status = 'ACTIVE'
+                    route.save()
+                    print('t3')
+                    if isinstance(protocol,(list)):
+                        for p in protocol:
+                            prot, created = MatchProtocol.objects.get_or_create(protocol=p)
+                            route.protocol.add(prot.pk)
+                    else:
+                        prot, created = MatchProtocol.objects.get_or_create(protocol=protocol)
+                        route.protocol.add(prot)
+                    th_act, created = ThenAction.objects.get_or_create(action=then,action_value=then_action)
+                    route.then.add(th_act.pk)
+                    message ='Routes are syncronised with the database.'
+                    print('this would be the saved route?: ',route)
+                    print('message: ', message , peer) 
                                 # check if the route is already in our DB
-                    except Exception as e:                    
-                            #message = 'Routes have already been syncronised.'
-                            
-                            pass
-                else:
-                        # means that the route does not belong to the user's peer
+                except Exception as e:                    
+                    #message = 'Routes have already been syncronised.'
+                    print(f"# means that the route does not belong to the users peer {peer}, {name_fw}, {e}")       
                     pass
-        print(f'Database syncronised {peer.peer_name}')
+       # print(f'Database syncronised {peer.peer_name}')
     
 
 
