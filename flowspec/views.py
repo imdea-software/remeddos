@@ -252,20 +252,23 @@ def build_routes_json(groutes, is_superuser):
                         rd['peer'] = ''
                     else:
                         try:
-                            peers = r.applier.profile.peers.prefetch_related('networks')
-                            username = None
-                            for peer in peers:
-                                if username:
-                                    break
-                                for network in peer.networks.all():
-                                    net = IPNetwork(network)
-                                    if IPNetwork(r.destination) in net:
-                                        username = peer.peer_name
+                            if not r.applier == None:
+                                peers = r.applier.profile.peers.prefetch_related('networks')
+                                username = None
+                                for peer in peers:
+                                    if username:
                                         break
-                            try:
-                                rd['peer'] = username
-                            except UserProfile.DoesNotExist:
-                                rd['peer'] = ''
+                                    for network in peer.networks.all():
+                                        net = IPNetwork(network)
+                                        if IPNetwork(r.destination) in net:
+                                            username = peer.peer_name
+                                            break
+                                try:
+                                    rd['peer'] = username
+                                except UserProfile.DoesNotExist:
+                                    rd['peer'] = ''
+                            else:
+                                logger.info(f"The route {r} does not have an applier.")    
                         except Exception as e:
                             logger.info('There has been an exception when building the routes json: ', e)
 

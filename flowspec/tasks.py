@@ -389,7 +389,6 @@ def sync_router_with_db():
                     if (peer.peer_name in name_fw):
                             fw_rules.append(child.text)                              
                     # if the user peer organisation is found on the router the program will collect all the info
-                print('t1')
                 if (peer.peer_name in name_fw):  
                     for child in children:
                         if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}then':
@@ -407,42 +406,51 @@ def sync_router_with_db():
                                 if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type': icmptype = c.text 
                                 if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length' and c.text != '': packetlength = c.text
                                 if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source': source = c.text
-                print('t2', name_fw , ' peer: ', peer.peer_name)
                 # loop through list checking f t name 
-                
-                print('hi ? ')
                 try: 
                     route = get_route(applier=None,peer=peer.peer_tag)
-                    route.name = name_fw
-                        #route.applier = applier
-                    route.source = source
-                    route.sourceport = src_port
-                    route.destination = destination
-                    route.destinationport = dest_port
-                    route.icmpcode = icmpcode
-                    route.icmptype = icmptype
-                    route.packetlength = packetlength
-                    route.tcpflag = tcpflags
-                    route.status = 'ACTIVE'
-                    route.save()
-                    print('t3')
-                    if isinstance(protocol,(list)):
-                        for p in protocol:
-                            prot, created = MatchProtocol.objects.get_or_create(protocol=p)
-                            route.protocol.add(prot.pk)
+                    if peer.peer_tag == get_peer_with_name(name_fw):
+                        check_route = get_object_or_404(get_edit_route(route, rname=name_fw), name=name_fw)
+                        if not check_route.status == 'ACTIVE' :
+                            check_route.name = name_fw
+                                #route.applier = applier
+                            check_route.source = source
+                            check_route.sourceport = src_port
+                            check_route.destination = destination
+                            check_route.destinationport = dest_port
+                            check_route.icmpcode = icmpcode
+                            check_route.icmptype = icmptype
+                            check_route.packetlength = packetlength
+                            check_route.tcpflag = tcpflags
+                            check_route.status = 'ACTIVE'
+                            check_route.peer = peer
+                            check_route.save()
+                            if isinstance(protocol,(list)):
+                                for p in protocol:
+                                    prot, created = MatchProtocol.objects.get_or_create(protocol=protocol)
+                                    check_route.protocol.add(prot.pk)
+                            else:
+                                try:
+                                    prot, created = MatchProtocol.objects.get_or_create(protocol=protocol)
+                                    check_route.protocol.add(prot)
+                                except Exception as e:
+                                    logger.info('An error has occured when trying to add the protocol to a non sync route: ', e)
+                            th_act, created = ThenAction.objects.get_or_create(action=then,action_value=then_action)
+                            check_route.then.add(th_act.pk)
+                            check_route.save()
+                        else:
+                            pass
                     else:
-                        prot, created = MatchProtocol.objects.get_or_create(protocol=protocol)
-                        route.protocol.add(prot)
-                    th_act, created = ThenAction.objects.get_or_create(action=then,action_value=then_action)
-                    route.then.add(th_act.pk)
-                    message ='Routes are syncronised with the database.'
-                    print('this would be the saved route?: ',route)
-                    print('message: ', message , peer) 
-                                # check if the route is already in our DB
+                        pass
+                        
                 except Exception as e:                    
                     #message = 'Routes have already been syncronised.'
-                    print(f"# means that the route does not belong to the users peer {peer}, {name_fw}, {e}")       
-                    pass
+                    pass 
+        message = ('Routes from the router have already been syncronised with the database')
+        send_message(message,peer=peer.peer_tag,superuser=False)
+                    
+                          
+                    
        # print(f'Database syncronised {peer.peer_name}')
     
 

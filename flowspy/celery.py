@@ -51,6 +51,11 @@ app.conf.beat_schedule = {
         "task": "flowspec.tasks.delete_expired_proposed_routes",
         "schedule": crontab(minute=0, hour=0), 
         "args": (),
-    }
+    },
+    "every-day-sync-router":{
+        "tasks":"flowspec.tasks.sync_router_with_db",
+        "schedule":crontab(minute=0,hour=0),
+        "args":(),
+    },
 }
 
