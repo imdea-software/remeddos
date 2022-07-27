@@ -265,7 +265,6 @@ def notify_expired():
                 expiration_days = (route.expires - today).days
                 if route.status == 'ACTIVE' :
                     if expiration_days < settings.EXPIRATION_NOTIFY_DAYS or expiration_days > 0:
-                        print('traza 1 ', route.name)
                         try:
                             fqdn = Site.objects.get_current().domain
                             admin_url = "https://%s%s" % \
@@ -278,7 +277,6 @@ def notify_expired():
                                 expiration_days_text = ''
                             if expiration_days == 1:
                                 days_num = ' day'
-                            print('traza 2 ', route.name)
                             message = ('Route %s expires %s%s. Notifying %s (%s)' %(route.name, expiration_days_text, days_num, route.applier, route.applier.email))
                             send_message(message=message,peer=peer.peer_tag,superuser=False)
                             send_mail(settings.EMAIL_SUBJECT_PREFIX + "Rule %s expires %s%s" %
@@ -439,8 +437,10 @@ def sync_router_with_db():
                             check_route.then.add(th_act.pk)
                             check_route.save()
                         else:
+                            logger.info('Checked route has already been syncronised')
                             pass
                     else:
+                        logger.info('Checked route has already been syncronised')
                         pass
                         
                 except Exception as e:                    
@@ -448,9 +448,6 @@ def sync_router_with_db():
                     pass 
         message = ('Routes from the router have already been syncronised with the database')
         send_message(message,peer=peer.peer_tag,superuser=False)
-                    
-                          
-                    
        # print(f'Database syncronised {peer.peer_name}')
     
 
@@ -527,7 +524,7 @@ def restore_backups():
         for files in backup_files:
             fixture = (backup_dir+files)
             call_command(f"loaddata",fixture)
-            message = 'BBDD restaurada'
+            logger.info('BBDD restaurada')
 
 
 
@@ -566,5 +563,29 @@ def delete_expired_proposed_routes():
 
 @shared_task
 def sync_routers():
+    first_router = get_routes_router()
+    backup_router = get_routes_backuprouter()
+
+    fw_routes = []
+    backup_fw_routes = []
+
+    for children in first_router:
+        for child in children:
+            if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
+                fw_routes.append(child.text)
     
-    pass
+    for children in backup_router:
+        for child in children:
+            if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
+                backup_fw_routes.append(child.text)
+
+    fw_routes.sort()
+    backup_fw_routes.sort()
+
+    if (fw_routes == backup_fw_routes):
+        logger.info('Routes between both routes have been syncronised.')
+    else:
+        diff = set(fw_routes).difference(backup_fw_routes)
+        notsynced_routes = list(diff)
+        logger.info(f"The following routes have not been syncronised: {notsynced_routes}")
+        pass

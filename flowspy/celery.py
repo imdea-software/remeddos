@@ -52,8 +52,8 @@ app.conf.beat_schedule = {
         "schedule": crontab(minute=0, hour=0), 
         "args": (),
     },
-    "every-day-sync-router":{
-        "tasks":"flowspec.tasks.sync_router_with_db",
+    "every-day-sync-router-with-db":{
+        "task":"flowspec.tasks.sync_router_with_db",
         "schedule":crontab(minute=0,hour=0),
         "args":(),
     },

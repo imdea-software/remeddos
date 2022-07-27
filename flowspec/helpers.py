@@ -1,7 +1,8 @@
 from django.core.mail import send_mail
 from django.conf import settings
 from accounts.models import *
-from flowspy.settings import * 
+from flowspy.settings import *
+from peers.models import PeerNotify 
 from utils.proxy import *
 from flowspy import settings
 from django.shortcuts import get_object_or_404
@@ -59,12 +60,14 @@ def send_message(message, peer=None, superuser=False):
 def get_peer_with_name(routename):
   fd = routename.find('_')
   peer_name = '' 
-  if not routename[fd::][-1].isnumeric():
-    peer_name = routename[fd+1::]
+  if routename[fd::][-1].isnumeric():
+    helper = routename[fd+1::]
+    fd1 = helper.find('_')
+    peer_name = helper[:fd1]
   else:
     n = routename[fd+1::]
     fd1 = n.find('_')
-    peer_name = n[:fd1]
+    peer_name = n[fd1+1::]
   return peer_name
 
 # get peer object
@@ -110,9 +113,9 @@ def get_link(id_golem):
         link = decode_result[fc+1:fe]
         return link
     except Exception as e:
-        print('There was an error when trying to read the configuration file: ',e)
+        logger.info('There was an error when trying to read the configuration file: ',e)
   except Exception as e:
-      print('There was an error when trying to connect via ssh: ',e)
+      logger.info('There was an error when trying to connect via ssh: ',e)
     
 
 
@@ -155,14 +158,14 @@ def create_db_backup():
   call_command('dumpdata', format='json',output=f'_backup/FOD/FOD_backup_{current_date}_{current_time}.json')
     #call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
   message = 'Copia de seguridad creada con éxito.'
-  print(message)
+  logger.info(message)
     
 def restore_db_backup():
   from django.core.management import call_command
   now = datetime.datetime.now()
   call_command('dumpdata', output_filename=("_backup/FOD/FOD_backup_08-March-2022_16:39.json"))
   message = 'Succesfull restore.'
-  print(message)
+  logger.info(message)
 
 
 
@@ -254,7 +257,7 @@ def get_ip_address(ip):
     address = h[0].split("=")
     return address[1]
   except Exception as e:
-    print('There was an error when trying to parse the ip. Error: ',e)
+    logger.info('There was an error when trying to parse the ip. Error: ',e)
     return ip
 
 
@@ -296,7 +299,7 @@ def graphs(timefrom,timetill, routename, username):
   from flowspec.models import Route
   zapi = ZabbixAPI(ZABBIX_SOURCE)
   zapi.login(ZABBIX_USER,ZABBIX_PWD)
-  route = get_object_or_404(get_edit_route(username), name=routename)
+  route = get_object_or_404(get_edit_route(username, routename), name=routename)
   query = get_query(route.name, route.destination, route.source, username)
   #in order to access history log we need to send the dates as timestamp
   if not timefrom=='' and not timetill=='':
@@ -309,7 +312,6 @@ def graphs(timefrom,timetill, routename, username):
     item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
     item_id = [i['itemid'] for i in item['result']]
     hostid = [i['hostid'] for i in item['result']]
-    print('host ',from_date_obj,till_date_obj)
     #if query fails it might be because parameters are not int parsed
     item_history = zapi.history.get(hostids=hostid,itemids=item_id,time_from=ts_from,time_till=ts_till)
     
@@ -336,7 +338,7 @@ def graphs(timefrom,timetill, routename, username):
 def get_default_graph(routename, username):
   zapi = ZabbixAPI(ZABBIX_SOURCE)
   zapi.login(ZABBIX_USER,ZABBIX_PWD)
-  route = get_object_or_404(get_edit_route(username), name=routename)
+  route = get_object_or_404(get_edit_route(username, routename), name=routename)
   query = get_query(route.name, route.destination, route.source, username)
 
   item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
@@ -422,6 +424,19 @@ def get_routes_router():
         routes = flow_nodes   
     return routes
 
+def get_routes_backuprouter():
+    retriever = Backup_Retriever()
+    router_config = retriever.fetch_config_str()    
+    tree = ET.fromstring(router_config)
+    data = [d for d in tree]
+    config = [c for c in data]
+    for config_nodes in config:
+        options = config_nodes
+    for option_nodes in options:
+        flow = option_nodes 
+    for flow_nodes in flow:
+        routes = flow_nodes   
+    return routes
 
 def get_route(applier,peer):
   from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
@@ -451,7 +466,7 @@ def get_route(applier,peer):
     user_routes = routes[peer]
     return user_routes
 
-def get_edit_route(applier,rname=None):
+def get_edit_route(applier,rname):
   from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   routes = {
     'Punch': Route,
@@ -471,11 +486,7 @@ def get_edit_route(applier,rname=None):
     'UPM' : Route_UPM,
     'URJC' : Route_URJC,
   } 
-  if rname != None:
-    peer_tag = get_peer_with_name(rname)
-
-  else:
-    peer_tag = get_peer_tag(applier)
+  peer_tag = get_peer_with_name(rname)
   user_routes = routes[peer_tag]
   return user_routes
 
@@ -816,7 +827,6 @@ def find_peer(peer_name):
   from peers.models import Peer
   find = peer_name.find('_')
   pn = peer_name[find+1::]
-  print('pn: ',pn,' peer_name: ',peer_name)
   peers = ['CV', 'CIB', 'CSIC', 'CEU', 'CUNEF', 'IMDEANET', 'IMDEA', 'UAM', 'UC3M', 'UCM', 'UAH', 'UEM', 'UNED', 'UPM', 'URJC']
   for peer in peers:
     if peer_name == 'punch.software.imdea.org' or peer_name == 'punch2.software.imdea.org' or peer_name == 'punch2.software.imdea.org(2)':
@@ -858,7 +868,7 @@ def find_peer(peer_name):
     elif peer in pn or pn in peer:
       return Peer.objects.get(peer_tag=peer)
     else:
-      print(f'The following institution is not connected to REM-E-DDOS {peer_name}')
+      logger.info(f'The following institution is not connected to REM-E-DDOS {peer_name}')
       return False 
 
        

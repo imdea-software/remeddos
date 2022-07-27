@@ -584,6 +584,7 @@ def edit_route(request, route_slug):
 @login_required
 @never_cache
 def verify_delete_user(request, route_slug):
+    print('dis method? ')
     if not 'token' in request.COOKIES != None:
         if request.method =='GET':
             num = get_code()
@@ -634,6 +635,7 @@ def verify_delete_user(request, route_slug):
 @login_required
 @never_cache
 def delete_route(request, route_slug):
+    print('or dis method? ')
     uname = request.user.username
     route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
 
@@ -673,11 +675,17 @@ def delete_route(request, route_slug):
 @login_required
 @never_cache
 def exterminate_route(request,route_slug):
-    fd = route_slug.find('_')
-    peer_tag = route_slug[fd+1:-2]
-    route = get_specific_route(applier=None,peer=peer_tag,route_slug=route_slug)
-    route.delete()
-    return HttpResponseRedirect(reverse("group-routes"))
+    from flowspec.helpers import get_peer_with_name
+
+    peertag = get_peer_with_name(route_slug)
+    try:
+        route = get_specific_route(applier=None,peer=peertag,route_slug=route_slug)
+        print('this is rooute: ', route)
+        route.delete()
+        return HttpResponseRedirect(reverse("group-routes"))
+    except Exception as e:
+        logger.info(f"There was an exception when trying to exterminate a route from the DB. Exception: {e}")
+        return HttpResponseRedirect(reverse("group-routes"))
 
 
 
@@ -803,7 +811,7 @@ def routedetails(request, route_slug):
 @login_required
 def routestats(request, route_slug):
     uname = request.user.username
-    route = get_object_or_404(get_edit_route(uname), name=route_slug)
+    route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
     #route = get_object_or_404(Route, name=route_slug)
     import junos
     import time
@@ -910,12 +918,14 @@ def ajax_graphs(request):
 @never_cache
 def display_graphs(request,route_slug):
     uname = request.user.username
-    try:
+    route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
+    return render(request,'graphs.html',{'route':route})
+    """ try:
         route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
         return render(request,'graphs.html',{'route':route})
     except Exception as e:
         logger.info('There was an exception when trying to display the graph. Error: ', e)
-        return HttpResponseRedirect(reverse('dashboard'))
+        return HttpResponseRedirect(reverse('dashboard')) """
     
     
 

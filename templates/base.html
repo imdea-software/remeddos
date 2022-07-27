@@ -56,7 +56,7 @@
                 <!-- <button type="button" class="btn btn-outline btn-light close" data-bs-dismiss="offcanvas" aria-label="Close"><span aria-hidden="true">&times;</span></button> -->
                 <div class="nav_list text-wrap">
                   <!-- <a href="{% url 'dashboard' %}" class="nav_link text-white text-decoration-none font-weight-light text-wrap"> <i class='bi-clipboard nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Dashboard"></i> <span class="nav_name">Dashboard</span></a> -->
-                    <a href="{% url 'group-routes' %}" class="nav_link text-white text-decoration-none font-weight-light text-wrap"> <i class='bi-table nav_icon text-primary' data-bs-toggle="tooltip" data-bs-placement="top" title="Routes"></i> <span class="nav_name">Mis Reglas</span></a>  
+                    <a href="{% url 'group-routes' %}" class="nav_link text-white text-decoration-none font-weight-light text-wrap"> <i class='bi-table nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Routes"></i> <span class="nav_name">Mis Reglas</span></a>  
                     {% if not request.COOKIES.token %}
                       <a href="#" class="nav_link text-white text-decoration-none text-wrap font-weight-light" data-bs-toggle="modal" data-bs-target="#addRouteM" id="submitButton"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Añadir regla"></i><span class="nav_name">Añadir regla</span></a>           
                     {% else %}

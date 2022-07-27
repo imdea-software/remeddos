@@ -46,7 +46,13 @@
                     {% if attack.protocol.all %}<b>Protocol</b> {% for p in attack.protocol.all %} {{p}} {% endfor %}<br> {% endif %}
                     {% if attack.tcpflag %} <b>Tcpflag</b>  {{attack.tcpflag}} {% endif %}
                     <br></small> </td> 
-                    <td><small>{{attack.status}} </small></td>
+                    {% if attack.status == 'Ongoing'  %}
+                    <td><span class="badge bg-success">{{attack.status}}</span></td>
+                    {% elif attack.status == 'Open' %}
+                    <td><span class="badge bg-success">{{attack.status}}</span></td>
+                    {% else %}
+                    <td><span class="badge bg-dark">{{attack.status}}</span></td>
+                    {% endif %}
                     <td><small>{{attack.max_value|floatformat}}/{{attack.typeof_value|title}} </small></td>
                     <td><small>{{attack.threshold_value|floatformat}}/{{attack.typeof_value|title}} </small></td> 
                     {% if attack.link %}
