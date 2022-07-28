@@ -133,10 +133,6 @@ def verify_commit_route(request, route_slug):
             route = get_specific_route(applier=request.user.username,peer=None,route_slug=route_slug)
             message = f"CUIDADO. Seguro que quiere aplicar la siguiente regla {route_slug}?"
             response = render(request,'values/add_value.html', {'form': form, 'message':message,'status':'commit', 'route':route}) 
-            try:
-                response.set_cookie('token',value=num,max_age=900) 
-            except Exception as e:
-                print('There was an exception when trying to assign the token, ',e)
             return response      
     if request.method=='POST':
         form = ValidationForm(request.POST)
@@ -147,6 +143,10 @@ def verify_commit_route(request, route_slug):
                 if str(value) == str(code):
                     url = reverse('commit', kwargs={'route_slug': route_slug})
                     response = HttpResponseRedirect(url) 
+                    try:
+                        response.set_cookie('token',value=num,max_age=900) 
+                    except Exception as e:
+                        print('There was an exception when trying to assign the token, ',e)
                     return response
                 else:
                     form = ValidationForm(request.GET)

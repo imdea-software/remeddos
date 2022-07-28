@@ -326,7 +326,8 @@ def build_routes_json(groutes, is_superuser):
 @verified_email_required
 @login_required
 def verify_add_user(request):
-    if 'token' in request.COOKIES != None:
+    print('COOKIES: ', request.COOKIES)
+    if 'token' in request.COOKIES:
         url = reverse('add')
         response = HttpResponseRedirect(url)
         return response 
@@ -335,19 +336,16 @@ def verify_add_user(request):
             if not 'token' in request.COOKIES:
                 num = get_code()
                 user = request.user
-                peer = get_peers(request.user.username)
-                msg = "El usuario {user} ha solicitado un codigo de seguridad para añadir una nueva regla. Código: '{code}'.".format(user=user,code=num)
+                peer = get_peers(request.user.username)   
                 code = Validation(value=num,user=request.user)
                 code.save()
+                msg = "El usuario {user} ha solicitado un codigo de seguridad para añadir una nueva regla. Código: '{code}'.".format(user=user,code=num)
                 if request.user.is_superuser:
                     send_message(msg,peer,superuser=True)
                 else:
                     send_message(msg,peer,superuser=False)
                 response = JsonResponse({"valid":True}, status = 200)
-                try:
-                    response.set_cookie('token',value=num,max_age=900) 
-                except Exception as e:
-                    logger.info('There was an exception when trying to assign the token, ',e)
+                
                 return response      
         if request.method=='POST':
             form = ValidationForm(request.POST)
@@ -358,6 +356,10 @@ def verify_add_user(request):
                     if str(value) == str(code):
                         url = reverse('add')
                         response = HttpResponseRedirect(url) 
+                        try:
+                            response.set_cookie('token',value=num,max_age=900) 
+                        except Exception as e:
+                            logger.info('There was an exception when trying to assign the token, ',e)
                         return response
                     else:
                         form = ValidationForm(request.GET)
@@ -454,49 +456,52 @@ def add_route(request):
 @verified_email_required
 @login_required             
 def verify_edit_user(request,route_slug):
-    if 'token' in request.COOKIES != None:
+    print('cookieees: ', request.COOKIES)
+    if 'token' in request.COOKIES:
         url = reverse('edit', kwargs={'route_slug':route_slug})
         response = HttpResponseRedirect(url)
-        return response     
-    if (request.method =='GET') and (not 'token' in request.COOKIES): 
-        num = get_code()
-        user= request.user.username
-        peer = get_peers(user)
-        route = get_specific_route(applier=user,peer=None, route_slug=route_slug)
-        msg = "El usuario {user} ha solicitado el siguiente código para editar la regla: {route_slug}. Código:  '{code}'.".format(user=user,code=num,route_slug=route_slug)
-        code = Validation(value=num,user=request.user)
-        code.save()
-        if request.user.is_superuser:
-            send_message(msg,peer,superuser=True)
-        else:
-            send_message(msg,peer,superuser=False)
-        form = ValidationForm(request.GET)
-        message = ""
-        response = render(request,'values/add_value.html', {'form': form, 'message':message,'status':'edit', 'route':route})
-        try:
-            response.set_cookie('token',value=num,max_age=900) 
-        except Exception as e:
-            logger.info('There was an exception when trying to assign the token, ',e)
         return response
-            
-    if request.method=='POST':
-        form = ValidationForm(request.POST)
-        if form.is_valid():
-            code = form.cleaned_data.get('value')
-            value = Validation.objects.latest('id')
-            try:
-                if str(value) == str(code):
-                    url = reverse('edit', kwargs={'route_slug': route_slug})
-                    return HttpResponseRedirect(url)
-                else:
-                    form = ValidationForm(request.GET)
-                    message = "El código introducido es erróneo porfavor introduzca el último código enviado."
-                    return render(request,'values/add_value.html', {'form': form, 'message':message})
+    else:     
+        if (request.method =='GET') and (not 'token' in request.COOKIES): 
+            num = get_code()
+            user= request.user.username
+            peer = get_peers(user)
+            route = get_specific_route(applier=user,peer=None, route_slug=route_slug)
+            code = Validation(value=num,user=request.user)
+            code.save()
+            msg = "El usuario {user} ha solicitado el siguiente código para editar la regla: {route_slug}. Código:  '{code}'.".format(user=user,code=num,route_slug=route_slug)
+            if request.user.is_superuser:
+                send_message(msg,peer,superuser=True)
+            else:
+                send_message(msg,peer,superuser=False)
+            form = ValidationForm(request.GET)
+            message = ""
+            response = render(request,'values/add_value.html', {'form': form, 'message':message,'status':'edit', 'route':route})
+            return response
+                
+        if request.method=='POST':
+            form = ValidationForm(request.POST)
+            if form.is_valid():
+                code = form.cleaned_data.get('value')
+                value = Validation.objects.latest('id')
+                try:
+                    if str(value) == str(code):
+                        url = reverse('edit', kwargs={'route_slug': route_slug})
+                        try:
+                            response = HttpResponseRedirect(url)
+                            response.set_cookie('token',value=get_code(),max_age=900)
+                        except Exception as e:
+                            logger.info('There was an exception when trying to assign the token, ',e)
+                        return response
+                    else:
+                        form = ValidationForm(request.GET)
+                        message = "El código introducido es erróneo porfavor introduzca el último código enviado."
+                        return render(request,'values/add_value.html', {'form': form, 'message':message})
 
-            except Exception as e:
-                form = ValidationForm(request.GET)
-                message = "Ha sucedido un error, porfavor introduzca el último código enviado.", e
-                return render(request,'values/add_value.html', {'form': form, 'message':message})
+                except Exception as e:
+                    form = ValidationForm(request.GET)
+                    message = "Ha sucedido un error, porfavor introduzca el último código enviado.", e
+                    return render(request,'values/add_value.html', {'form': form, 'message':message})
 
 @verified_email_required
 @login_required
@@ -584,7 +589,6 @@ def edit_route(request, route_slug):
 @login_required
 @never_cache
 def verify_delete_user(request, route_slug):
-    print('dis method? ')
     if not 'token' in request.COOKIES != None:
         if request.method =='GET':
             num = get_code()
@@ -602,10 +606,6 @@ def verify_delete_user(request, route_slug):
             route = get_specific_route(applier=username,peer=None,route_slug=route_slug)
             message = f"CUIDADO. Seguro que quiere eliminar la siguiente regla {route_slug}?"
             response = render(request,'values/add_value.html', {'form': form, 'message':message,'status':'delete', 'route':route}) 
-            try:
-                response.set_cookie('token',value=num,max_age=900) 
-            except Exception as e:
-                logger.info('There was an exception when trying to assign the token, ',e)
             return response
                 
         if request.method=='POST':
@@ -616,7 +616,12 @@ def verify_delete_user(request, route_slug):
                 try:
                     if str(value) == str(code):
                         url = reverse('delete', kwargs={'route_slug': route_slug})
-                        return HttpResponseRedirect(url)
+                        try:
+                            response = HttpResponseRedirect(url)
+                            response.set_cookie('token',value=get_code(),max_age=900) 
+                        except Exception as e:
+                            logger.info('There was an exception when trying to assign the token, ',e)
+                        return response
                     else:
                         form = ValidationForm(request.GET)
                         message = "The code introduced does not match the one that has been sent, please try again."
@@ -635,7 +640,6 @@ def verify_delete_user(request, route_slug):
 @login_required
 @never_cache
 def delete_route(request, route_slug):
-    print('or dis method? ')
     uname = request.user.username
     route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
 
@@ -680,7 +684,6 @@ def exterminate_route(request,route_slug):
     peertag = get_peer_with_name(route_slug)
     try:
         route = get_specific_route(applier=None,peer=peertag,route_slug=route_slug)
-        print('this is rooute: ', route)
         route.delete()
         return HttpResponseRedirect(reverse("group-routes"))
     except Exception as e:
@@ -785,7 +788,6 @@ def load_jscript(request,file):
 @login_required
 @never_cache
 def routes_update(request, route_slug):
-#    route = Route.objects.get(name=route_slug)
     route = get_specific_route(applier=request.user.username,peer=None,route_slug=route_slug)
     updates = route.check_history_changes()
     return render(request,'route_updates.html',{'route':route,'updates':updates})
@@ -813,8 +815,6 @@ def routestats(request, route_slug):
     uname = request.user.username
     route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
     #route = get_object_or_404(Route, name=route_slug)
-    import junos
-    import time
     res = {}
     try:
         with open(settings.SNMP_TEMP_FILE, "r") as f:
@@ -920,12 +920,6 @@ def display_graphs(request,route_slug):
     uname = request.user.username
     route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
     return render(request,'graphs.html',{'route':route})
-    """ try:
-        route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
-        return render(request,'graphs.html',{'route':route})
-    except Exception as e:
-        logger.info('There was an exception when trying to display the graph. Error: ', e)
-        return HttpResponseRedirect(reverse('dashboard')) """
     
     
 
@@ -1170,11 +1164,5 @@ def restore_complete_db(request):
     else:
         return render(request,'routes_synced.html',{'message':'Esta opción solo puede ser usada por un superusuario, disculpe las molestias.'})
 
-
-
-"""  
-            celery -A flowspy worker -l INFO --logfile=/var/log/fod/celery_jobs.log --concurrency=10 -n worker1@%h 
-            celery -A flowspy worker --loglevel=INFO --logfile=/var/log/fod/celery_jobs.log  --concurrency=10 -n worker2@%h 
-            celery -A flowspy worker --loglevel=INFO --logfile=/var/log/fod/celery_jobs.log  --concurrency=10 -n worker3@%h" """
 
 
