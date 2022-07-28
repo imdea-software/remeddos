@@ -446,8 +446,8 @@ def sync_router_with_db():
                 except Exception as e:                    
                     #message = 'Routes have already been syncronised.'
                     pass 
-        message = ('Routes from the router have already been syncronised with the database')
-        send_message(message,peer=peer.peer_tag,superuser=False)
+    message = ('Routes from the router have already been syncronised with the database')
+    send_message(message,peer=None,superuser=True)
        # print(f'Database syncronised {peer.peer_name}')
     
 

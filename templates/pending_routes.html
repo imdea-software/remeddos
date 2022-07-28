@@ -37,7 +37,13 @@
                          {% if route.icmpcode %} Icmpcode: {{route.icmpcode}} <br></small> {% endif %}
                      </td>
                      
-                     <td><small>{{route.status}}</small></td>
+                     {% if route.status == 'ACTIVE' %}
+                     <td><span class="badge bg-success">{{route.status}}</span></td>
+                     {% elif route.status == 'PENDING' %}
+                     <td><span class="badge bg-dark">{{route.status}}</span></td>
+                     {% elif route.status == 'OUTOFSYNC' %}
+                     <td><span class="badge bg-dark">{{route.status}}</span></td>
+                     {% endif %}
                      <td>
                          {% if not route.status == 'ACTIVE' %}
                          {% if not request.COOKIES.token %}
