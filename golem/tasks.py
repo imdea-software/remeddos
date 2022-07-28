@@ -31,9 +31,7 @@ def golem(anomaly_info, id_event):
             open_event(id_event)
     else:
         if anomaly_info['institution_name'] == 'Non-Home':
-            print('anomaly_info: ', anomaly_info)
-            print('#################################')
-            print('id event: ', id_event)
+            check_golem_conexion(anomaly_info)
         #event doesn't belong to peer
         pass
 

@@ -562,12 +562,6 @@ def delete_expired_proposed_routes():
 
 
 @shared_task
-def check_golem_works():
-
-    pass
-
-
-@shared_task
 def sync_routers():
     first_router = get_routes_router()
     backup_router = get_routes_backuprouter()

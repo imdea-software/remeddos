@@ -27,7 +27,9 @@ def petition_geni(id_event):
     return (response.json(),event_data)
 
 
-
+def check_golem_conexion(anomaly_info):
+    if anomaly_info['ip_attacked'] == '146.88.240.4' :
+        send_message('Conexion between REM-GOLEM and REM-e-DDOS works.',peer=None,superuser=True)
 
 
 def open_event(id_event):
