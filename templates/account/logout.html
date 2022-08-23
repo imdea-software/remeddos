@@ -8,13 +8,9 @@
 <div class="container-fluid p-5">
 <div class="row">
   <div class="col align-middle">
-    <h5>{% trans "Cerrar sesión" %}</h5>
+    <h5>{% trans '¿Estás seguro de querer cerrar sesión?' %}</h5>
     </div>
     </div>
-<div class="row">
-  <div class="col">
-    <p>{% trans 'Are you sure you would like to log out?' %}</p>
-</div>
 <div class="row">
     <div class="col align-middle">
     <form method="post" action="{% url 'account_logout' %}">
@@ -22,7 +18,7 @@
       {% if redirect_field_value %}
       <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}"/>
       {% endif %}
-      <button class="btn btn-outline-info" type="submit">{% trans 'Log out' %}</button>
+      <button class="btn btn-outline-info" type="submit">{% trans 'Cerrar sesión' %}</button>
     </form>
 </div>
 </div>

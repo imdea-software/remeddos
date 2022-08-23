@@ -326,7 +326,6 @@ def build_routes_json(groutes, is_superuser):
 @verified_email_required
 @login_required
 def verify_add_user(request):
-    print('COOKIES: ', request.COOKIES)
     if 'token' in request.COOKIES:
         url = reverse('add')
         response = HttpResponseRedirect(url)
@@ -1165,4 +1164,13 @@ def restore_complete_db(request):
         return render(request,'routes_synced.html',{'message':'Esta opción solo puede ser usada por un superusuario, disculpe las molestias.'})
 
 
-
+@verified_email_required
+@login_required
+@never_cache
+def whoisDst(request):
+    print(request.GET)
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    if is_ajax:
+        print('this is the value, is here.')
+        pass
+    pass

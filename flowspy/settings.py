@@ -266,7 +266,7 @@ LOGGING = {
 
 LOGIN_REDIRECT_URL = 'dashboard'
 ACCOUNT_LOGOUT_REDIRECT_URL ='/accounts/login/'
-
+DEFAULT_FROM_EMAIL = "redifod@software.imdea.org"
 
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
@@ -365,8 +365,8 @@ PROTECTED_SUBNETS = ['10.10.0.0/16']
 MAX_RULE_EXPIRE_DAYS = 30
 
 # Add two whois servers in order to be able to get all the subnets for an AS.
-PRIMARY_WHOIS = 'whois.remeddos.com'
-ALTERNATE_WHOIS = 'whois.redimadrid.remeddos.net'
+PRIMARY_WHOIS = 'whois.remedios.redimadrid.es'
+ALTERNATE_WHOIS = 'whois.remedios.redimadrid.com'
 
 TINYMCE_JS_URL = STATIC_URL +'js/tinymce/tiny_mce.js'
 

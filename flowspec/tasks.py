@@ -79,8 +79,9 @@ def add(route, callback=None):
         route.status = "ERROR"
         route.response = "Error"
         route.save()
-        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
-        send_message(message,peer,superuser=False)
+        print('Error: ', e)
+        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response} - Error: {e}.")
+        #send_message(message,peer,superuser=False)
     except TransactionManagementError: 
         route.status = "ERROR"
         route.response = "Transaction Management Error"
@@ -483,7 +484,7 @@ def expired_backups():
     from flowspy.settings import BACK_UP_DIR
     import os
     import datetime
-
+    
     peers = Peer.objects.all()
     fixture = ''
 
@@ -554,7 +555,7 @@ def delete_expired_proposed_routes():
     routes = find_all_routes()
     for x in routes:
         for route in x:
-            if route.status == 'OUTOFSYNC' and route.applier == None:
+            if (route.status == 'OUTOFSYNC' or route.status == 'EXPIRED') and route.applier == None:
                 expired_date = route.filed + datetime.timedelta(days=5)
                 if today > expired_date:
                     logger.info(f"Route: {route.name} is about to expired")
@@ -583,9 +584,30 @@ def sync_routers():
     backup_fw_routes.sort()
 
     if (fw_routes == backup_fw_routes):
-        logger.info('Routes between both routes have been syncronised.')
+        logger.info('Routes between both routers are syncronised.')
     else:
         diff = set(fw_routes).difference(backup_fw_routes)
-        notsynced_routes = list(diff)
-        logger.info(f"The following routes have not been syncronised: {notsynced_routes}")
-        pass
+        if not diff == set():
+            notsynced_routes = list(diff)
+            logger.info(f"The following routes have not been syncronised: {notsynced_routes}")
+            for route in notsynced_routes:
+                try:
+                    commit_route = get_specific_route(applier=None,peer=None, route_slug=route)
+                    commit_route.commit_add()
+                except Exception as e:
+                    message = (f"There was an error when trying to sync both routers: {e}")
+                    logger.info(message)
+        else:
+            diff = set(backup_fw_routes).difference(fw_routes)
+            notsynced_routes = list(diff)
+            logger.info(f"The following routes have not been syncronised: {notsynced_routes}")
+            for route in notsynced_routes:
+                try:
+                    commit_route = get_specific_route(applier=None,peer=None, route_slug=route)
+                    commit_route.commit_add()
+                except Exception as e:
+                    message = (f"There was an error when trying to sync both routers: {e}")
+                    logger.info(message)
+
+
+            pass

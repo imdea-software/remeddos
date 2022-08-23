@@ -2,17 +2,21 @@
 {% load static %}
 {% load i18n %}
 {% block extrahead %}
-<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
-<link rel="stylesheet" href="{% static 'css/dataTable_style.css' %}">
+<!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css"> -->
+<!-- <link rel="stylesheet" href="{% static 'css/dataTable_style.css' %}"> -->
 <link rel="stylesheet" href="{% static 'css/table_style.css' %}">
 <link rel="stylesheet" href="{% static 'css/section_style.css' %}">
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.12.1/datatables.min.css"/>
+<!-- <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.12.1/datatables.min.css"/> -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.3/datatables.min.css">
+
 {% endblock %}
 {% block title %}{% trans "Ataques recientes" %}{% endblock %}
 
 {% block contentplaceholder %}
 
 <div class="container">
+  {% if attacks %}
+
 <div class="row rows-cols-4 p-5">
     <div class="mb-2">
       <i class="fa fa-shield"></i><span class="font-weight-light font-monospace">  Ataques recibidos desde <span class="text-danger">REM-GOLEM</span></span>
@@ -77,12 +81,18 @@
     </div>
 
 </div>
-
+{% else %}
+<div class="row w-100">
+  <div class="alert alert-danger alert-dismissible" role="alert" >
+    <p class="font-weight-light font-monospace"> No se ha registrado ningún ataque en la última semana, para más información en <a href=" https://193.145.15.26:443/atm_popup_anomaly?anomaly_info=MSwyMDIyMDgsNCxBMzg3ODU2" target="_blank" data-bs-toggle="tooltip" data-bs-placement="top" title="" class="link-danger" style="text-decoration: None;" data-bs-original-title="REM-GOLEM">REM-GOLEM</a></p>
+</div>
+</div>
+{% endif %}
 
 <div class="row p-2 mt-3">
   <div class="col">
     <div class="card float-right">
-                <h5 class="card-header text-left text-info">Shortcuts</h5>
+                <h5 class="card-header text-left font-monospace">Shortcuts</h5>
                 <div class="card-body btn-group">
                   <div class="card-text btn-group">
                     {% if not request.COOKIES.token %}
@@ -100,7 +110,6 @@
 </div>
 </div>
 
-</div>
 <!-- Commit to router Modal -->
 <div class="modal fade" id="deleteModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" role="dialog" aria-labelledby="deleteconfirmModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -122,8 +131,8 @@
 {% endblock %}
 
 {% block pagejsbottom %}
-<!-- <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.11.5/datatables.min.js"></script> -->
-<script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.5/af-2.3.7/b-2.2.2/datatables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.11.5/datatables.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.jqueryui.min.css">
 <script type="text/javascript">
 $(document).ready(function(){
     $('#golemtable').DataTable({

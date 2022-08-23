@@ -3791,6 +3791,8 @@ class Route(models.Model):
                 send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
         except Exception as e:
                 print('There was an exception when trying to notify the user via e-mail, ',e)
+     
+                
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.profile.peers.all()
         username = None

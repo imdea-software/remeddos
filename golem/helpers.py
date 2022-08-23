@@ -29,7 +29,8 @@ def petition_geni(id_event):
 
 def check_golem_conexion(anomaly_info):
     if anomaly_info['ip_attacked'] == '146.88.240.4' :
-        send_message('Conexion between REM-GOLEM and REM-e-DDOS works.',peer=None,superuser=True)
+        message = (f"Conexion between REM-GOLEM and REM-e-DDOS works. ID: {anomaly_info['ip_attacked']}")
+        send_message(message,peer=None,superuser=True)
 
 
 def open_event(id_event):
@@ -113,7 +114,6 @@ def ongoing(id_event,peer):
         not_recovered = True 
         while not_recovered:
             time.sleep(300)
-            print('after 300')
             attack_data, attack_info = petition_geni(id_event)
             if attack_info['status'] == 'Ongoing':
             # wait 4 min , rule proposition and send email to user , repeat process every 5 min until status equals 'recovered'

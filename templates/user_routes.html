@@ -6,11 +6,11 @@
 {% block extrahead %}
     <!-- <link href="{% static 'theme/css/plugins/dataTables/dataTables.bootstrap.css' %}" rel="stylesheet"> -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
-    <link rel="stylesheet" href="{% static 'css/dataTable_style.css' %}">
+    <!-- <link rel="stylesheet" href="{% static 'css/dataTable_style.css' %}"> -->
     <link rel="stylesheet" href="{% static 'css/table_style.css' %}">
     <link rel="stylesheet" href="{% static 'css/section_style.css' %}">
-    <!-- <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.3/datatables.min.css"> -->
-    <!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.jqueryui.min.css"> -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.3/datatables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.jqueryui.min.css">
 <style>
 body{
     line-height: 0.8rem !important;
@@ -21,14 +21,24 @@ small > a{
     text-decoration: none !important;
     
     }
-    .page-item.active .page-link {
+.page-item.active .page-link {
     background-color: lightgrey !important;
     border: 1px solid lightgrey;
     }
-  .page-link {
+.page-link {
     color: black !important;
     background-color: white !important;
     }
+.paginate_button a {
+      padding: 10px 10px;
+      margin: 5px;
+      border-radius: 6px;
+      border: 1px solid #474747;
+   }
+select.form-select.form-select-sm{
+    margin: 5px !important;
+    padding: 5px !important;
+}
 table {
       border-collapse:separate !important;
       border:solid lightgrey 1px !important;
@@ -89,9 +99,7 @@ td:first-child, th:first-child {
             <div class="row p-2 mt-3">
                 <div class="col">
                     <div class="card float-right">
-                        <h5 class="card-header text-left text-info">
-                            Shortcuts
-                        </h5>
+                        <h5 class="card-header text-left font-monospace">Shortcuts</h5>
                         <div class="card-body">
                             <div class="card-text btn-group">
                             {% if not request.COOKIES.token %}
@@ -116,7 +124,9 @@ td:first-child, th:first-child {
 
 <script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.3/datatables.min.js"></script>
 <script type="text/javascript">
+
 $('.addbutton').click(function(){
+
       $.ajax({
               url: "{% url 'add-route' %}",
               type: "GET",
@@ -233,22 +243,23 @@ $(document).ready( function(){
         "aoColumns":[
                      {"mData":"id", "bSearchable": false,"bSortable": false, "bvisible":false},
                      {"mData":"details", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
-                     "mRender": function (data, type, full) {
-                        if (full.comments !== null) {
-                            if (!full.comments.trim()) {
-                               return  '<small>'+data+'</small>';
+                            "mRender": function (data, type, full) {
+                                if (full.comments !== null) {
+                                    if (!full.comments.trim()) {
+                                    return  '<small>'+data+'</small>';
+                                    }
+                                    
+                                    {% if request.COOKIES.token %}
+                                    displayurl = "{% url 'edit-route' route_slug='routename'  %}".replace('routename', full.name.toString());
+                                    {% else %}
+                                    displayurl = "{% url 'edit' route_slug='routename'  %}".replace('routename', full.name.toString());
+                                    {% endif %}
+                                    return '<a rel="tooltip" href="'+displayurl+'" data-bs-toggle="tooltip" data-bs-placement="top" title='+full.comments+'><small>'+data+'</small>'
+                                } else {
+                                    data = "No comments"
+                                    return data;
+                                }
                             }
-                            
-                            {% if request.COOKIES.token %}
-                            displayurl = "{% url 'edit-route' route_slug='routename'  %}".replace('routename', full.name.toString());
-                            {% else %}
-                            displayurl = "{% url 'edit' route_slug='routename'  %}".replace('routename', full.name.toString());
-                            {% endif %}
-                            return '<a rel="tooltip" href="'+displayurl+'" data-bs-toggle="tooltip" data-bs-placement="top" title='+full.comments+'><small>'+data+'</small>'
-                        } else {
-                            return 'No comments';
-                        }
-                     }
                      },
                      {"mData":"match", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
@@ -381,11 +392,20 @@ $(document).ready( function(){
                         
                      }
                      return btn;
-                     },
+                     }
                     }
 
          ]
-} );
+})
+/* element = document.getElementsByClassName("dl-horizontal");
+    for (var i = 0; i < element.length; i++) {
+            element[i].classList.add("table-elements");
+        } */
+});    
+// add class name
+
+
+
 $('#filterplaceholder').html(filterbtns);
 
 
@@ -427,7 +447,6 @@ var update_size = function() {
     }
     oTable.fnAdjustColumnSizing();
   }
-});
 </script>
 <style type="text/css">
 

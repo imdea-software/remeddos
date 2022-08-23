@@ -34,14 +34,29 @@
   <style>
     body{
       font-family: 'Raleway' !important;
+      background: #FFFF !important; 
   
+    }
+    .content{
+      background: #FFFF !important; 
+    }
+    header{
+      /* box-shadow: 0 0px 0px 1px rgba(0,0,0,.2) !important;
+      border: 1px solid rgba(39, 39, 39, 0.7); */
+    }
+    .offcanvas:hover{
+      box-shadow: 0 0 27px 0 rgba(27, 28, 28, 0.52);
+      /* border: 1px solid rgba(0,0,0,.7); */
+    }
+    button:hover {
+      box-shadow: 0 0 27px 0 rgba(27, 28, 28, 0.52);
     }
   </style>
      <!-- TOP NAVBAR -->
-    <header class="header bg-dark" id="header">
+    <header class="header" id="header">
         {% if user.is_authenticated %}
-        <div class="header_toggle"> <button type="button" class="btn btn-dark white-text" data-bs-toggle="offcanvas" data-bs-target="#nav-bar" aria-controls="nav-bar"><i class='bi-list' id="header-toggle"></i></button> </div>
-        <div class=""><img src="{% static 'img/redimadrid_negativo.png'%}" alt="RediMadrid logo" class="float-end d-inline-block"  width="100px" height="50px"></div>
+        <div class="header_toggle"> <button type="button" class="btn white-text" data-bs-toggle="offcanvas" data-bs-target="#nav-bar" aria-controls="nav-bar"><i class='bi-list' id="header-toggle"></i></button> </div>
+        <div class=""><img src="{% static 'img/redimadrid_horizontal.png'%}" alt="RediMadrid logo" class="float-end d-inline-block"  width="100px" height="50px"></div>
         
         <!-- <a href="{% url 'account_login' %}" class="text-end text-white text-decoration-none fw-light"> <i class='bi-person nav_icon' data-bs-toggle="tooltip" data-bs-placement="top" title="Sign In"></i> <span class="nav_name">Log in</span> </a> -->
         {% endif %}
@@ -52,11 +67,11 @@
         <nav class="nav">
             <div class=""> 
                 {% if user.is_authenticated %}
-                <a href="{% url 'dashboard' %}" class="nav_logo text-decoration-none text-wrap"> <i class="nav_icon bi bi-shield text-danger"></i></a>
+                <a href="{% url 'dashboard' %}" class="nav_logo text-decoration-none text-wrap"> <i class="nav_icon bi bi-shield text-danger"></i><span class="nav_name text-white">Dashboard</span></a>
                 <!-- <button type="button" class="btn btn-outline btn-light close" data-bs-dismiss="offcanvas" aria-label="Close"><span aria-hidden="true">&times;</span></button> -->
                 <div class="nav_list text-wrap">
                   <!-- <a href="{% url 'dashboard' %}" class="nav_link text-white text-decoration-none font-weight-light text-wrap"> <i class='bi-clipboard nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Dashboard"></i> <span class="nav_name">Dashboard</span></a> -->
-                    <a href="{% url 'group-routes' %}" class="nav_link text-white text-decoration-none font-weight-light text-wrap"> <i class='bi-table nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Routes"></i> <span class="nav_name">Mis Reglas</span></a>  
+                    <a href="{% url 'group-routes' %}" class="nav_link text-white text-decoration-none font-weight-light text-wrap"> <i class='bi-table nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Reglas"></i> <span class="nav_name">Mis Reglas</span></a>  
                     {% if not request.COOKIES.token %}
                       <a href="#" class="nav_link text-white text-decoration-none text-wrap font-weight-light" data-bs-toggle="modal" data-bs-target="#addRouteM" id="submitButton"> <i class='bi-shield-plus nav_icon text-warning' data-bs-toggle="tooltip" data-bs-placement="top" title="Añadir regla"></i><span class="nav_name">Añadir regla</span></a>           
                     {% else %}
@@ -86,7 +101,20 @@
       </div>
     <!-- ENDOFNAVBAR-->
     
-    <div class="container-fluid p-5 height-100 bg-light">
+    <div class="content container-fluid p-5 height-100 bg-light">
+      {% if messages %}
+        <div class="row">
+              <div class="lg-col-12">
+                  <div id="messages">
+                      {% for message in messages %}
+                      <div {% if message.tags %} class="alert alert-{{ message.tags }} alert-dismissible" role="alert" {% endif %}>
+                        {{ message }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">&times;</button>
+                                  {% endfor %}
+                          </div>
+                      </div>
+          </div>
+		{% endif %}
       
     {% block contentplaceholder %}
     {% endblock %}
@@ -293,6 +321,7 @@ function checkCookie(vname) {
   }
 }
 	$(document).ready(function() {
+    $('.alert').alert();
     $("#confbModal").modal('hide');
     $('#submitButton').click(function(){
       $.ajax({

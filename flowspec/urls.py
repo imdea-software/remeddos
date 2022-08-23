@@ -33,6 +33,7 @@ urlpatterns = [
     path('createdbackup/',views.create_db_backup, name='db-backup'),
     path('restoredb/',views.restore_complete_db, name='db-restore'),
     path('route_update/<slug:route_slug>',views.routes_update,name='route-updates'),
-    path('delete_route/<slug:route_slug>',views.exterminate_route, name="exterminate")
+    path('delete_route/<slug:route_slug>',views.exterminate_route, name="exterminate"),
+    re_path(r'destWhois/?$',views.whoisDst,name="destWhois"),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

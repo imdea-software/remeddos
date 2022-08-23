@@ -57,5 +57,10 @@ app.conf.beat_schedule = {
         "schedule":crontab(minute=0,hour=0),
         "args":(),
     },
+    "sync-routers":{
+        "task":"flowspec.tasks.sync_routers",
+        "schedule":crontab(minute=0,hour=0),
+        "args":(),
+    }
 }
 

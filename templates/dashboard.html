@@ -9,10 +9,6 @@
 <link rel="stylesheet" href="{% static 'css/dashboard_style.css' %}">
 <link rel="stylesheet" href="{% static 'css/section_style.css' %}">
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.12.1/datatables.min.css"/>
-{% endblock %}
-{% block title %}{% trans "Dashboard" %}{% endblock %}
-{% block contentplaceholder %}
-{% csrf_token %}
 <style>
 	.page-item.active .page-link {
     background-color: lightgrey !important;
@@ -43,9 +39,21 @@ th {
 td:first-child, th:first-child {
        border-left: none !important;
   }
-</style>
+.paginate_button a {
+      /* padding: 5px 5px; */
+	  width: fit-content;
+	  height: fit-content;
+      font-size: 17px;
+      border-radius: 6px;
+      border: 1px solid #474747;
+   }
 
-        <div class="container">
+</style>
+{% endblock %}
+{% block title %}{% trans "Dashboard" %}{% endblock %}
+{% block contentplaceholder %}
+{% csrf_token %}
+        
 			<section id="projects">
 				<div class="container">
 				  <!-- INFO -->
@@ -102,7 +110,7 @@ td:first-child, th:first-child {
 				  <!--  TABLE -->
 				  <div class="row p-2 mt-3">
 				  <div class="col">
-					{% if routes != None %}
+					{% if routes  %}
         			<table id="routes_table" class="table table-hover table-responsive display compact w-100">
 						<thead class="">
 						<tr>
@@ -115,11 +123,11 @@ td:first-child, th:first-child {
 						<tbody>
 							{% for route in routes %}
 							<tr>
-								<td><small><a href="{% url 'route-details' route.name %}">{{route.name}}</a></small></td>
+								<td><small><a href="{% url 'route-details' route.name %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Gráficos y más información">{{route.name}}</a></small></td>
 								<td><small>{{route.filed|time:"H:i"}}, {{route.filed|date:"d M Y"}}</small></td>
 								<td> 
-									{% if route.destination %} <small>{{route.destination}}</small> {% endif %} <br> 
-									{% if route.source %} <small>{{route.source}}</small> {% endif %} <br>
+									{% if route.destination %} <small id="routeDestination" value="{{route.destination}}">{{route.destination}}</small> {% endif %} <br> 
+									{% if route.source %} <small onmouseover="whoisAddressSrc()" id="routeSource" value="{{route.source}}">{{route.source}}</small> {% endif %} <br>
 									{% if route.protocol %} <small>Protocolo: {% for p in route.protocol.all %} {{p}} {% endfor %}</small><br> {% endif %} 
 									{% if route.port %} <small>Port: {{route.port}}</small><br> {% endif %}
 									{% if route.tcpflag %} <small>Tcpflag: {{route.tcpflag}}</small><br> {% endif %}
@@ -132,13 +140,13 @@ td:first-child, th:first-child {
 							</tbody>
         </table>
         {% else %}
-        <p class="fw-light">No hay reglas asociadas a este ataque todavía. Porfavor contacte con RediMadrid en caso de que no se proponga ninguna regla antes de que finalice el ataque.</p>
+        <div class="alert alert-info" role="alert"><p class="fw-light">No hay reglas de firewall activas  </p></div>
         {% endif %}
 				  </div>
 				
 					<div class="col">
 							<div class="card">
-										<h5 class="card-header text-left text-info ">Shortcuts</h5>
+										<h5 class="card-header text-left font-monospace">Shortcuts</h5>
 										<div class="card-body btn-group">
 										  <div class="card-text btn-group">
 											{% if not request.COOKIES.token %}
@@ -157,7 +165,7 @@ td:first-child, th:first-child {
 		</div>
 	</section>		
 
-</div>   
+  
 {% endblock %}
 {% block pagejsbottom %}
 <script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.5/af-2.3.7/b-2.2.2/datatables.min.js"></script>
@@ -176,12 +184,51 @@ td:first-child, th:first-child {
             });
      });
 	 $(document).ready(function(){
+		$('#routeDestionation').mouseover(function(){
+			console.log('bfff')
+				$.ajax({
+					url: "{% url 'destWhois' %}",
+					type: "POST",
+					dataType: "json",
+					data:{'value':value},
+					headers: {
+						"X-Requested-With": "XMLHttpRequest",
+						"X-CSRFToken": getCookie("csrftoken"),  // don't forget to include the 'getCookie' function
+					},
+					sucess: (data) => {
+						console.log('sucess'+ value);
+					},
+					error:(error) => {
+						console.log(error);
+					}
+				});
+
+	 });
+
+	 //======================
 		$('#routes_table').DataTable({
 			"order": [[ 1, "desc" ]],
 			"AutoWidth": true,
-			"Processing": true, 
+			"Processing": true,
+			/* "buttons": [
+					{
+   						extend: 'edit',
+   						editor: editor,
+   						className: 'btn btn-default btn-sm,
+					} */
     		});
 	 });
+	function whoisAddressDest(){
+		var value = document.getElementById('routeDestination').innerHTML;
+		
+
+	 }
+	
+
+	 function whoisAddressSrc(){
+		var value = document.getElementById('routeSource').innerHTML;
+		console.log('its working src '+value);
+	 }
 </script>
 
 {% endblock %}
