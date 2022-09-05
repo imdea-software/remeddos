@@ -102,7 +102,7 @@ $("#dateForm").on('submit', function(event){
       success: function(response){         
           if(response['beats'] && response['time']){
             var beats = response['beats'];
-            var time = response['beats_hour'];
+            var time = response['time'];
             var ctx = $('#curve_chart');
             new Chart(ctx,{
               type:'line',
@@ -171,7 +171,7 @@ $('document').ready(function(){
       success: function(response){         
           if(response['beats'] && response['time']){
             var beats = response['beats'];
-            var time = response['beats_hour'];
+            var time = response['time'];
             var ctx = $('#curve_chart');
             new Chart(ctx,{
               type:'line', 

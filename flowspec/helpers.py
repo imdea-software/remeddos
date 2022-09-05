@@ -324,9 +324,8 @@ def graphs(timefrom,timetill, routename, username):
    
     for x in clock_value:
       y = datetime.datetime.fromtimestamp(int(x))
-      beats_date.append(y.strftime("%m/%d/%Y"))
-      beats_hour.append(y.strftime("%H:%M:%S"))
-      beats_fulltime.append(y.strftime("%Y/%m/%d %H:%M:%S"))
+      beats_date.append(y.strftime("%d-%m"))
+      beats_fulltime.append(y.strftime("%d-%m %H:%M"))
       
     beats_values = dict(zip(beats_hour,beat_value))
     return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
@@ -366,9 +365,9 @@ def get_default_graph(routename, username):
       
   for x in clock_value:
     y = datetime.datetime.fromtimestamp(int(x))
-    beats_date.append(y.strftime("%m/%d/%Y"))
-    beats_hour.append(y.strftime("%H:%M:%S"))
-    beats_fulltime.append(y.strftime("%Y/%m/%d %H:%M:%S"))
+    beats_date.append(y.strftime("%d-%m"))
+    beats_hour.append(y.strftime("%H:%M"))
+    beats_fulltime.append(y.strftime("%d-%m %H:%M"))
       
   beats_values = dict(zip(beats_hour,beat_value))
   return beats_date, beats_hour, beat_value, beats_values, beats_fulltime

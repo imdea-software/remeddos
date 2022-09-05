@@ -896,6 +896,7 @@ def ajax_graphs(request):
                 'beats' : beats_value,
                 'time' : bfulltime,
             }
+            print('this is the info: ', data['time'])
             return JsonResponse(data,status=200)
         else:
             beats_date, beats_hour, beats_value, beats_values, bfulltime = get_default_graph(routename, username)
@@ -905,6 +906,7 @@ def ajax_graphs(request):
                 'beats' : beats_value,
                 'time' : bfulltime,
             }
+            print('this is the info: ', data['time'])
             return JsonResponse(data,status=200)
 
 
