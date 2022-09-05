@@ -97,23 +97,7 @@ td:first-child, th:first-child {
             </div>
 
             <div class="row p-2 mt-3">
-                <div class="col">
-                    <div class="card float-right">
-                        <h5 class="card-header text-left font-monospace">Shortcuts</h5>
-                        <div class="card-body">
-                            <div class="card-text btn-group">
-                            {% if not request.COOKIES.token %}
-                            <a class="btn btn-sm btn-outline-dark float-left addbutton" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
-                            {% else %}
-                            <a href="{% url 'add' %}" class="btn btn-outline-dark btn-sm float-left" id="routebutton"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
-                            {% endif %}
-                            <a class="btn btn-outline-dark btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table text-secondary mr-1"></i>Reglas</a>
-                            <a href="{% url 'pending-routes' %}" type="button" class="btn btn-outline-dark btn-sm float-left ml-2"> <i class="bi-clipboard text-danger mr-1"></i>Reglas propuestas</a>
-                            <a class="btn btn-outline-dark btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard text-info mr-1"></i>Dashboard</a>
-                        </div>
-                        </div>
-                        </div>
-                    </div>
+                {% include "shortcuts.html" %}
                 </div>
 
 

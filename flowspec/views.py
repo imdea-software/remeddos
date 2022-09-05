@@ -90,9 +90,7 @@ logger.addHandler(handler)
 
 @login_required
 def user_routes(request):
-    #user_routes = Route.objects.filter(applier=request.user)
-    user = request.user
-    routes = find_routes(user.username)
+    routes = find_routes(request.user.username)
     user_routes = []
     for route in routes:
         if route.applier != None:
@@ -455,7 +453,6 @@ def add_route(request):
 @verified_email_required
 @login_required             
 def verify_edit_user(request,route_slug):
-    print('cookieees: ', request.COOKIES)
     if 'token' in request.COOKIES:
         url = reverse('edit', kwargs={'route_slug':route_slug})
         response = HttpResponseRedirect(url)
@@ -517,7 +514,7 @@ def edit_route(request, route_slug):
         for peer in user_peers:
             applier_peer_networks.extend(peer.networks.all())
     if not applier_peer_networks:
-        messages.add_message(request,messages.WARNING,('Insufficient rights on administrative networks. Cannot add rule. Contact your administrator') )
+        messages.add_message(request,messages.WARNING,('No se puede añadir la regla debido a que las direcciones usadas no están registradas dentro de tu institución, porfavor contacte con su administrador.') )
         return HttpResponseRedirect(reverse("group-routes"))    
     route_original = deepcopy(route_edit)
     if request.POST:

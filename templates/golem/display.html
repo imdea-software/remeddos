@@ -82,15 +82,19 @@
 
 </div>
 {% else %}
-<div class="row w-100">
+<div class="row">
   <div class="alert alert-danger alert-dismissible" role="alert" >
-    <p class="font-weight-light font-monospace"> No se ha registrado ningún ataque en la última semana, para más información en <a href=" https://193.145.15.26:443/atm_popup_anomaly?anomaly_info=MSwyMDIyMDgsNCxBMzg3ODU2" target="_blank" data-bs-toggle="tooltip" data-bs-placement="top" title="" class="link-danger" style="text-decoration: None;" data-bs-original-title="REM-GOLEM">REM-GOLEM</a></p>
+    <p class="font-weight-light"> No se ha registrado ningún ataque en la última semana, para más información visite <a href=" https://193.145.15.26:443/atm_popup_anomaly?anomaly_info=MSwyMDIyMDgsNCxBMzg3ODU2" target="_blank" data-bs-toggle="tooltip" data-bs-placement="top" title="" class="link-danger" style="text-decoration: None;" data-bs-original-title="REM-GOLEM">REM-GOLEM</a></p>
 </div>
 </div>
 {% endif %}
 
-<div class="row p-2 mt-3">
-  <div class="col">
+<div class="row">
+  <div class="float-right mt-3 pt-3">
+    {% include "../shortcuts.html" %}
+  </div>
+  
+  <!-- <div class="col">
     <div class="card float-right">
                 <h5 class="card-header text-left font-monospace">Shortcuts</h5>
                 <div class="card-body btn-group">
@@ -106,7 +110,8 @@
                 </div>
               </div>
             </div>
-      </div>
+      </div> -->
+
 </div>
 </div>
 

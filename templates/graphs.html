@@ -34,7 +34,6 @@ $('#addRuleButton').click(function(){
               type: "GET",
               dataType: "json",
               success: (data) => {
-                console.log('it worked');
               },
               error: (error) => {
                 console.log(error);
@@ -236,9 +235,9 @@ $('document').ready(function(){
   <section id="section">
       <div class="row">
         <div class="col">
-          <h5>More information about <span class="text-info">{{route.name}}</span></h5>
+          <h5>Más información sobre: <span class="text-info">{{route.name}}</span></h5>
         </div>
-      </div>
+    </div>
   
   <div class="row">
       <form class="d-flex flex-row bd-highlight datepickers" method="POST" id="dateForm" name="dateForm">
@@ -264,6 +263,12 @@ $('document').ready(function(){
       </form>
     </div>
   
+    <div class="row pt-3 ml-2">
+      <div class="col">
+        <p class="text-muted font-weight-light">La primera vez que se haya configurado una regla, <span class="text-danger">Remedios</span> puede tardar hasta 3 minutos en recibir datos desde Zabbix. Disculpe las molestias.</p>
+      </div>
+    </div>
+
   <canvas id="curve_chart" class="w-100 h-75" name="curve_chart">
 </canvas>
 </section>
@@ -308,25 +313,7 @@ $('document').ready(function(){
       </div>
     </div>
     </div>
-    <div class="col">
-      <div class="card float-right">
-        <h5 class="card-header text-left text-info">
-            Shortcuts
-        </h5>
-        <div class="card-body">
-            <div class="card-text btn-group">
-            {% if not request.COOKIES.token %}
-            <a class="btn btn-sm btn-outline float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
-            {% else %}
-            <a href="{% url 'add' %}" class="btn btn-sm float-left" id="routebutton"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
-            {% endif %}
-            <a class="btn btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table text-secondary mr-1"></i>Reglas</a>
-            <a href="{% url 'pending-routes' %}" type="button" class="btn btn-sm float-left ml-2"> <i class="bi-clipboard text-danger mr-1"></i>Reglas propuestas</a>
-            <a class="btn btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard text-info mr-1"></i>Dashboard</a>
-        </div>
-        </div>
-        </div>
-    </div>
+    {% include "shortcuts.html" %}
 </section>
 </div>
 

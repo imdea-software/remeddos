@@ -102,7 +102,7 @@ def get_link(id_golem):
     k = paramiko.RSAKey.from_private_key_file(path)
     ssh.connect(hostname="logs.redimadrid.es", port=22, pkey=k, username="alicia.cardenosa")
     try:
-        stdin, stdout, stderr = ssh.exec_command(f'grep {id_golem} /var/log/remote/193.145.15.26/`date +%Y-%m-%d`.log')
+        stdin, stdout, stderr = ssh.exec_command(f'grep {id_golem} /var/log/remote/{settings.DIR_GOLEM}/`date +%Y-%m-%d`.log')
         res,err = stdout.read(),stderr.read()
         result = res if res else err
         decode_result = result.decode()
@@ -353,7 +353,13 @@ def get_default_graph(routename, username):
   item_history = zapi.history.get(hostids=hostid,itemids=item_id,time_from=ts_from,time_till=ts_till)
   
       
-  beats_date = []; beats_hour = []; clock_value = []; beat_value = []; beats_fulltime = []; beats_values = []
+  beats_date = []
+  beats_hour = [] 
+  clock_value = []
+  beat_value = []
+  beats_fulltime = []
+  beats_values = []
+  
   for x in item_history:
     clock_value.append(x['clock'])
     beat_value.append(x['value'])
