@@ -31,7 +31,7 @@
                             <p class="card-text">{{peer}} <br>
                         <small class="text-muted">
                             {% for network in peer.networks.all %}
-                                {{network}}
+                                {{network}} <br>
                                 {% empty %}
                                 <span style="color:red">{% blocktrans %}Ooops! Seems you have no networks associated with your peer. Contact Helpdesk to resolve this issue.{% endblocktrans %}</span>
                             {% endfor %}

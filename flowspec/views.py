@@ -321,9 +321,11 @@ def build_routes_json(groutes, is_superuser):
                     group_routes.append(rd)
     return group_routes
 
+
 @verified_email_required
 @login_required
 def verify_add_user(request):
+    print('here are the cookies: ',request.COOKIES)
     if 'token' in request.COOKIES:
         url = reverse('add')
         response = HttpResponseRedirect(url)
@@ -342,7 +344,6 @@ def verify_add_user(request):
                 else:
                     send_message(msg,peer,superuser=False)
                 response = JsonResponse({"valid":True}, status = 200)
-                
                 return response      
         if request.method=='POST':
             form = ValidationForm(request.POST)
@@ -354,6 +355,7 @@ def verify_add_user(request):
                         url = reverse('add')
                         response = HttpResponseRedirect(url) 
                         try:
+                            num = Validation.objects.latest('created_date')
                             response.set_cookie('token',value=num,max_age=900) 
                         except Exception as e:
                             logger.info('There was an exception when trying to assign the token, ',e)
@@ -896,7 +898,6 @@ def ajax_graphs(request):
                 'beats' : beats_value,
                 'time' : bfulltime,
             }
-            print('this is the info: ', data['time'])
             return JsonResponse(data,status=200)
         else:
             beats_date, beats_hour, beats_value, beats_values, bfulltime = get_default_graph(routename, username)
@@ -906,7 +907,6 @@ def ajax_graphs(request):
                 'beats' : beats_value,
                 'time' : bfulltime,
             }
-            print('this is the info: ', data['time'])
             return JsonResponse(data,status=200)
 
 

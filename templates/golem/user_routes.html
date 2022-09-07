@@ -46,22 +46,40 @@
                     {% if route.icmptype %} <small>Icmptype: {{route.icmptype}</small><br> {% endif %}
                     {% if route.icmpcode %} <small>Icmpcode: {{route.icmpcode}}</small><br> {% endif %}
                 </td>
-                <td><small>{{route.status}}</small></td>
+                {% if route.status == 'ACTIVE' %}
+                <td><span class="badge bg-success">{{route.status}}</span></td>
+                {% endif %}
+                {% if route.status == 'OUTOFSYNC' %}
+                <td><span class="badge bg-info">{{route.status}}</span></td>
+                {% endif %}
+                {% if route.status == 'EXPIRED' %}
+                <td><span class="badge bg-info">{{route.status}}</span></td>
+                {% endif %}
+                {% if route.status == 'PENDING' %}
+                <td><span class="badge bg-info">OUTOFSYNC</span></td>
+                {% endif %}
+                {% if route.status == 'ERROR' %}
+                <td><span class="badge bg-warning">{{route.status}}</span></td>
+                {% endif %}
+                {% if route.status == 'INACTIVE' %}
+                <td><span class="badge bg-warning">{{route.status}}</span></td>
+                {% endif %}
+
                 <td>
                     <div class="col-2 btn-group d-inline">
                     {% if not route.status == 'ACTIVE' %}
                         {% if not request.COOKIES.token %}
-                            <a id="commitbutton" href="{% url 'vcommit' route.name %}" data-bs-toggle="tootltip" data-bs-placement="bottom" title="Commit Route" class="btn m-1"><i class="bi bi-patch-plus text-warning"></i></a>  
+                            <span data-bs-toggle="tootltip" data-bs-placement="top" title="Commit regla"><a  href="{% url 'vcommit' route.name %}"  id="commitbutton" class="btn m-1"><i class="bi bi-patch-plus"></i></a></span>
                         {% else %}
-                            <a id="commitbutton" href="{% url 'commit' route.name %}" data-bs-toggle="tooltip"  data-bs-placement="bottom" title="Commit Route" class="btn m-1"><i class="bi bi-patch-plus text-warning"></i></a>  
+                            <a href="{% url 'commit' route.name %}" id="commitbutton"  data-bs-toggle="tooltip"  data-bs-placement="top" title="Commit regla" class="btn m-1"><i class="bi bi-patch-plus"></i></a>  
                     {% endif %}
                     {% endif %}
                     {% if not request.COOKIES.token %}
-                    <a href="{% url 'edit-route' route.name  %}"  data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit rule" class="btn m-1"><i class="bi bi-pencil text-info"></i></a>
+                    <a href="{% url 'edit-route' route.name  %}"  data-bs-toggle="tooltip" data-bs-placement="bottom" title="Editar regla" class="btn m-1"><i class="bi bi-pencil"></i></a>
                     {% else %}
-                    <a href="{% url 'edit' route.name  %}"  data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit rule" class="btn m-1"><i class="bi bi-pencil text-info"></i></a>
+                    <a href="{% url 'edit' route.name  %}"  data-bs-toggle="tooltip" data-bs-placement="bottom" title="Editar regla" class="btn m-1"><i class="bi bi-pencil"></i></a>
                     {% endif %}
-                    <a href="{% url 'exterminate' route.name  %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete rule" class="btn m-1"><i class="bi bi-trash text-danger"></i></a>
+                    <a href="{% url 'exterminate' route.name  %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Eleminar regla de la base de datos" class="btn m-1"><i class="bi bi-trash"></i></a>
                 </div>
                 </td>
             </tr>
@@ -75,25 +93,6 @@
 </div>
 <div class="row">
     {% include "shortcuts.html" %}
-    <!-- <div class="col">
-        <div class="card float-right">
-            <h5 class="card-header text-left text-info">
-                Shortcuts
-            </h5>
-            <div class="card-body">
-                <div class="card-text btn-group">
-                {% if not request.COOKIES.token %}
-                <a class="btn btn-sm btn-outline float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
-                {% else %}
-                <a href="{% url 'add' %}" class="btn btn-sm float-left" id="routebutton"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
-                {% endif %}
-                <a class="btn btn-sm float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table text-secondary mr-1"></i>Reglas</a>
-                <a href="{% url 'pending-routes' %}" type="button" class="btn btn-sm float-left ml-2"> <i class="bi-clipboard text-danger mr-1"></i>Reglas propuestas</a>
-                <a class="btn btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard text-info mr-1"></i>Dashboard</a>
-            </div>
-            </div>
-            </div>
-        </div> -->
     </div>
 </div>
 

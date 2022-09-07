@@ -27,12 +27,16 @@
         <div class="col col-md-6">
           <label for="id_name" class="form-label"><b>{% trans "Nombre de usuario" %}</b></label>
           {% render_field form.login class+="form-control" placeholder="Introduce tu nombre de usuario" %}
+          {% if form.login.errors %} <span class="help-block"> {{ form.login.errors|join:", " }} </span>
+						{% endif %}
         </div>
       </div>
         <div class="row">
         <div class="col col-6">
           <label for="id_password" class="form-label"><b>{% trans "Contraseña" %}</b></label>
           {% render_field form.password class+="form-control" placeholder="Introduce tu contraseña" %}
+          {% if form.password.errors %} <span class="help-block"> {{ form.password.errors|join:", " }} </span>
+						{% endif %}
         </div>
         </div>    
             {% if redirect_field_value %}

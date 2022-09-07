@@ -64,7 +64,6 @@ def display(request):
         peer_name = get_peers(username)
         peer = Peer.objects.get(peer_name=peer_name)
         golem_attacks = GolemAttack.objects.filter(peer=peer.pk).all()[::-1]
-        print('??, ', GolemAttack.objects.all()[::-1])
         return render(request,'golem/display.html',{'attacks':golem_attacks})
 
 @verified_email_required
@@ -75,9 +74,9 @@ def display_routes(request,golem_name):
     actions = ThenAction.objects.all()
     golem = GolemAttack.objects.get(id_name=golem_name)
     p = ''
-    dic = {'Punch': golem.route.all(),'CV':golem.route_cv.all(),'CIB':golem.route_cib.all(),'CSIC':golem.route_csic.all(),'CEU':golem.route_ceu.all(),'CUNEF':golem.route_cunef.all(),'IMDEA_NET':golem.route_imdeanet.all(),
-    'IMDEA':golem.route_imdea.all(),'UAM':golem.route_uam.all(),'UC3M':golem.route_uc3m.all(),'UCM':golem.route_ucm.all(),'UAH':golem.route_uah.all(),'UEM':golem.route_uem.all(),'UNED':golem.route_uned.all(),'UPM':golem.route_upm.all(),
-    'URJC':golem.route_urjc.all()}
+    dic = {'Punch': golem.route.order_by('filed'),'CV':golem.route_cv.order_by('filed'),'CIB':golem.route_cib.order_by('filed'),'CSIC':golem.route_csic.order_by('filed'),'CEU':golem.route_ceu.order_by('filed'),'CUNEF':golem.route_cunef.order_by('filed'),'IMDEA_NET':golem.route_imdeanet.order_by('filed'),
+    'IMDEA':golem.route_imdea.order_by('filed'),'UAM':golem.route_uam.all(),'UC3M':golem.route_uc3m.order_by('filed'),'UCM':golem.route_ucm.order_by('filed'),'UAH':golem.route_uah.order_by('filed'),'UEM':golem.route_uem.order_by('filed'),'UNED':golem.route_uned.order_by('filed'),'UPM':golem.route_upm.order_by('filed'),
+    'URJC':golem.route_urjc.order_by('filed')}
     for peer in peers:
         if peer.peer_tag == golem.peer.peer_tag:
             p = peer.peer_tag

@@ -314,7 +314,7 @@ function avoidMultipleSubmitting(){
 				<div class="form-group">
                   <label for="id_expires" class="col col-2 form-label"><b>{% trans "Caduca (*): " %}</b></label>
 		        <div class="col col-8 date" id="id_expire">
-		            {% render_field form.expires class+="form-control js-datetimepicker"  placeholder="Fecha" %}
+		            {% render_field form.expires class+="form-control js-timepicker"  placeholder="Fecha" %}
 		            {% if form.expires.errors %} <span class="help-block"> {{ form.expires.errors|join:", " }} </span>
 		            {% endif %}
 		        </div>

@@ -13,7 +13,43 @@
 {% block title %}{% trans "Ataques recientes" %}{% endblock %}
 
 {% block contentplaceholder %}
-
+<style>
+  .page-item.active .page-link {
+  background-color: lightgrey !important;
+  border: 1px solid lightgrey;
+  }
+.page-link {
+  color: black !important;
+  background-color: white !important;
+  }
+.paginate_button a {
+    padding: 10px 10px;
+    margin: 5px;
+    border-radius: 6px;
+    border: 1px solid #474747;
+ }
+ table {
+      border-collapse:separate !important;
+      border:solid lightgrey 1px !important;
+      border-radius:15px !important;
+  }
+  
+td {
+      border-left:solid lightgrey 1px !important;
+      border-top:solid lightgrey 1px !important;
+      border-bottom:none !important;
+      border-right: none !important;
+  }
+  
+th {
+    border-top: none !important;
+    border-top: none !important;
+  }
+  
+td:first-child, th:first-child {
+       border-left: none !important;
+  }
+</style>
 <div class="container">
   {% if attacks %}
 
@@ -93,24 +129,6 @@
   <div class="float-right mt-3 pt-3">
     {% include "../shortcuts.html" %}
   </div>
-  
-  <!-- <div class="col">
-    <div class="card float-right">
-                <h5 class="card-header text-left font-monospace">Shortcuts</h5>
-                <div class="card-body btn-group">
-                  <div class="card-text btn-group">
-                    {% if not request.COOKIES.token %}
-                    <a class="btn btn-sm btn-outline-dark float-left" id="routebutton" href="#" data-bs-toggle="modal" data-bs-target="#addRouteM"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
-                    {% else %}
-                    <a href="{% url 'add' %}" class="btn btn-sm btn-outline-dark float-left" id="routebutton"><i class="bi bi-shield-plus text-warning mr-1"></i>Añadir Regla</a>
-                    {% endif %}
-                    <a class="btn btn-sm btn-outline-dark float-left ml-2" href="{% url 'group-routes' %}"> <i class="bi-table text-secondary mr-1"></i>Reglas</a>
-                    <a href="{% url 'pending-routes' %}" type="button" class="btn btn-outline-dark btn-sm float-left ml-2"> <i class="bi-clipboard text-danger mr-1"></i>Reglas propuestas</a>
-                    <a class="btn btn-outline-dark btn-sm float-left ml-2" href="{% url 'dashboard' %}"> <i class="bi-clipboard text-info mr-1"></i>Dashboard</a>
-                </div>
-              </div>
-            </div>
-      </div> -->
 
 </div>
 </div>

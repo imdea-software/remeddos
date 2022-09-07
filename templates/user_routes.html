@@ -35,10 +35,6 @@ small > a{
       border-radius: 6px;
       border: 1px solid #474747;
    }
-select.form-select.form-select-sm{
-    margin: 5px !important;
-    padding: 5px !important;
-}
 table {
       border-collapse:separate !important;
       border:solid lightgrey 1px !important;
@@ -372,7 +368,7 @@ $(document).ready( function(){
 
                      }
                      if (status == "ERROR" ){
-                     	btn = '<div class="row"><div class="col col-2 btn-group d-inline"><a href="'+editurl+'" class="btn btn btn-sm" id="edit_button_{{route.pk}}">{% trans "Arreglar!" %}</a>';
+                     	btn = '<div class="row"><div class="col col-2 btn-group d-inline"><a href="'+editurl+'" class="btn btn-outline-warning btn-sm" id="edit_button_{{route.pk}}">{% trans "Arreglar!" %}</a>';
                         
                      }
                      return btn;
