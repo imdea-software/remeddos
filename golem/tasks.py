@@ -28,7 +28,7 @@ def golem(anomaly_info, id_event):
 
     if not anomaly_info['institution_name'] == 'Non-Home':
         if anomaly_info['status'] == 'Open':
-            open_event(id_event)
+            open_event(id_event)   
     else:
         if anomaly_info['institution_name'] == 'Non-Home':
             check_golem_conexion(anomaly_info)

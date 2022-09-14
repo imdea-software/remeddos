@@ -1,22 +1,3 @@
-# -*- coding: utf-8 -*- vim:fileencoding=utf-8:
-# vim: tabstop=4:shiftwidth=4:softtabstop=4:expandtab
-
-# Copyright (C) 2010-2014 GRNET S.A.
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-
 import json
 from tkinter import N
 from django import forms
@@ -325,7 +306,6 @@ def build_routes_json(groutes, is_superuser):
 @verified_email_required
 @login_required
 def verify_add_user(request):
-    print('here are the cookies: ',request.COOKIES)
     if 'token' in request.COOKIES:
         url = reverse('add')
         response = HttpResponseRedirect(url)
@@ -404,6 +384,7 @@ def add_route(request):
             network = []
             for p in peer:
                 network.append(p.networks.all())
+                
         else:
             peer = Peer.objects.get(pk__in=user_peers)
             network = peer.networks.all()
@@ -487,6 +468,7 @@ def verify_edit_user(request,route_slug):
                         url = reverse('edit', kwargs={'route_slug': route_slug})
                         try:
                             response = HttpResponseRedirect(url)
+                            num = Validation.objects.latest('created_date')
                             response.set_cookie('token',value=get_code(),max_age=900)
                         except Exception as e:
                             logger.info('There was an exception when trying to assign the token, ',e)
@@ -616,7 +598,8 @@ def verify_delete_user(request, route_slug):
                         url = reverse('delete', kwargs={'route_slug': route_slug})
                         try:
                             response = HttpResponseRedirect(url)
-                            response.set_cookie('token',value=get_code(),max_age=900) 
+                            num = Validation.objects.latest('created_date')
+                            response.set_cookie('token',value=num,max_age=900) 
                         except Exception as e:
                             logger.info('There was an exception when trying to assign the token, ',e)
                         return response

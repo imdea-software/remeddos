@@ -555,7 +555,7 @@ def delete_expired_proposed_routes():
     routes = find_all_routes()
     for x in routes:
         for route in x:
-            if (route.status == 'OUTOFSYNC' or route.status == 'EXPIRED') and route.applier == None:
+            if (route.status == 'OUTOFSYNC' or route.status == 'EXPIRED' or route.status == 'PROPOSED') and route.is_proposed == True:
                 expired_date = route.filed + datetime.timedelta(days=5)
                 if today > expired_date:
                     logger.info(f"Route: {route.name} is about to expired")
@@ -611,3 +611,17 @@ def sync_routers():
 
 
             pass
+
+
+@shared_task
+def check_open_events():
+    from golem.models import GolemAttack
+    from golem.helpers import ongoing
+    import datetime
+
+    limit = datetime.timedelta(minutes=30)
+    events = GolemAttack.objects.filter(status='Ongoing')
+    for event in events:
+        expire = event.received_at + limit
+        if expire > event.received_at:
+            ongoing(event.id_name, event.peer)

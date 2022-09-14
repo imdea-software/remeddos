@@ -358,7 +358,6 @@ class Route_IMDEAForm(forms.ModelForm):
 
     def clean_destination(self):
         destination = self.cleaned_data.get('destination')
-        print('HEY THIS IS APPLIER: ',self.data['applier'])
         if destination:
             res = clean_destination(
                 User.objects.get(pk=self.data['applier']),

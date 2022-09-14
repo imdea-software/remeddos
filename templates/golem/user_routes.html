@@ -56,7 +56,10 @@
                 <td><span class="badge bg-info">{{route.status}}</span></td>
                 {% endif %}
                 {% if route.status == 'PENDING' %}
-                <td><span class="badge bg-info">OUTOFSYNC</span></td>
+                <td><span class="badge bg-info">{{route.status}}</span></td>
+                {% endif %}
+                {% if route.status == 'PROPOSED' %}
+                <td><span class="badge bg-info">{{route.status}}</span></td>
                 {% endif %}
                 {% if route.status == 'ERROR' %}
                 <td><span class="badge bg-warning">{{route.status}}</span></td>

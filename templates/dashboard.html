@@ -72,7 +72,7 @@ td:first-child, th:first-child {
 						</div>
 					  </div>
 					  <div class="row cards">
-						<div class="col-md-4 d-flex justify-content-center">
+						<div class="col-md-3 d-flex justify-content-center">
 						  <div class="card" style="width: 18rem;">
 							<div class="card-body">
 								<p class="card-text"> Status: <span class="badge bg-success">ACTIVE</span><br>
@@ -81,16 +81,26 @@ td:first-child, th:first-child {
 						  </div>
 						</div>
 				  
-						<div class="col-md-4 d-flex justify-content-center">
+						<div class="col-md-3 d-flex justify-content-center">
 						  <div class="card" style="width: 18rem;">
 							<div class="card-body">
-								<p class="card-text"> Status: <span class="badge bg-dark">OUTOFSYNC</span><br>
-									Cuando el estado de una regla es 'PENDING' significa que ha sido propuesta por REM-e-DDOS, está guardada en la base de datos y está a la espera de ser aplicada al router.
+								<p class="card-text"> Status: <span class="badge bg-info">PROPOSED</span><br>
+									Cuando el estado de una regla es 'PROPOSED' significa que ha sido propuesta por REM-e-DDOS, está guardada en la base de datos y está a la espera de ser aplicada al router.
 							</div>
 						  </div>
 						</div>
 						
-						<div class="col-md-4 d-flex justify-content-center">
+						<div class="col-md-3 d-flex justify-content-center">
+							<div class="card" style="width: 18rem;">
+							  <div class="card-body">
+								  <p class="card-text"> Status: <span class="badge bg-danger">ERROR</span><br>
+									Cuando el estado de una regla es 'ERROR' significa que ha habido un error a la hora de configurar o eliminar una regla del router, en ese caso 
+									porfavor contacte con los administradores de la aplicación. </p>
+							  </div>
+							</div>
+						  </div>
+
+						  <div class="col-md-3 d-flex justify-content-center">
 							<div class="card" style="width: 18rem;">
 							  <div class="card-body">
 								  <p class="card-text"> Status: <span class="badge bg-danger">ERROR</span><br>

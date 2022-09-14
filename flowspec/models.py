@@ -1,23 +1,3 @@
-# -*- coding: utf-8 -*- vim:fileencoding=utf-8:
-# vim: tabstop=4:shiftwidth=4:softtabstop=4:expandtab
-
-# Copyright (C) 2010-2014 GRNET S.A.
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-
-
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -103,6 +83,7 @@ ROUTE_STATES = (
         ("OUTOFSYNC", "OUTOFSYNC"),
         ("INACTIVE", "INACTIVE"),
         ("ADMININACTIVE", "ADMININACTIVE"),
+        ("PROPOSED","PROPOSED"),
     ) 
 
 TCP_CHOICES =(
@@ -198,6 +179,7 @@ class Route_CV(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
+    is_proposed = models.BooleanField(default=False)
     history = HistoricalRecords(use_base_model_db=True)
     
 
@@ -696,6 +678,7 @@ class Route_IMDEA(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
+    is_proposed = models.BooleanField(default=False)
     history = HistoricalRecords(use_base_model_db=True)
     
 
@@ -1194,6 +1177,7 @@ class Route_CIB(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
+    is_proposed = models.BooleanField(default=False)
     history = HistoricalRecords(use_base_model_db=True)
     
 
@@ -1693,6 +1677,7 @@ class Route_CSIC(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
+    is_proposed = models.BooleanField(default=False)
     history = HistoricalRecords(use_base_model_db=True)
     
 
@@ -2176,6 +2161,7 @@ class Route_CEU(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
+    is_proposed = models.BooleanField(default=False)
     history = HistoricalRecords(use_base_model_db=True)
     
 
@@ -2676,6 +2662,7 @@ class Route_CUNEF(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
+    is_proposed = models.BooleanField(default=False)
     history = HistoricalRecords(use_base_model_db=True)
     
 
@@ -3174,6 +3161,7 @@ class Route_IMDEANET(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
+    is_proposed = models.BooleanField(default=False)
     history = HistoricalRecords(use_base_model_db=True)
     
 
@@ -3672,6 +3660,7 @@ class Route(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
+    is_proposed = models.BooleanField(default=False)
     history = HistoricalRecords(use_base_model_db=True)
     
 
@@ -4172,6 +4161,7 @@ class Route_UAM(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
+    is_proposed = models.BooleanField(default=False)
     history = HistoricalRecords(use_base_model_db=True)
     
 
@@ -4670,6 +4660,7 @@ class Route_UAH(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
+    is_proposed = models.BooleanField(default=False)
     history = HistoricalRecords(use_base_model_db=True)
     
 
@@ -5168,6 +5159,7 @@ class Route_UC3M(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
+    is_proposed = models.BooleanField(default=False)
     history = HistoricalRecords(use_base_model_db=True)
     
 
@@ -5666,6 +5658,7 @@ class Route_UCM(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
+    is_proposed = models.BooleanField(default=False)
     history = HistoricalRecords(use_base_model_db=True)
     
 
@@ -6183,6 +6176,7 @@ class Route_UEM(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
+    is_proposed = models.BooleanField(default=False)
     history = HistoricalRecords(use_base_model_db=True)
     
 
@@ -6684,6 +6678,7 @@ class Route_UNED(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
+    is_proposed = models.BooleanField(default=False)
     history = HistoricalRecords(use_base_model_db=True)
     
 
@@ -7185,6 +7180,7 @@ class Route_UPM(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
+    is_proposed = models.BooleanField(default=False)
     history = HistoricalRecords(use_base_model_db=True)
     
 
@@ -7683,6 +7679,7 @@ class Route_URJC(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
+    is_proposed = models.BooleanField(default=False)
     history = HistoricalRecords(use_base_model_db=True)
     
 

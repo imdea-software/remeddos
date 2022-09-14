@@ -6,7 +6,15 @@ from braces.views import CsrfExemptMixin
 from django.contrib.auth.decorators import login_required
 from allauth.account.decorators import verified_email_required
 from django.views.decorators.cache import never_cache
+from django.contrib import messages
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
+
+from flowspec.validators import (
+    clean_source,
+    clean_destination,
+    clean_expires,
+    clean_route_form
+)
 
 from multiprocessing import Process
 
@@ -116,60 +124,113 @@ def delete_golem(request,golem_id):
 @verified_email_required
 @login_required
 def verify_commit_route(request, route_slug):
-    if request.is_ajax and request.method == "GET":
-        if not 'token' in request.COOKIES:
-            num = get_code()
-            user = request.user
-            peer = get_peer_tag(user.username)
-            msg = "El usuario {user} ha solicitado un codigo de seguridad para configurar una regla propuesta en el router. Código: '{code}'.".format(user=user,code=num)
-            code = Validation(value=num,user=request.user)
-            code.save()
-            if request.user.is_superuser:
-                send_message(msg,peer=None, superuser=True)
-            else:
-                send_message(msg,peer,superuser=False)
-            form = ValidationForm(request.GET)
-            route = get_specific_route(applier=request.user.username,peer=None,route_slug=route_slug)
-            message = f"CUIDADO. Seguro que quiere aplicar la siguiente regla {route_slug}?"
-            response = render(request,'values/add_value.html', {'form': form, 'message':message,'status':'commit', 'route':route}) 
-            return response      
-    if request.method=='POST':
-        form = ValidationForm(request.POST)
-        if form.is_valid():
-            code = form.cleaned_data.get('value')
-            value = Validation.objects.latest('id')
-            try:
-                if str(value) == str(code):
-                    url = reverse('commit', kwargs={'route_slug': route_slug})
-                    response = HttpResponseRedirect(url) 
-                    try:
-                        response.set_cookie('token',value=num,max_age=900) 
-                    except Exception as e:
-                        print('There was an exception when trying to assign the token, ',e)
-                    return response
+    print('request COOKIES ', request.COOKIES)
+    if 'token' in request.COOKIES:
+        url = reverse('commit', kwargs={'route_slug': route_slug})
+        return HttpResponseRedirect(url)
+    else: 
+        if request.is_ajax and request.method == "GET":
+            if not 'token' in request.COOKIES:
+                num = get_code()
+                """ user = request.user """
+                peer = get_peer_tag(request.user.username)
+                msg = "El usuario {user} ha solicitado un codigo de seguridad para configurar una regla propuesta en el router. Código: '{code}'.".format(user=request.user,code=num)
+                code = Validation(value=num,user=request.user)
+                code.save()
+                if request.user.is_superuser:
+                    send_message(msg,peer=None, superuser=True)
                 else:
+                    send_message(msg,peer,superuser=False)
+                form = ValidationForm(request.GET)
+                route = get_specific_route(applier=request.user.username,peer=None,route_slug=route_slug)
+                message = f"CUIDADO. Seguro que quiere aplicar la siguiente regla {route_slug}?"
+                response = render(request,'values/add_value.html', {'form': form, 'message':message,'status':'commit', 'route':route}) 
+                return response      
+        if request.method=='POST':
+            form = ValidationForm(request.POST)
+            if form.is_valid():
+                code = form.cleaned_data.get('value')
+                value = Validation.objects.latest('id')
+                try:
+                    if str(value) == str(code):
+                        url = reverse('commit', kwargs={'route_slug': route_slug})
+                        response = HttpResponseRedirect(url) 
+                        try:
+                            num = Validation.objects.latest('created_date')
+                            response.set_cookie('token',value=num,max_age=900) 
+                        except Exception as e:
+                            print('There was an exception when trying to assign the token, ',e)
+                        return response
+                    else:
+                        form = ValidationForm(request.GET)
+                        message = "El código introducido es erróneo porfavor introduzca el último código enviado."
+                        return render(request,'values/add_value.html', {'form': form, 'message':message})
+                    
+                except Exception as e:
                     form = ValidationForm(request.GET)
                     message = "El código introducido es erróneo porfavor introduzca el último código enviado."
                     return render(request,'values/add_value.html', {'form': form, 'message':message})
-                
-            except Exception as e:
+            else:
                 form = ValidationForm(request.GET)
                 message = "El código introducido es erróneo porfavor introduzca el último código enviado."
                 return render(request,'values/add_value.html', {'form': form, 'message':message})
-        else:
-            form = ValidationForm(request.GET)
-            message = "El código introducido es erróneo porfavor introduzca el último código enviado."
-            return render(request,'values/add_value.html', {'form': form, 'message':message})
+
+
+
+
 
 @login_required
 @never_cache
 def commit_to_router(request,route_slug):
+    print('request : ', request.COOKIES)
+    applier_peer_networks = []
     fd = route_slug.find('_')
     peer_tag = route_slug[fd+1:-2]
     route = get_specific_route(applier=None,peer=peer_tag,route_slug=route_slug)
-    route.applier = request.user
-    route.save()
-    route.commit_add()
-    return HttpResponseRedirect(reverse("group-routes"))
+    event_name = get_event_name(route_slug)
+    if request.user.is_superuser:
+        route.applier = request.user
+        route.save()
+        route.commit_add()
+        return HttpResponseRedirect(reverse("golem-routes",kwargs={'golem_name': event_name}))
+    if not request.user.is_superuser: 
+        user_peers = request.user.profile.peers.all()
+        for peer in user_peers:
+            applier_peer_networks.extend(peer.networks.all())
+    if not applier_peer_networks:
+        messages.add_message(request,messages.WARNING,('Insufficient rights on administrative networks. Cannot add rule. Contact your administrator'))
+        return HttpResponseRedirect(reverse("group-routes"))
+    
+    if not request.user.is_superuser:
+        source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
+        destination = IPNetwork('%s/%s' % (IPNetwork(route.destination).network.compressed, IPNetwork(route.destination).prefixlen)).compressed
+        route.source = clean_source(request.user, source)
+        route.destination = clean_destination(request.user, destination) 
+
+        peer = Peer.objects.get(pk__in=user_peers)
+        network = peer.networks.filter(network__icontains=route.destination)
+        if not network:
+            messages.add_message(request,messages.WARNING,('Estás intentando aplicacar una regla con direcciones que no pertenecen a tu espacio administrativo. Contacte con su administrador.'))
+            return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name})) 
+
+        route.applier = request.user
+        route.expires = clean_expires(route.expires)
+        try:
+            route.requesters_address = request.META['HTTP_X_FORWARDED_FOR']
+        except:
+            # in case the header is not provided
+            route.requesters_address = 'unknown'
+        route.save()
+        route.commit_add()
+        return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name}))
+
+
+        
+
+        
+
+        
+        
+
 
 

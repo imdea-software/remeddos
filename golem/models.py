@@ -29,7 +29,7 @@ class GolemAttack(models.Model):
     threshold_value  = models.FloatField(max_length=500, blank=True, null=True)
     typeof_value = models.CharField(max_length=200, blank=True, null=True)
     history = HistoricalRecords(use_base_model_db=True)
-    received_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    received_at = models.DateTimeField(auto_now_add=True)
     typeof_attack = models.CharField(max_length=200, blank=True, null=True)
     link = models.CharField(max_length=300, blank=True, null=True)
     # route models
