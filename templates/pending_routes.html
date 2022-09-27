@@ -14,18 +14,20 @@
       <div class="row rows-cols-4 p-5">
         <div class="col">
             <h5 class="font-weight-light font-monospace">Reglas propuestas</h5>
+            <small>Las reglas se crean en base a la información que se recibe desde la aplicación REM-Golem.Los valores seleccionados son ip origen, protocolo y puerto con mas tráfico así como los valores propio del
+              protocolo como pueden ser tcpflags, icmptype e icmpcode.</small>
         </div>
     </div>
     <div class="row">
       <div class="col">
-        <a href="{% url 'attack-list' %}" class="fw-light text-danger" style="text-decoration: none;"> <i class="bi bi-arrow-left-short"></i> REM-Golem events</a>
+        <a href="{% url 'attack-list' %}" class="fw-light text-info" style="text-decoration: none;"> <i class="bi bi-arrow-left-short"></i> REM-Golem events</a>
     </div>
   </div>
     <div class="row pt-3">
       <div class="panel-body">
             <table class="table compact display w-100 " id="pending_table">
               <thead class="">
-                <tr><th><small>Nombre</small></th><th><small>Creadas</small></th><th><small>Dest Addr</small></th><th><small>Src Addr</small></th><th><small>More information</small></th><th><small>Status</small></th><th><small>Actions</small></th></tr>
+                <tr><th><small>Nombre</small></th><th><small>Creada</small></th><th><small>Dir Destino</small></th><th><small>Dir Origen</small></th><th><small>Más información</small></th><th><small>Estado</small></th><th><small>Otros</small></th></tr>
              </thead>
              <tbody>
                     {% for route in routes %}

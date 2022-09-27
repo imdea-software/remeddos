@@ -55,7 +55,7 @@ td:first-child, th:first-child {
 
 <div class="row rows-cols-4 p-5">
     <div class="mb-2">
-      <i class="fa fa-shield"></i><span class="font-weight-light font-monospace">  Ataques recibidos desde <span class="text-danger">REM-GOLEM</span></span>
+      <i class="fa fa-shield"></i><span class="font-weight-light font-monospace">  Ataques recibidos desde <a href=""></a> <span class="text-info">REM-GOLEM</span></span>
     </div>
 </div>
 <div class="row pt-3">
@@ -64,8 +64,8 @@ td:first-child, th:first-child {
         <!-- <thead class="bg-dark text-white"> -->
           <thead>
            <tr>
-               <th>ID </th><th>Type</th><th>Recieved at</th><th>Institution</th><th>Important Data</th> <th>Status</th> 
-               <th>Max Value</th> <th>Threshold </th><th>More Information</th> <th>Actions</th>
+               <th>ID </th><th>Tipo</th><th>Tiempo</th><th>Institución</th><th>Más Información</th> <th>Estado</th> 
+               <!-- <th>Max Value</th> <th>Threshold </th> --><th>Gráfica Golem</th> <th>Otros</th>
             </tr>
         </thead>
         <tbody>
@@ -74,17 +74,22 @@ td:first-child, th:first-child {
                 <td><small>
                     <a href="{% url 'golem-routes' attack.id_name %}" class="fw-bold text-danger" style="text-decoration:None;">{{attack.id_name}}</a>
                 </small></td>
-                {% if attack.typeof_attack %} <td><small> {{attack.typeof_attack}}</small></td> {% else %} <td><small> No se registró el tipo de ataque</small></td> {% endif %}
-                <td><small> {{attack.received_at|time:"H:i"}}, {{attack.received_at|date:"d M Y" }}</small></td>
+                {% if attack.typeof_attack %} <td><small> {{attack.typeof_attack}}</small> <br> <small>{{attack.name}} </small> </td> {% else %} <td><small> No se registró el tipo de ataque</small></td> {% endif %}
+                
+                <td><small> 
+                  Fecha: {{attack.received_at|date:"d M Y" }} <br>
+                  Comienzo: {{attack.received_at|time:"H:i"}} <br> 
+                  {% if attack.status == 'Recovered' %} Duración: {{attack.get_event_duration}} {% endif %}</small></td>
+
                 <td><small>{{attack.peer}}</small></td>
                 <td><small>
-                    {% if attack.ip_src %} <b>Src Addr</b> {{attack.ip_src}}<br> {% endif %}
-                    {% if attack.ip_dest %} <b>Dest Addr</b> {{attack.ip_dest}}<br> {% endif %}
-                    {% if attack.src_port %} <b>Src Port</b> {{attack.src_port}}<br> {% endif %}
-                    {% if attack.port %} <b>Port</b> {{attack.port}}<br> {% endif %}
-                    {% if attack.dest_port %}<b>Dest Port</b>{{attack.dest_port}}<br> {% endif %}
-                    {% if attack.protocol.all %}<b>Protocol</b> {% for p in attack.protocol.all %} {{p}} {% endfor %}<br> {% endif %}
-                    {% if attack.tcpflag %} <b>Tcpflag</b>  {{attack.tcpflag}} {% endif %}
+                    {% if attack.ip_src %} <b>Src Addr:</b> {{attack.ip_src}}<br> {% endif %}
+                    {% if attack.ip_dest %} <b>Dest Addr:</b> {{attack.ip_dest}}<br> {% endif %}
+                    {% if attack.src_port %} <b>Src Port:</b> {{attack.src_port}}<br> {% endif %}
+                    {% if attack.port %} <b>Port:</b> {{attack.port}}<br> {% endif %}
+                    {% if attack.dest_port %}<b>Dest Port:</b>{{attack.dest_port}}<br> {% endif %}
+                    {% if attack.protocol.all %}<b>Protocol:</b> {% for p in attack.protocol.all %} {{p}} {% endfor %}<br> {% endif %}
+                    {% if attack.tcpflag %} <b>Tcpflag: </b>  {{attack.tcpflag}} {% endif %}
                     <br></small> </td> 
                     {% if attack.status == 'Ongoing'  %}
                     <td><span class="badge bg-success">{{attack.status}}</span></td>
@@ -93,10 +98,10 @@ td:first-child, th:first-child {
                     {% else %}
                     <td><span class="badge bg-dark">{{attack.status}}</span></td>
                     {% endif %}
-                    <td><small>{{attack.max_value|floatformat}}/{{attack.typeof_value|title}} </small></td>
-                    <td><small>{{attack.threshold_value|floatformat}}/{{attack.typeof_value|title}} </small></td> 
+                    <!-- <td><small>{{attack.max_value|floatformat}}/{{attack.typeof_value|title}} </small></td>
+                    <td><small>{{attack.threshold_value|floatformat}}/{{attack.typeof_value|title}} </small></td> --> 
                     {% if attack.link %}
-                    <td><small><a href="{{attack.link}}" target="_blank" data-bs-toggle="tooltip" data-bs-placement="top" title="More information" class="link-danger" style="text-decoration: None;">REM-GOLEM</a></small></td>
+                    <td><small><a href="{{attack.link}}" target="_blank" data-bs-toggle="tooltip" data-bs-placement="top" title="Mas información" class="link-info" style="text-decoration: None;">Acceso a REM-GOLEM</a></small></td>
                     {% else %}
                     <td><small>There is no more information available at the moment, we apologize for any inconvenience.</small></td>
                     {% endif %}
@@ -120,7 +125,7 @@ td:first-child, th:first-child {
 {% else %}
 <div class="row">
   <div class="alert alert-danger alert-dismissible" role="alert" >
-    <p class="font-weight-light"> No se ha registrado ningún ataque en la última semana, para más información visite <a href=" https://193.145.15.26:443/atm_popup_anomaly?anomaly_info=MSwyMDIyMDgsNCxBMzg3ODU2" target="_blank" data-bs-toggle="tooltip" data-bs-placement="top" title="" class="link-danger" style="text-decoration: None;" data-bs-original-title="REM-GOLEM">REM-GOLEM</a></p>
+    <p class="font-weight-light"> No se ha registrado ningún ataque en la última semana, para más información visite <a href=" https://193.145.15.26:443/atm_popup_anomaly?anomaly_info=MSwyMDIyMDgsNCxBMzg3ODU2" target="_blank" data-bs-toggle="tooltip" data-bs-placement="top" title="" class="link-info" style="text-decoration: None;" data-bs-original-title="REM-GOLEM">REM-GOLEM</a></p>
 </div>
 </div>
 {% endif %}

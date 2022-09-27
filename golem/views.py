@@ -50,10 +50,11 @@ class ProcessWebHookView(CsrfExemptMixin, View):
         message = json.loads(request.body)
         id_event = message['event']['id']
         anomaly_ticket, anomaly_info = petition_geni(id_event)
-        print('New webhook event, ', id_event)
+        last_updated = message['event']['datetime']['update_time']
+        print('New webhook event, ', id_event, anomaly_info['status'])      
         try:
             #post.apply_async((anomaly_info, id_event))
-            task = Process(target=golem, args=(anomaly_info,id_event))
+            task = Process(target=golem, args=(anomaly_info,id_event,last_updated))
             task.start()
             
         except Exception as e:
@@ -68,6 +69,7 @@ def display(request):
     if request.user.is_superuser:
         golem_attacks = GolemAttack.objects.all().order_by('-received_at')
         return render(request,'golem/display.html',{'attacks':golem_attacks})
+
     else:
         peer_name = get_peers(username)
         peer = Peer.objects.get(peer_name=peer_name)
@@ -124,7 +126,6 @@ def delete_golem(request,golem_id):
 @verified_email_required
 @login_required
 def verify_commit_route(request, route_slug):
-    print('request COOKIES ', request.COOKIES)
     if 'token' in request.COOKIES:
         url = reverse('commit', kwargs={'route_slug': route_slug})
         return HttpResponseRedirect(url)
@@ -182,7 +183,6 @@ def verify_commit_route(request, route_slug):
 @login_required
 @never_cache
 def commit_to_router(request,route_slug):
-    print('request : ', request.COOKIES)
     applier_peer_networks = []
     fd = route_slug.find('_')
     peer_tag = route_slug[fd+1:-2]
@@ -209,6 +209,7 @@ def commit_to_router(request,route_slug):
 
         peer = Peer.objects.get(pk__in=user_peers)
         network = peer.networks.filter(network__icontains=route.destination)
+        print('this is netwooork: ', network, peer)
         if not network:
             messages.add_message(request,messages.WARNING,('Estás intentando aplicacar una regla con direcciones que no pertenecen a tu espacio administrativo. Contacte con su administrador.'))
             return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name})) 

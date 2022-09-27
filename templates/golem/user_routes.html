@@ -15,12 +15,14 @@
 
 <div class="row rows-cols-4 p-5">
     <div class="col">
-        <h5 class="fw-light text-right">Reglas propuestas para mitigar el ataque: <a href="{{link}}" class="text-danger" target="_blank" style="text-decoration:none;">  {{golem_name}}</a> </h5>
+        <h5 class="fw-light">Reglas propuestas para mitigar el ataque: <a href="{{link}}" class="text-info" target="_blank" style="text-decoration:none;">  {{golem_name}}</a> </h5>
+        <small>Las reglas se crean en base a la información que se recibe desde la aplicación REM-GOLEM.Los valores seleccionados son ip origen, protocolo y puerto con mas tráfico así como los valores propio del
+            protocolo como pueden ser tcpflags, icmptype e icmpcode.</small>
     </div>
 </div>
 <div class="row">
     <div class="col">
-        <a href="{% url 'attack-list' %}" class="fw-light text-danger text-start" style="text-decoration: none;"> <i class="bi bi-arrow-left-short"></i> REM-Golem events</a>
+        <a href="{% url 'attack-list' %}" class="fw-light text-info text-start" style="text-decoration: none;"> <i class="bi bi-arrow-left-short"></i> REM-GOLEM events</a>
     </div>
 </div>
 <div class="row pt-3">
@@ -29,13 +31,13 @@
         <table id="golem_routes_table" class="table table-striped table-bordered  table-hover table-responsive cell-border display compact w-100 pretty">
         <thead class="">
            <tr>
-               <th><small>ID</small></th><th><small>Proposed</small></th><th><small>Dest Addr</small></th><th><small>Src Addr</small></th><th><small>More information</small></th><th><small>Status</small></th><td><small>Actions</small></th>
+               <th><small>ID</small></th><th><small>Creación</small></th><th><small>Dir Destino</small></th><th><small>Dir Origen</small></th><th><small>Más información</small></th><th><small>Estado</small></th><td><small>Otros</small></th>
             </tr>
         </thead>
         <tbody>
                {% for route in routes %}
             <tr>
-                <td class="text-danger"><small>{{route.name}}</small></td>
+                <td class="text-info"><small>{{route.name}}</small></td>
                 <td><small>{{route.filed|time:"H:i"}}, {{route.filed|date:"d M Y"}}</small></td>
                 <td>{% if route.destination %} <small>{{route.destination}}</small><br> {% endif %}</td>
                 <td> {% if route.source %} <small>{{route.source}}</small><br> {% endif %} </td>

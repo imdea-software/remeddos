@@ -156,6 +156,7 @@ def group_routes(request):
             error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
             return render(request,'error.html',{'error': error})
         context = {'route_slug' : routes,'file'  : ''}
+        print('hoe')
         return render(request,'user_routes.html',context)
 
 

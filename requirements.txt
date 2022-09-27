@@ -18,7 +18,7 @@ click-repl==0.1.6
 cryptography==3.4.6
 defusedxml==0.7.1
 distlib==0.3.1
-Django==3.1
+Django==3.2
 django-admin==2.0.1
 django-allauth==0.44.0
 django-excel-base==1.0.4
@@ -92,4 +92,5 @@ dj-webhooks==0.2.1
 django-braces==1.14.0
 django-sass==1.1.0
 django-simple-history==3.0.0
+django-python3-ldap==0.15.3
 django-celery-results

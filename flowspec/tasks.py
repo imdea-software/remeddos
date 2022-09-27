@@ -13,7 +13,6 @@ from ipaddr import *
 import os
 from os import fork,_exit
 from sys import exit
-import time
 import slack
 from flowspec.helpers import *
 from django.http import HttpResponse
@@ -542,8 +541,6 @@ def delete_expired_events():
         expired_date = event.received_at  + datetime.timedelta(days=5)
         if today > expired_date:
             event.delete()
-
-
          
 @shared_task
 def delete_expired_proposed_routes():

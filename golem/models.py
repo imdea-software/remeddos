@@ -30,6 +30,8 @@ class GolemAttack(models.Model):
     typeof_value = models.CharField(max_length=200, blank=True, null=True)
     history = HistoricalRecords(use_base_model_db=True)
     received_at = models.DateTimeField(auto_now_add=True)
+    ends_at = models.DateTimeField(null=True, blank=True, default=None)
+    nameof_attack = models.CharField(max_length=200, blank=True, null=True)
     typeof_attack = models.CharField(max_length=200, blank=True, null=True)
     link = models.CharField(max_length=300, blank=True, null=True)
     # route models
@@ -68,6 +70,17 @@ class GolemAttack(models.Model):
                 else:
                     history_records = 'El ataque no ha sufrido cambios registrados.'
                     return history_records
+    
+    def get_event_duration(self):
+        if not self.ends_at == None:
+            try:
+                duration = self.ends_at - self.received_at 
+                return (duration // 1000000 * 1000000)
+            except Exception as e:
+                pass
+        else: 
+            pass
+        
 
     def check_golem_updates(self):
         if self.history:

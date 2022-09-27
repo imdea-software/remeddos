@@ -32,7 +32,8 @@ def iter_for_delta_changes(iterable):
   next(b,None)
   return zip(a,b)
 
-def send_new_mail(subject, message, from_email, recipient_list, bcc_list):
+def send_new_mail(subject, message, recipient_list, bcc_list):
+  from_email='remeddos@software.imdea.org'
   try:
     logger.info("helpers::send_new_mail(): send mail: from_email="+str(from_email)+", recipient_list="+str(recipient_list)+", bcc_list="+str(bcc_list)) 
     #i have removed the bbc_list just for now
@@ -218,34 +219,6 @@ def check_protocol(protocol):
     match_protocol = get_protocol(protocol)
     return match_protocol
 
-def assemble_dic(traffic_event,event_info):
-  # organise all info collected from rem_golem, also we assemble here the route based on the attack
-  # for example which port to use depending on the traffic
-  try:
-    ip_dest = traffic_event[1]['data'][0][0]; 
-    ip_src = traffic_event[0]['data'][0][0] 
-    source_port = traffic_event[2]['data'][0][0]; fd = source_port.find(':') ; src_port = source_port[fd+1::] 
-    destination_port = traffic_event[3]['data'][0][0]; fn = destination_port.find(':'); dest_port = destination_port[fn+1::]
-    p = traffic_event[4]['data'][0][0]; tcp_flag = traffic_event[5]['data'][0][0]
-    spt = traffic_event[2]['data'][0][1]; sport = traffic_event[2]['data'][0][0] ; fs = sport.find(':'); srcport = sport[fs+1:]
-    dpt = traffic_event[3]['data'][0][1]; dport = traffic_event[3]['data'][0][0] ; fd = dport.find(':'); destport = dport[fd+1:]
-    ft = tcp_flag.find('(')
-    tcpflag = tcp_flag[:ft]
-    if spt > dpt : 
-      dic = {'id_attack':event_info['id'],'status':event_info['status'],'typeofattack':event_info['typeof_attack'],'max_value':event_info['max_value'],'th_value':event_info['threshold_value'],
-      'attack_name':event_info['attack_name'],'institution_name':event_info['institution_name'],'typeofvalue':event_info['typeof_value'],
-      'ip_dest':ip_dest,'ip_src':ip_src,'source_port':src_port,'dest_port':dest_port,'tcp_flag':tcpflag,'port':srcport}
-    else:
-      dic = {'id_attack':event_info['id'],'status':event_info['status'],'typeofattack':event_info['typeof_attack'],'max_value':event_info['max_value'],'th_value':event_info['threshold_value'],
-      'attack_name':event_info['attack_name'],'institution_name':event_info['institution_name'],'typeofvalue':event_info['typeof_value'],
-      'ip_dest':ip_dest,'ip_src':ip_src,'source_port':src_port,'dest_port':dest_port,'tcp_flag':tcpflag,'port':destport}
-    return dic
-  except IndexError as e:
-    logger.info('There was an exception when trying to assemble the dictionary for a proposed route. Error: ', e)
-    
-  
-  
-
 
 def get_ip_address(ip):
   import subprocess
@@ -257,7 +230,7 @@ def get_ip_address(ip):
     address = h[0].split("=")
     return address[1]
   except Exception as e:
-    logger.info('There was an error when trying to parse the ip. Error: ',e)
+    logger.info(f"There was an error when trying to parse the ip. Error: {e}")
     return ip
 
 

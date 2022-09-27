@@ -5,6 +5,31 @@ from flowspy import settings
 import requests
 
 
+def assemble_dic(traffic_event,event_info):
+    # organise all info collected from rem_golem, also we assemble here the route based on the attack
+    # for example which port to use depending on the traffic
+    try:
+        ip_dest = traffic_event[1]['data'][0][0]; 
+        ip_src = traffic_event[0]['data'][0][0] 
+        source_port = traffic_event[2]['data'][0][0]; fd = source_port.find(':') ; src_port = source_port[fd+1::] 
+        destination_port = traffic_event[3]['data'][0][0]; fn = destination_port.find(':'); dest_port = destination_port[fn+1::]
+        p = traffic_event[4]['data'][0][0]; tcp_flag = traffic_event[5]['data'][0][0]
+        spt = traffic_event[2]['data'][0][1]; sport = traffic_event[2]['data'][0][0] ; fs = sport.find(':'); srcport = sport[fs+1:]
+        dpt = traffic_event[3]['data'][0][1]; dport = traffic_event[3]['data'][0][0] ; fd = dport.find(':'); destport = dport[fd+1:]
+        ft = tcp_flag.find('(')
+        tcpflag = tcp_flag[:ft]
+        if spt > dpt : 
+            dic = {'id_attack':event_info['id'],'status':event_info['status'],'typeofattack':event_info['typeof_attack'],'max_value':event_info['max_value'],'th_value':event_info['threshold_value'],
+            'attack_name':event_info['attack_name'],'institution_name':event_info['institution_name'],'typeofvalue':event_info['typeof_value'],
+            'ip_dest':ip_dest,'ip_src':ip_src,'source_port':src_port,'dest_port':dest_port,'tcp_flag':tcpflag,'port':srcport}
+        else:
+            dic = {'id_attack':event_info['id'],'status':event_info['status'],'typeofattack':event_info['typeof_attack'],'max_value':event_info['max_value'],'th_value':event_info['threshold_value'],
+            'attack_name':event_info['attack_name'],'institution_name':event_info['institution_name'],'typeofvalue':event_info['typeof_value'],
+            'ip_dest':ip_dest,'ip_src':ip_src,'source_port':src_port,'dest_port':dest_port,'tcp_flag':tcpflag,'port':destport}
+        return dic
+    except IndexError as e:
+        logger.info('There was an exception when trying to assemble the dictionary for a proposed route. Error: ', e)
+
 def get_event_name(route_slug):
     p = route_slug.find('_')
     event_name = route_slug[:p]
@@ -56,7 +81,7 @@ def open_event(id_event):
         ip = get_ip_address(event_info['ip_attacked'])
         link = get_link(dic_regla['id_attack'])
         if peer:
-            geni_attack,created = GolemAttack.objects.get_or_create(id_name=dic_regla['id_attack'],peer=peer, ip_src = dic_regla['ip_src'],port=dic_regla['port'],tcpflag = dic_regla['tcp_flag'], status = dic_regla['status'], max_value = dic_regla['max_value'], threshold_value = dic_regla['th_value'], typeof_attack = dic_regla['typeofattack'], typeof_value=dic_regla['typeofvalue'], link=link)
+            geni_attack,created = GolemAttack.objects.get_or_create(id_name=dic_regla['id_attack'],peer=peer, ip_src = dic_regla['ip_src'],ip_dest=dic_regla['ip_dest'],port=dic_regla['port'],tcpflag = dic_regla['tcp_flag'], status = dic_regla['status'], max_value = dic_regla['max_value'], threshold_value = dic_regla['th_value'], nameof_attack = dic_regla['attack_name'] ,typeof_attack = dic_regla['typeofattack'], typeof_value=dic_regla['typeofvalue'], link=link)
             send_message(message = (f"Nuevo ataque DDoS contra el recurso '{ip}' con id {id_event} de tipo {event_info['attack_name']}. Consulte nuestra <https://remedios.redimadrid.es/|*web*> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link}."), peer=peer.peer_tag,superuser=False)          
             if not created:
                 geni_attack.save()        
@@ -97,7 +122,7 @@ def ongoing(id_event,peer):
         traffic_characteristics = event_data['response']['result']['data'][0]['traffic_characteristics']
         dic_regla2 = assemble_dic(traffic_characteristics,info)
         link1 = get_link(id_event)
-        attack = GolemAttack.objects.get_or_create(id_name=id_event)
+        attack = GolemAttack.objects.get(id_name=id_event)
         attack.status, attack.max_value, attack.threshold_value,attack.link = dic_regla2['status'], dic_regla2['max_value'], dic_regla2['th_value'], link1
         attack.save()
         protocol = traffic_characteristics[4]['data'][0][0]
@@ -141,24 +166,26 @@ def ongoing(id_event,peer):
         recovered(id_event,info, peer)
 
 
-
-
 def recovered(id_event, info, peer):
     from golem.models import GolemAttack
+    from datetime import datetime
+    from django.utils import timezone
+
     try:
         attack = GolemAttack.objects.get(id_name=id_event)
         peer = find_peer(info['institution_name'])    
         attack.status = info['status']
         attack.max_value = info['max_value']
         attack.threshold_value = info['threshold_value']
+        attack.ends_at = timezone.now()
+        print('fin del ataque: ',attack.ends_at)
+        print('INFO: ', info)
         attack.save()                          
         send_message(message=(f"El ataque DDoS con id {id_event} a la institución {info['institution_name']} ha terminado. Más información en <https://remedios.redimadrid.es/|REMeDDoS> o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
+          
     except ObjectDoesNotExist:
         #was not tracked 
         pass
-
-    
-    
 
 
 def create_route(golem_id,route_dic,peer):
@@ -178,8 +205,8 @@ def create_route(golem_id,route_dic,peer):
             fd = name.find('_')
             if golem_id == name[:fd] :
                 golem_routes.append(r)
-                #busqueda de todas las reglas, ver si alguna tiene el nombre del ataque
-                #cuantas hay, dependiendo de cuantas crear 1,2,3
+        # busqueda de todas las reglas, ver ya se ha propuesto alguna regla para el ataque sino
+        # generar la primera regla 
         if len(golem_routes)==0:
             try: 
                 route.name = route_dic['name']+'_1'

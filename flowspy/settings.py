@@ -175,6 +175,7 @@ WSGI_APPLICATION = 'flowspy.wsgi.application'
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
+    'django_python3_ldap.auth.LDAPBackend',
 )
 
 INSTALLED_APPS = (
@@ -268,7 +269,7 @@ LOGGING = {
 
 LOGIN_REDIRECT_URL = 'dashboard'
 ACCOUNT_LOGOUT_REDIRECT_URL ='/accounts/login/'
-DEFAULT_FROM_EMAIL = "redifod@software.imdea.org"
+DEFAULT_FROM_EMAIL = "remeddos@software.imdea.org"
 
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
@@ -483,3 +484,20 @@ CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_PRELOAD = True
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
+""" LDAP SERVER CONFIG  """
+
+# The URL of the LDAP server(s).  List multiple servers for high availability ServerPool connection.
+LDAP_AUTH_URL = ["ldaps://ldap.software.imdea.org"]
+
+# Specify which TLS version to use (Python 3.10 requires TLSv1 or higher)
+import ssl
+LDAP_AUTH_TLS_VERSION = ssl.PROTOCOL_TLSv1_2
+
+
+AUTH_LDAP_SERVER_URI = "ldaps://ldap.software.imdea.org" 
+LDAP_AUTH_SEARCH_BASE = "ou=People,dc=software,dc=imdea,dc=org"
+
+LDAP_ALWAYS_SEARCH_BIND = True
+
+AUTH_LDAP_START_TLS = True

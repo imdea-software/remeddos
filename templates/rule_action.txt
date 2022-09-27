@@ -1,26 +1,27 @@
-{% load tofqdn %}{% ifequal action 'expires' %}Rule {{route.name}} expires {% ifequal expiration_days 0 %}today{% else%}in {{expiration_days}} day{{ expiration_days|pluralize }}{% endifequal %}{% else %}A new rule {{action}} job has spawned
+{% load tofqdn %}{% ifequal action 'expires' %}Regla {{route.name}} expira {% ifequal expiration_days 0 %}hoy{% else%} en {{expiration_days}} día(s){{ expiration_days|pluralize }}{% endifequal %}
+{% else %}Nueva regla {{action}} 
 
-Peer: {{peer.peer_name}}
-User {{route.applier_username_nice}} requested the {{action}} of the following rule from address {{address}} {% if address|tofqdn %}({{address|tofqdn}}){% endif %}:
+Institución: {{peer.peer_name}}
+Usuario {{route.applier_username_nice}} ha solicitado {{action}} para la siguiente regla {{address}} {% if address|tofqdn %}({{address|tofqdn}}){% endif %}:
 
 Rule name: {{route.name}}{% endifequal %}
 
-Match Statements:
-* Source Address: {{route.source}}
-* Destination Address: {{route.destination}}
-* Protocol: {% if route.protocol.all %}{% for protocol in route.protocol.all %}{{ protocol }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}any{% endif %}
-* Ports: {% if route.sourceport or route.destinationport %}Defined by source/destination ports{% else %}{% if route.port %}{{ route.port }}{% else %}any{% endif %}{% endif %}
-* Source Ports: {% if route.port %}same as ports{% else %}{% if route.sourceport %}{{ route.sourceport }}{% else %}any{% endif %}{% endif %}
-* Destination Ports: {% if route.port %}same as ports{% else %}{% if route.destinationport %}{{ route.destinationport }}{% else %}any{% endif %}{% endif %}
+Información:
+* Dirección origen: {{route.source}}
+* Dirección destino: {{route.destination}}
+* Protocolo: {% if route.protocol.all %}{% for protocol in route.protocol.all %}{{ protocol }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}cualquiera{% endif %}
+* Puertos: {% if route.sourceport or route.destinationport %}Defined by source/destination ports{% else %}{% if route.port %}{{ route.port }}{% else %}cualquiera{% endif %}{% endif %}
+* Puertos de origen: {% if route.port %}igual que los puertos{% else %}{% if route.sourceport %}{{ route.sourceport }}{% else %}cualquiera{% endif %}{% endif %}
+* Puertos de destino: {% if route.port %}igual que los puertos{% else %}{% if route.destinationport %}{{ route.destinationport }}{% else %}cualquiera{% endif %}{% endif %}
 
 
 
-Then Actions:
-* Action:{% for then in route.then.all %}{{ then }}{% if not forloop.last %}, {% endif %}{% endfor %}
+Acciones:
+* Acción:{% for then in route.then.all %}{{ then }}{% if not forloop.last %}, {% endif %}{% endfor %}
 
-Comments: {% if route.comments %}{{route.comments}}{% else %}-{% endif %}
+Otros comentarios: {% if route.comments %}{{route.comments}}{% else %}-{% endif %}
 
-Expires: {% ifequal action 'removal' %}Now, removal requested{%else%}{{route.expires}}{% endifequal %}
+Expira: {% ifequal action 'removal' %}Now, removal requested{%else%}{{route.expires}}{% endifequal %}
 
-Rule url: {{url}}
+
 
