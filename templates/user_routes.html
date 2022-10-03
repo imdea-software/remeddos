@@ -12,30 +12,24 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.3/datatables.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.jqueryui.min.css">
 <style>
-body{
-    line-height: 0.8rem !important;
-    }
-
-small > a{
-    pointer-events: none !important;
-    text-decoration: none !important;
-    
-    }
-.page-item.active .page-link {
-    background-color: lightgrey !important;
-    border: 1px solid lightgrey;
-    }
+select.form-select > option {
+  margin: 2em;
+}
+ /* .page-item.active .page-link {
+  background-color: lightgrey !important;
+  border: 1px solid lightgrey;
+  }
 .page-link {
-    color: black !important;
-    background-color: white !important;
-    }
+  color: black !important;
+  background-color: white !important;
+  }
 .paginate_button a {
-      padding: 10px 10px;
-      margin: 5px;
-      border-radius: 6px;
-      border: 1px solid #474747;
-   }
-table {
+    padding: 10px 10px;
+    margin: 5px;
+    border-radius: 6px;
+    border: 1px solid #474747;
+ }
+ table {
       border-collapse:separate !important;
       border:solid lightgrey 1px !important;
       border-radius:15px !important;
@@ -54,61 +48,152 @@ th {
   }
   
 td:first-child, th:first-child {
-       border-left: none !important;
-  }
+       border-left: none !important; */
+  
 </style>
-
 {% endblock %}
 {% block title %}{% trans "Mis reglas" %}{% endblock %}
 {% block contentplaceholder %}
 {% csrf_token %}
 
+
 <div class="container">
 
-    <div class="row">
-                <div class="col-md-12">
-                   <h1 id="myrulesheader" class="page-header">{% trans "Mis reglas" %} </h1>
-        </div>
-        </div>
+    <!-- Table -->
 
-    <div class="row">
-        <div class="col-md-10">
+    
+    <div class="row pt-3">
+        <div class="col">
             <div class="panel panel-primary">
-                <div class="panel-heading"> <span class="font-monospace">  Reglas de Firewall</span> <i class="fa fa-shield"></i></div>
-            </div>
-        </div>
-    </div>
-        
-<div class="panel-body">
-    <div class="table-responsive">
-        <table class="table table-striped table-bordered compact w-100" id="routes_table">
-            <thead>
+                <div class="panel-heading"><span class="font-monospace">Mis reglas de Firewall</span><i class="fa fa-shield"></i></div>
+
+                <div class="panel-body">
+
+                <table id="routestable" class="table table-hover table-responsive compact w-100">
+                    <thead>
                     <tr>
-                        <th>Id</th>
-                        <th><big>Nombre</big></th>
-                        <th><big>Información</big></th>
-                        <th><big>Acción</big></th>
-                        <th><big>Estado</big></th>
-                        <th><big>Pertenece a</big></th>
-                        <th><big>Caduca</big></th>
-                        <th><big>Respuesta</big></th>
-                        <th><big>Otros</big></th>
+                        <th>Nombre</th><th>Información</th><th>Pertenece a</th><th>Estado</th><th>Acción</th><th>Caduca</th><th>Respuesta</th><th>Otros</th>
                     </tr>
                 </thead>
 
-                    <tbody>
-                </tbody>
-    </table>
-</div>
-</div>
-
-
-
-            <div class="row p-2 mt-3">
-                {% include "shortcuts.html" %}
-            </div>
+                <tbody>
+                    {% for route in routes %}
                 
+                        <tr>
+                            <td><small>
+                                {% if route.status == 'ACTIVE' %}
+                                <a href="{% url 'display-graphs' route.name %}" class="text-danger">{{route.name}}</a>
+                                {% else %}
+                                <span class="text-danger">{{route.name}}</span>
+                                {% endif %}
+                            </small></td>
+                            
+
+                            <td><small>
+                                {% if route.source %} <b>Dir Origen:</b> {{route.source}}<br> {% endif %}
+                                {% if route.destination %} <b>Dir Destino:</b> {{route.destination}}<br> {% endif %}
+                                {% if route.source_port %} <b>Puerto origent:</b> {{route.source_port}}<br> {% endif %}
+                                {% if route.port %} <b>Puerto(s):</b> {{route.port}}<br> {% endif %}
+                                {% if route.destination_port %}<b>Puerto Destino:</b>{{route.destination_port}}<br> {% endif %}
+                                {% if route.protocol.all %}<b>Protocolo:</b> {% for p in route.protocol.all %} {{p}} {% endfor %}<br> {% endif %}
+                                {% if route.tcpflag %} <b>Tcpflag(s): </b>  {{route.tcpflag}} {% endif %}
+                            </small></td>
+                             
+                            <td><small>{{route.applier_username_nice}}</small></td>
+
+                            <td>
+                                {% if route.status == 'ACTIVE'  %}
+                                    <span class="badge bg-success">{{route.status}}</span>
+                                {% elif route.status == 'DEACTIVATED' %}
+                                <span class="badge bg-dark">{{route.status}}</span>
+                                {% elif route.status == 'EXPIRED' %}
+                                <span class="badge bg-dark">{{route.status}}</span>
+                                {% elif route.status == 'INACTIVE' %}
+                                <span class="badge bg-dark">{{route.status}}</span>
+                                {% elif route.status == 'ERROR' %}
+                                    <span class="badge bg-danger">{{route.status}}</span>
+                                {% elif route.status == 'PENDING' %}
+                                        <img src="{% static 'dots.gif' %}" alt="...">
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{% if route.then.action %}{{route.then.action}}{% else %} {% endif %}</small>
+                            </td>
+                            
+
+                            <td><small>{% if route.expires %}{{route.expires}}{% else %}'Esta regla no tiene fecha de caducidad establecida.'{% endif %}</small></td>
+
+                            <td><small>{{route.response}}</small></td>
+
+                            <td>
+                                    <div class="btn-group d-inline">
+                                        {% if not request.COOKIES.token %}
+                                                {% if route.status == 'ACTIVE' %}                            
+                                                    <a href="{% url 'edit-route' route.name %}" class="btn btn-outline m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Editar"><i class="bi-pencil text-dark"></i></a>
+                                                    <a href="{% url 'delete-route' route.name  %}"class="btn btn-outline m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Desactivar"><i class="bi-shield-x text-dark"></i></a>
+                                                    <a href="{% url 'display-graphs' route.name %}" class="btn btn-outline m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Mostrar gráficos!"><i class="bi-graph-up text-dark"></i></a>
+                                                {% endif %}
+                                                    {% if route.status == 'ERROR' %}
+                                                    <a href="{% url 'edit-route' route.name %}" class="btn btn-outline-warning btn-sm" id="edit_button_{{route.pk}}">{% trans "Arreglar!" %}</a>
+                                                    {% endif %}
+                                                
+                                                    {% if route.status == 'DEACTIVATED' %}
+                                                    <a href="'edit-route' route.name" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Reactivar" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>
+                                                    <a href="{% url 'exterminate' route.name %}" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar regla de REM-E-DDOS"><i class="bi-shield-fill-x text-dark"></i></a>
+                                                    {% elif route.status == 'INACTIVE' %}
+                                                    <a href="'edit-route' route.name" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Reactivar" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>
+                                                    <a href="{% url 'exterminate' route.name %}" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar regla de REM-E-DDOS"><i class="bi-shield-fill-x text-dark"></i></a>
+                                                    {% elif route.status == 'EXPIRED' %}
+                                                    <a href="'edit-route' route.name" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Reactivar" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>
+                                                    <a href="{% url 'exterminate' route.name %}" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar regla de REM-E-DDOS"><i class="bi-shield-fill-x text-dark"></i></a>
+                                                {% endif %}
+                                    {% elif request.COOKIES.token %}
+                                        {% if route.status == 'ACTIVE' %}
+                                                <a href="{% url 'edit-route' route.name %}" class="btn btn-outline m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Editar"><i class="bi-pencil text-dark"></i></a>
+                                                <a href="{% url 'delete-route' route.name  %}"class="btn btn-outline  m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Desactivar"><i class="bi-shield-x text-dark"></i></a>
+                                                <a href="{% url 'display-graphs' route.name %}" class="btn btn-outline m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Mostrar gráficos!"><i class="bi-graph-up text-dark"></i></a>
+                                        {% endif %}
+                                                {% if route.status == 'ERROR' %}
+                                            <a href="{% url 'edit' route.name %}" class="btn btn-outline-warning btn-sm" id="edit_button_{{route.pk}}">{% trans "Arreglar!" %}</a>
+                                        {% else %}
+                                        <a href="'edit' route.name" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Reactivar" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>
+                                        <a href="{% url 'exterminate' route.name %}" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar regla de REM-E-DDOS"><i class="bi-shield-fill-x text-dark"></i></a>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                                
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        </div>
+        </div>
+    </div>
+
+    <div class="row mb-3 pb-3">
+        <div class="col">
+            <div class="card float-left">
+                <h6 class="card-header text-muted">Iconografía</h6> 
+                <div class="card-body">
+                    <div class="card-text">
+                    <span>Editar regla:  </span><i class="bi-pencil text-dark"></i><br>
+                    <span>Reactivar regla:   </span><i class="bi-cloud-arrow-up text-dark"></i><br>
+                    <span>Desactivar regla:  </span>  <i class="bi-shield-x text-dark"></i><br>
+                    <span>Eliminar regla:   </span><i class="bi-shield-fill-x text-dark"></i><br>
+                    <span>Ver gráfico: </span> <i class="bi-graph-up text-dark"></i><br>
+                </div>
+            </div>
+            </div>
+        </div>
+        <div class="col">
+          {% include "shortcuts.html" %}
+        </div>
+      
+      </div>
 </div>
+
 {% endblock %}
 
 {% block pagejsbottom %} 
@@ -130,279 +215,29 @@ $('.addbutton').click(function(){
             });
      });
 
-var filterbtns = '<div class="btn-group col-centered">\
-    <button type="button" class="btn btn-outline-success btn-sm" name="status_filter" value="ACTIVE" id="show_active">ACTIVE</button>\
-    <button type="button" class="btn btn-outline-info btn-sm" name="status_filter" value="PENDING" id="show_pending">PENDING</button>\
-    <button type="button" class="btn btn-outline-warning btn-sm" name="status_filter" value="ERROR" id="show_error">ERROR</button>\
-    <button type="button" class="btn btn-outline-dark btn-sm" name="status_filter" value="DEACTIVATED" id="show_deactivated">DEACTIVATED</button>\
-    </div>';
-
-var oTable;
-var start;
-var end;
-var oldhtml;
-var last_element = false;
-var refreshUrl = "{% url 'group-routes-ajax' %}";
-
-
 $(document).ready( function(){
-    oTable = $('#routes_table').dataTable( {
+    oTable = $('#routestable').dataTable( {
         "order": [[ 0, "desc" ]],
-        "bPaginate": true,
-        "bFilter": true,
-        "bResposive": {
-                breakpoints: [
-                {name: 'bigdesktop', width: Infinity},
-                {name: 'meddesktop', width: 1480},
-                {name: 'smalldesktop', width: 1280},
-                {name: 'medium', width: 1188},
-                {name: 'tabletl', width: 1024},
-                {name: 'btwtabllandp', width: 848},
-                {name: 'tabletp', width: 768},
-                {name: 'mobilel', width: 480},
-                {name: 'mobilep', width: 320}
-                ]
-            },
-        "bAutoWidth": true,
+        "AutoWidth": true,
         "aLengthMenu" : [
             [5, 15, 20, -1],
             [5, 15, 20, "All"]
         ],
-        "sDom":"<'row'<'col-xs-4'l><'col-xs-4'<'#filterplaceholder'>><'col-xs-4'f>><'row'<'col-xs-6'i><'col-xs-6'p>>tr<'row'<'col-xs-6'i><'col-xs-6'p>>",
-        "iDisplayLength": 20,
-        "bProcessing": true,
-        "sAjaxSource": refreshUrl,
-        "bDeferRender": true,
-         "fnInitComplete": function(oSettings, json) {
-         	oTable.fnSetColumnVis( 0,false );
-         	update_size();
-
-          	$('body').on('click', '.revertbutton', function () {
-            	var my = $(this);
-            	my.parent().html(oldhtml);
-            	last_element = false;
-            	return false;
-            });
-        },
-        "aoColumns":[
-                     {"mData":"id", "bSearchable": false,"bSortable": false, "bvisible":false},
-                     {"mData":"details", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
-                            "mRender": function (data, type, full) {
-                                if (full.comments !== null) {
-                                    if (!full.comments.trim()) {
-                                    return  '<small>'+data+'</small>';
-                                    }
-                                    
-                                    {% if request.COOKIES.token %}
-                                    displayurl = "{% url 'edit-route' route_slug='routename'  %}".replace('routename', full.name.toString());
-                                    {% else %}
-                                    displayurl = "{% url 'edit' route_slug='routename'  %}".replace('routename', full.name.toString());
-                                    {% endif %}
-                                    return '<a rel="tooltip" href="'+displayurl+'" data-bs-toggle="tooltip" data-bs-placement="top" title='+full.comments+'><small>'+data+'</small>'
-                                } else {
-                                    data = "No comments"
-                                    return data;
-                                }
-                            }
-                     },
-                     {"mData":"match", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
-                     "mRender": function (data, type, full) {
-                     	return '<small>'+data+'</small>';
-                     }
-                     },
-                     {"mData":"then", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
-                     "mRender": function (data, type, full) {
-                     	return data;
-                     }
-                     },
-                     {"mData":"status", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
-                     "mRender": function (data, type, full) {
-                     	var status = data;
-                     	if (status == "EXPIRED" ||status == "ADMININACTIVE" || status == "INACTIVE" || status == "OUTOFSYNC"){
-                     		if (status == "EXPIRED" ||status == "ADMININACTIVE" || status == "INACTIVE" ){
-                     			return '<span class="badge pill bg-dark">DESACTIVADA</span>';
-                     		}
-                     		else
-                     		{
-                     			if (status == "OUTOFSYNC"){
-                     				return '<span class="badge pill bg-dark">DESACTIVADA</span>';
-                     			}
-                     			else{
-                     				return status;
-                     			}
-                     		}
-                     	}
-                     	else{
-                     		if (status == 'ACTIVE'){
-                     			return '<span class="badge pill bg-success">'+status+'</span>';
-                     		}
-                     		else{
-                     			if (status == 'PENDING'){
-                     				return '<span class="badge pill bg-info">'+status+'</span>';
-                     			}
-                                if (status == 'ERROR'){
-                                    return '<span class="badge pill bg-danger">'+status+'</span>';
-                                }
-                     			else{
-                     				return '<span class="badge pill bg-dark">'+status+'</span>';
-                     			}
-                     		}
-                     	}
-                     }
-                     },
-                     {"mData":"applier", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
-                     "mRender": function (data, type, full) {
-                         if(data==null){
-                            return '<small>Esta regla no pertenece a nadie hasta que no se haga un commit con el router.</small>';
-                         }else{
-                            return '<small>'+data+' ('+full.peer+')</small>';
-                         }
-                     	
-                     }
-                     },
-                     {"mData":"expires", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
-                     "mRender": function (data, type, full) {
-                        var parsedate = new Date(data).toLocaleDateString('es-ES',{
-                            year:'numeric',
-                            month:'long',
-                            day:'numeric',
-                        });
-                        if(parsedate=='Invalid Date'){
-                            parsedate = 'No expira'
-                        }
-                        if (parsedate==null){
-                            parsedate = 'No expira'
-                        }
-                     	return '<small>'+parsedate+'</small>';
-                     }},
-                     {"mData":"response", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
-                     "mRender": function (data, type, full) {
-                     	status = full.status;
-                     	toolt = '<a rel="tooltip" href="#" data-bs-toggle="tooltip" data-bs-placement="top"';
-   	                     	if (status == "EXPIRED" ||status == "ADMININACTIVE" || status == "INACTIVE" || status == "OUTOFSYNC"){
-	                     		if (status == "INACTIVE" ){
-	                     			title = "{% trans 'Desactivada por el usuario' %}";
-	                     		}
-	                     		if (status == "ADMININACTIVE" ){
-	                     			title = "{% trans 'Desactivada por el administrador' %}";
-	                     		}
-	                     		if (status == "EXPIRED" ){
-	                     			title = "{% trans 'Desactivada por caducación.' %}";
-	                     		}
-	                     		if (status == "OUTOFSYNC" ){
-	                     			title = "{% trans 'Error por sincronización. Hay diferente configuraciones en el router y base de datos.' %}";
-	                     		}
-	                     		return toolt+" title=\""+title+"\">"+"<small>{% trans 'Regla caducada' %}</small>"+"</a>";
-	                     	}
-                     		if (status == "PENDING"){
-                     				return "<img src={% static 'dots.gif' %}>";
-                     			}
-                     		return "<small>"+full.response+"</small>";
-
-                     }
-                     },
-                     {"mData":"comments", "bSearchable": true,"bSortable": true,
-                      "mRender": function (data, type, full) {
-                     status = full.status;
-                     btn = '';
-                    {% if not request.COOKIES.token %}
-                        editurl = "{% url 'edit-route' route_slug='routename'  %}".replace('routename', full.name.toString());
-                    {% else %}
-                        editurl = "{% url 'edit' route_slug='routename'  %}".replace('routename', full.name.toString());
-                    {% endif %}
-                    {% if not request.COOKIES.token %}
-                        deleteurl = "{% url 'delete-route' route_slug='routename'  %}".replace('routename', full.name.toString());
-                        deleteroute = "{% url 'exterminate' route_slug='routename' %}".replace('routename', full.name.toString());
-                    {% else %}
-                        deleteurl = "{% url 'delete' route_slug='routename'  %}".replace('routename', full.name.toString());
-                        deleteroute = "{% url 'exterminate' route_slug='routename' %}".replace('routename', full.name.toString());
-                    {% endif %}
-                     graphsurl = "{% url 'display-graphs' route_slug='routename'  %}".replace('routename', full.name.toString());
-                     if (status == "ACTIVE" ){
-                     	btn = '<div class="row"><div class="col col-2 btn-group d-inline"><a href="'+editurl+'" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Editar" %}"><i class="bi-pencil text-dark"></i></a>';
-                        btn = btn +'<a href="'+deleteurl+'" class="btn  m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Desactivar" %}"><i class="bi-shield-fill-x text-dark"></i></a>';
-                        btn = btn +'<a href="'+graphsurl+'" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Mostrar gráficos!" %}"><i class="bi-graph-up text-dark"></i></a></div></div>';
-                    }
-                     if (status == 'EXPIRED' || status == 'ADMININACTIVE' || status == 'INACTIVE' || status == 'DEACTIVATED' ){
-                     	btn = '<a href="'+editurl+'" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Reactivar" %}" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>';
-                        btn = btn +'<a href="'+deleteroute+'" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans "Eliminar regla de REM-E-DDOS" %}"><i class="bi-shield-fill-x text-dark"></i></a>';
-                     }
-                     if (status == "OUTOFSYNC" ){
-                     	btn = '<a href="'+editurl+'" class="btn btn btn-sm  id="edit_button_{{route.pk}}">{% trans "Resincronizar" %}</a>';
-
-                     }
-                     if (status == "ERROR" ){
-                     	btn = '<div class="row"><div class="col col-2 btn-group d-inline"><a href="'+editurl+'" class="btn btn-outline-warning btn-sm" id="edit_button_{{route.pk}}">{% trans "Arreglar!" %}</a>';
-                        
-                     }
-                     return btn;
-                     }
-                    }
-
-         ]
-})
-
-});    
-// add class name
-
-
-
-$('#filterplaceholder').html(filterbtns);
-
-
-
-    $('body').on('click', 'button[name="status_filter"]', function(){
-    	var reg_exp = '';
-        var checkboxs = document.getElementsByName('status_filter');
-        $(this).button('toggle');
-        for (var i = 0, inp; inp = checkboxs[i]; i++) {
-            if (inp.type.toLowerCase() == 'button' && $(inp).hasClass('active')) {
-                reg_exp = reg_exp + inp.value + '|';
-            }
-        }
-        //passing an empty string will result in no filter
-        //thus, it must be set to something that will not exist in the column
-        if (reg_exp == '') {
-            reg_exp = '|'
-        }
-        oTable.fnFilter(reg_exp.slice(0, -1), 4, true, false, false);
-        console.log(reg_exp.slice(0, -1))
-        return false;
+        
+        "Processing": true, 
+        "DisplayLength": 5,
     });
 
-  $(window).resize(function() {
-    clearTimeout(window.refresh_size);
-    window.refresh_size = setTimeout(function() { update_size(); }, 250);
-  });
+    var select_element = document.getElementsByName("routestable_length");
+    console.log(select_element)
+    select_element.forEach(a => a.classList.remove("form-select"));
+    select_element.forEach(a => a.classList.remove("form-select-sm"));
 
-var update_size = function() {
-    $(oTable).css({ width: $(oTable).parent().width() });
-    pw=$(oTable).parent().width();
-    tw=$(oTable).width();
-    if (tw>pw){
-		oTable.fnSetColumnVis( 7,false );
-		oTable.fnSetColumnVis( 5,false );
-    }else{
-    	oTable.fnSetColumnVis( 7,true );
-    	oTable.fnSetColumnVis( 5,true );
-    }
-    oTable.fnAdjustColumnSizing();
-  }
+
+})    
+// add class name
+
 </script>
-<style type="text/css">
-
-
-	.dl-horizontal dt {
-    width: 70px;
-}
-.dl-horizontal dd {
-    margin-left: 90px;
-}
-
-th{
-	font-size: 12px;
-}
-</style>
 
 
 

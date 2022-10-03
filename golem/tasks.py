@@ -46,3 +46,15 @@ def golem(anomaly_info, id_event,last_updated=None):
         #event doesn't belong to peer
         pass
 
+
+@shared_task
+def check_ongoing_golem_events():
+    from golem.models import GolemAttack
+    from golem.helpers import petition_geni
+
+    golem_events = GolemAttack.objects.all()
+    for golem in golem_events:
+        if not golem.finished:
+            open_event(golem.id_name)
+        else:
+            pass

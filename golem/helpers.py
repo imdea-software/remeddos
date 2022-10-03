@@ -103,8 +103,8 @@ def open_event(id_event):
                 geni_attack.save()
         
         ongoing(id_event,peer)
-    else:
-        pass
+    elif event_info['status'] == 'Recovered':
+        recovered(id_event,event_info,peer)
 
 
 
@@ -134,36 +134,39 @@ def ongoing(id_event,peer):
                 logger.info('There was an error: ')
                 pass
         send_message(f"El ataque DDoS con id {dic_regla2['id_attack']} de tipo {info['attack_name']} a la institución {dic_regla2['institution_name']} persiste y hemos actualizado los datos del ataque. Consulte nuestra <https://remedios.redimadrid.es/|web> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link1}.", peer=peer.peer_tag,superuser=False)
-        not_recovered = True 
-        while not_recovered:
-            time.sleep(300)
-            attack_data, attack_info = petition_geni(id_event)
-            if attack_info['status'] == 'Ongoing':
-            # wait 4 min , rule proposition and send email to user , repeat process every 5 min until status equals 'recovered'
-                traffic_data = attack_data['response']['result']['data'][0]['traffic_characteristics']
-                dic_regla3 = assemble_dic(traffic_data,attack_info)
-                link2 = get_link(id_event)                                
-                attack = GolemAttack.objects.get(id_name=id_event)
-                attack.status = dic_regla3['status']
-                attack.max_value = dic_regla3['max_value']
-                attack.threshold_value = dic_regla3['th_value']
-                attack.link = link2
-                attack.save()
-                route_info1 = {'name':dic_regla3['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla3['ip_dest'],'ipsrc':dic_regla3['ip_src'],'port':dic_regla3['port'],'protocol':match_protocol.pk,'tcpflag':dic_regla3['tcp_flag']}
-                try:
-                    create_route(id_event,route_info1,peer.peer_tag)
-                except Exception as e:
-                    logger.info('There was an error: ')
-                send_message(message=(f"El ataque DDoS con id {dic_regla3['id_attack']} de tipo {attack_info['attack_name']} a la institución {dic_regla3['institution_name']} persiste y hemos actualizado los datos del ataque. Consulte nuestra <https://remedios.redimadrid.es/|web> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información siga el siguiente link: {link2}."),peer=peer.peer_tag,superuser=False)
-                not_recovered = True
-            elif attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':
-                # send message to slack saying the attack has finished
-                recovered(id_event,attack_info, peer)
-                not_recovered = False
-                break
-            
     elif info['status'] == 'Recovered' or info['status'] =='Burst':
         recovered(id_event,info, peer)
+    
+    not_recovered = True 
+    while not_recovered:
+        time.sleep(300)
+        attack_data, attack_info = petition_geni(id_event)
+        if attack_info['status'] == 'Ongoing':
+        # wait 4 min , rule proposition and send email to user , repeat process every 5 min until status equals 'recovered'
+            traffic_data = attack_data['response']['result']['data'][0]['traffic_characteristics']
+            dic_regla3 = assemble_dic(traffic_data,attack_info)
+            link2 = get_link(id_event)                                
+            attack = GolemAttack.objects.get(id_name=id_event)
+            attack.status = dic_regla3['status']
+            attack.max_value = dic_regla3['max_value']
+            attack.threshold_value = dic_regla3['th_value']
+            attack.link = link2
+            attack.save()
+            route_info1 = {'name':dic_regla3['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla3['ip_dest'],'ipsrc':dic_regla3['ip_src'],'port':dic_regla3['port'],'protocol':match_protocol.pk,'tcpflag':dic_regla3['tcp_flag']}
+            try:
+                create_route(id_event,route_info1,peer.peer_tag)
+            except Exception as e:
+                logger.info('There was an error: ')
+            print('va a mandar mensaje al slack')
+            send_message(message=(f"El ataque DDoS con id {dic_regla3['id_attack']} de tipo {attack_info['attack_name']} a la institución {dic_regla3['institution_name']} persiste y hemos actualizado los datos del ataque. Consulte nuestra <https://remedios.redimadrid.es/|web> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información siga el siguiente link: {link2}."),peer=peer.peer_tag,superuser=False)
+            not_recovered = True
+        elif attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':
+            # send message to slack saying the attack has finished
+            recovered(id_event,attack_info, peer)
+            not_recovered = False
+            break
+            
+    
 
 
 def recovered(id_event, info, peer):
@@ -173,16 +176,20 @@ def recovered(id_event, info, peer):
 
     try:
         attack = GolemAttack.objects.get(id_name=id_event)
-        peer = find_peer(info['institution_name'])    
-        attack.status = info['status']
-        attack.max_value = info['max_value']
-        attack.threshold_value = info['threshold_value']
-        attack.ends_at = timezone.now()
-        print('fin del ataque: ',attack.ends_at)
-        print('INFO: ', info)
-        attack.save()                          
-        send_message(message=(f"El ataque DDoS con id {id_event} a la institución {info['institution_name']} ha terminado. Más información en <https://remedios.redimadrid.es/|REMeDDoS> o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
-          
+        if not attack.finished:
+            peer = find_peer(info['institution_name'])    
+            attack.status = info['status']
+            attack.max_value = info['max_value']
+            attack.threshold_value = info['threshold_value']
+            attack.ends_at = timezone.now()
+            print('fin del ataque: ',attack.ends_at)
+            print('INFO: ', info)
+            attack.finished = True
+            attack.save()                          
+            send_message(message=(f"El ataque DDoS con id {id_event} a la institución {info['institution_name']} ha terminado. Más información en <https://remedios.redimadrid.es/|REMeDDoS> o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
+        else:
+            #means the attack has already finished and the user has been notified 
+            pass  
     except ObjectDoesNotExist:
         #was not tracked 
         pass
@@ -274,18 +281,7 @@ def create_route(golem_id,route_dic,peer):
 
 
 
-""" @shared_task
-def check_golem_events():
-    from golem.models import GolemAttack
-    from golem.helpers import petition_geni
 
-    golem_events = GolemAttack.objects.all()
-    for golem in golem_events:
-        if golem.status == 'Ongoing' :
-            event_ticket, attack_info = petition_geni(id_event=golem.id_name)
-            open_event(attack_info,golem.id_name)
-        else:
-            pass
- """
+
 
 

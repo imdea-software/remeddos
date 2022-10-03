@@ -144,19 +144,31 @@ def group_routes(request):
     if user.is_superuser:
         try:
             routes = find_all_routes()
+            fw_routes = []
+            for x in routes:
+                for route in x:
+                    if not route.applier == None:
+                        fw_routes.append(route)
         except UserProfile.DoesNotExist:
             error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
             return render(request,'error.html',{'error': error})
-        context = {'route_slug' : routes,'file'  : ''}
+        print(fw_routes)
+        context = {'route_slug' : routes,'file' : '', 'routes':fw_routes}
         return render(request,'user_routes.html',context)
     else:
         try:
             routes = find_routes(user.username)
+            fw_routes = []
+            for route in routes:
+                if not route.applier == None:
+                    fw_routes.append(route)
+                else:
+                    pass
+
         except UserProfile.DoesNotExist:
             error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
             return render(request,'error.html',{'error': error})
-        context = {'route_slug' : routes,'file'  : ''}
-        print('hoe')
+        context = {'route_slug' : routes,'file'  : '', 'routes':fw_routes}
         return render(request,'user_routes.html',context)
 
 

@@ -34,6 +34,7 @@ class GolemAttack(models.Model):
     nameof_attack = models.CharField(max_length=200, blank=True, null=True)
     typeof_attack = models.CharField(max_length=200, blank=True, null=True)
     link = models.CharField(max_length=300, blank=True, null=True)
+    finished = models.BooleanField(default=False)
     # route models
     route = models.ManyToManyField(Route,blank=True)
     route_cv = models.ManyToManyField(Route_CV,blank=True)

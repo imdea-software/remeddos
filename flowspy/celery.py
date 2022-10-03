@@ -42,6 +42,11 @@ app.conf.beat_schedule = {
         "schedule": crontab(minute=0, hour=0), 
         "args": (),
     },
+    "check-expired-backups": {
+        "task": "flowspec.tasks.expired_backups",
+        "schedule": crontab(minute=0, hour=0), 
+        "args": (),
+    },
     "every-day-del-golem-events": {
         "task": "flowspec.tasks.delete_expired_events",
         "schedule": crontab(minute=0, hour=0), 
@@ -58,7 +63,7 @@ app.conf.beat_schedule = {
         "args":(),
     },
     "check-ongoing-golem-events":{
-        "task":"flowspec.tasks.check_open_events",
+        "task":"flowspec.tasks.check_ongoing_golem_events",
         "schedule":crontab(minute='*/30'),
         "args":(),
     },

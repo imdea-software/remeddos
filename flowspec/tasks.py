@@ -486,8 +486,9 @@ def expired_backups():
     
     peers = Peer.objects.all()
     fixture = ''
+    today = datetime.datetime.now()
 
-    for peer in peers: 
+    for peer in peers:
         if not peer.peer_tag == 'Punch':
             backup_dir = (f"{BACK_UP_DIR}{peer.peer_tag}/")
             for f in os.listdir(backup_dir):
@@ -498,7 +499,7 @@ def expired_backups():
                 date = p1[:fd2]            
                 date_obj = datetime.datetime.strptime(date, '%d-%B-%Y-%H:%M')
                 expired_date = date_obj + datetime.timedelta(days=30)
-                if date_obj > expired_date:
+                if today > expired_date:
                     os.remove(fixture)
                 else:
                     pass                    

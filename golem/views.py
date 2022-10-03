@@ -50,15 +50,23 @@ class ProcessWebHookView(CsrfExemptMixin, View):
         message = json.loads(request.body)
         id_event = message['event']['id']
         anomaly_ticket, anomaly_info = petition_geni(id_event)
-        last_updated = message['event']['datetime']['update_time']
-        print('New webhook event, ', id_event, anomaly_info['status'])      
         try:
-            #post.apply_async((anomaly_info, id_event))
-            task = Process(target=golem, args=(anomaly_info,id_event,last_updated))
-            task.start()
-            
+            last_updated = message['event']['datetime']['update_time']
         except Exception as e:
-            logger.info('Error while trying to analyze the golem event. Error: ',e)
+            #if not found it means the field is not has not been sent yet
+            pass
+        print('New webhook event, ', id_event, anomaly_info['status'])   
+        if not anomaly_info['status'] == 'Recovered':   
+            try:
+                task = Process(target=golem, args=(anomaly_info,id_event,last_updated))
+                task.start()
+            except Exception as e:
+                logger.info('Error while trying to analyze the golem event. Error: ',e)
+        elif anomaly_info['status'] == 'Recovered' :
+            dic_regla = assemble_dic(anomaly_ticket['response']['result']['data'][0]['traffic_characteristics'],anomaly_info)
+            peer = find_peer(dic_regla['institution_name'])
+            recovered(id_event,anomaly_info,peer)
+
         return HttpResponse()
 
 @verified_email_required
