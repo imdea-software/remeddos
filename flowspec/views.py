@@ -152,7 +152,6 @@ def group_routes(request):
         except UserProfile.DoesNotExist:
             error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
             return render(request,'error.html',{'error': error})
-        print(fw_routes)
         context = {'route_slug' : routes,'file' : '', 'routes':fw_routes}
         return render(request,'user_routes.html',context)
     else:
@@ -997,7 +996,7 @@ def sync_router(request):
                         route.protocol.add(prot)
                     th_act, created = ThenAction.objects.get_or_create(action=then,action_value=then_action)
                     route.then.add(th_act.pk)
-                    print('Todas las reglas ya han sido sincronizadas con la base de datos.') 
+                    logger.info('Todas las reglas ya han sido sincronizadas con la base de datos.') 
                         # check if the route is already in our DB
                 except Exception as e:                    
                     #message = 'Routes have already been syncronised.'
@@ -1047,7 +1046,7 @@ def routes_sync(request):
             message = 'Reglas sincronizadas.'
             send_message(message,peer=None,superuser=True)
         else:
-            print('there are not syncroutes: ',diff, notsynced_routes)
+            logger.info('There are routes out of sync: ',diff, notsynced_routes)
     else:
         if router_routes == [] and routes_db:
             for route_db in routes_db:
@@ -1159,13 +1158,3 @@ def restore_complete_db(request):
         return render(request,'routes_synced.html',{'message':'Esta opción solo puede ser usada por un superusuario, disculpe las molestias.'})
 
 
-@verified_email_required
-@login_required
-@never_cache
-def whoisDst(request):
-    print(request.GET)
-    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    if is_ajax:
-        print('this is the value, is here.')
-        pass
-    pass
