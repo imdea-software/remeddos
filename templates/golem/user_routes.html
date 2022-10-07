@@ -74,7 +74,7 @@
                     <div class="col-2 btn-group d-inline">
                     {% if not route.status == 'ACTIVE' %}
                         {% if not request.COOKIES.token %}
-                            <span data-bs-toggle="tootltip" data-bs-placement="top" title="Commit regla"><a  href="{% url 'vcommit' route.name %}"  id="commitbutton" class="btn m-1"><i class="bi bi-patch-plus"></i></a></span>
+                            <a  href="{% url 'vcommit' route.name %}"  id="commitbutton" data-bs-toggle="tootltip" data-bs-placement="top" title="Commit regla" class="btn m-1"><i class="bi bi-patch-plus"></i></a>
                         {% else %}
                             <a href="{% url 'commit' route.name %}" id="commitbutton"  data-bs-toggle="tooltip"  data-bs-placement="top" title="Commit regla" class="btn m-1"><i class="bi bi-patch-plus"></i></a>  
                     {% endif %}
@@ -96,9 +96,28 @@
         {% endif %}
     </div>
 </div>
-<div class="row">
-    {% include "shortcuts.html" %}
+
+
+<div class="row mb-3 pb-3">
+    <div class="col">
+        <div class="card float-left">
+            <h6 class="card-header">Iconografía</h6> 
+            <div class="card-body">
+                <div class="card-text">
+                    <div class="col d-inline">
+                        <span class="">Commit regla:  <i class="bi bi-patch-plus text-info"></i></span>
+                        <span class="ml-2">Editar regla:   <i class="bi-pencil text-info"></i></span>
+                        <span class="ml-2">Eliminar regla:   <i class="bi-trash text-info"></i></span>
+            </div>
+            </div>
+        </div>
+        </div>
     </div>
+    <div class="col">
+      {% include "shortcuts.html" %}
+    </div>
+  
+  </div>
 </div>
 
 

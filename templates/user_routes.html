@@ -14,42 +14,7 @@
 <style>
 select.form-select > option {
   margin: 2em;
-}
- /* .page-item.active .page-link {
-  background-color: lightgrey !important;
-  border: 1px solid lightgrey;
-  }
-.page-link {
-  color: black !important;
-  background-color: white !important;
-  }
-.paginate_button a {
-    padding: 10px 10px;
-    margin: 5px;
-    border-radius: 6px;
-    border: 1px solid #474747;
- }
- table {
-      border-collapse:separate !important;
-      border:solid lightgrey 1px !important;
-      border-radius:15px !important;
-  }
-  
-td {
-      border-left:solid lightgrey 1px !important;
-      border-top:solid lightgrey 1px !important;
-      border-bottom:none !important;
-      border-right: none !important;
-  }
-  
-th {
-    border-top: none !important;
-    border-top: none !important;
-  }
-  
-td:first-child, th:first-child {
-       border-left: none !important; */
-  
+} 
 </style>
 {% endblock %}
 {% block title %}{% trans "Mis reglas" %}{% endblock %}
@@ -72,7 +37,7 @@ td:first-child, th:first-child {
                 <table id="routestable" class="table table-hover table-responsive compact w-100">
                     <thead>
                     <tr>
-                        <th>Nombre</th><th>Información</th><th>Pertenece a</th><th>Estado</th><th>Acción</th><th>Caduca</th><th>Respuesta</th><th>Otros</th>
+                        <th>Creada</th><th>Nombre</th><th>Información</th><th>Pertenece a</th><th>Estado</th><th>Caduca</th><th>Respuesta</th><th>Otros</th>
                     </tr>
                 </thead>
 
@@ -80,6 +45,7 @@ td:first-child, th:first-child {
                     {% for route in routes %}
                 
                         <tr>
+                            <td><small>{{route.filed|date:"d M Y" }}</small></td>
                             <td><small>
                                 {% if route.status == 'ACTIVE' %}
                                 <a href="{% url 'display-graphs' route.name %}" class="text-danger">{{route.name}}</a>
@@ -97,6 +63,7 @@ td:first-child, th:first-child {
                                 {% if route.destination_port %}<b>Puerto Destino:</b>{{route.destination_port}}<br> {% endif %}
                                 {% if route.protocol.all %}<b>Protocolo:</b> {% for p in route.protocol.all %} {{p}} {% endfor %}<br> {% endif %}
                                 {% if route.tcpflag %} <b>Tcpflag(s): </b>  {{route.tcpflag}} {% endif %}
+                                {% if route.then.action %} <b> Acción: {{route.then.action}} </b> {% endif %}
                             </small></td>
                              
                             <td><small>{{route.applier_username_nice}}</small></td>
@@ -116,9 +83,6 @@ td:first-child, th:first-child {
                                         <img src="{% static 'dots.gif' %}" alt="...">
                                 {% endif %}
                             </td>
-                            <td>
-                                <small>{% if route.then.action %}{{route.then.action}}{% else %} {% endif %}</small>
-                            </td>
                             
 
                             <td><small>{% if route.expires %}{{route.expires}}{% else %}'Esta regla no tiene fecha de caducidad establecida.'{% endif %}</small></td>
@@ -126,38 +90,46 @@ td:first-child, th:first-child {
                             <td><small>{{route.response}}</small></td>
 
                             <td>
-                                    <div class="btn-group d-inline">
+                                    <div class="col-2 btn-group d-inline">
                                         {% if not request.COOKIES.token %}
                                                 {% if route.status == 'ACTIVE' %}                            
                                                     <a href="{% url 'edit-route' route.name %}" class="btn btn-outline m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Editar"><i class="bi-pencil text-dark"></i></a>
                                                     <a href="{% url 'delete-route' route.name  %}"class="btn btn-outline m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Desactivar"><i class="bi-shield-x text-dark"></i></a>
                                                     <a href="{% url 'display-graphs' route.name %}" class="btn btn-outline m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Mostrar gráficos!"><i class="bi-graph-up text-dark"></i></a>
                                                 {% endif %}
-                                                    {% if route.status == 'ERROR' %}
+                                                {% if route.status == 'ERROR' %}
                                                     <a href="{% url 'edit-route' route.name %}" class="btn btn-outline-warning btn-sm" id="edit_button_{{route.pk}}">{% trans "Arreglar!" %}</a>
-                                                    {% endif %}
-                                                
-                                                    {% if route.status == 'DEACTIVATED' %}
-                                                    <a href="'edit-route' route.name" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Reactivar" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>
-                                                    <a href="{% url 'exterminate' route.name %}" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar regla de REM-E-DDOS"><i class="bi-shield-fill-x text-dark"></i></a>
-                                                    {% elif route.status == 'INACTIVE' %}
-                                                    <a href="'edit-route' route.name" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Reactivar" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>
-                                                    <a href="{% url 'exterminate' route.name %}" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar regla de REM-E-DDOS"><i class="bi-shield-fill-x text-dark"></i></a>
-                                                    {% elif route.status == 'EXPIRED' %}
-                                                    <a href="'edit-route' route.name" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Reactivar" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>
-                                                    <a href="{% url 'exterminate' route.name %}" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar regla de REM-E-DDOS"><i class="bi-shield-fill-x text-dark"></i></a>
                                                 {% endif %}
-                                    {% elif request.COOKIES.token %}
+                                                
+                                                {% if route.status == 'DEACTIVATED' %}
+                                                    <a href="'edit-route' route.name" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Reactivar" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>
+                                                    <a href="{% url 'exterminate' route.name %}" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar regla de REM-E-DDOS"><i class="bi-trash text-dark"></i></a>
+                                                    {% endif %}
+                                                    {% if route.status == 'INACTIVE' %}
+                                                    <a href="'edit-route' route.name" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Reactivar" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>
+                                                    <a href="{% url 'exterminate' route.name %}" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar regla de REM-E-DDOS"><i class="bi-trash text-dark"></i></a>
+                                                    {% endif %}
+                                                    {% if route.status == 'EXPIRED' %}
+                                                    <a href="'edit-route' route.name" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Reactivar" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>
+                                                    <a href="{% url 'exterminate' route.name %}" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar regla de REM-E-DDOS"><i class="bi-trash text-dark"></i></a>
+                                                {% endif %}
+                                        {% endif %}
+                                    {% if request.COOKIES.token %}
                                         {% if route.status == 'ACTIVE' %}
                                                 <a href="{% url 'edit-route' route.name %}" class="btn btn-outline m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Editar"><i class="bi-pencil text-dark"></i></a>
                                                 <a href="{% url 'delete-route' route.name  %}"class="btn btn-outline  m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Desactivar"><i class="bi-shield-x text-dark"></i></a>
                                                 <a href="{% url 'display-graphs' route.name %}" class="btn btn-outline m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Mostrar gráficos!"><i class="bi-graph-up text-dark"></i></a>
                                         {% endif %}
+                                        {% if route.status == 'INACTIVE' %}
+                                                    <a href="'edit-route' route.name" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Reactivar" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>
+                                                    <a href="{% url 'exterminate' route.name %}" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar regla de REM-E-DDOS"><i class="bi-trash text-dark"></i></a>
+                                                    {% endif %}
                                                 {% if route.status == 'ERROR' %}
                                             <a href="{% url 'edit' route.name %}" class="btn btn-outline-warning btn-sm" id="edit_button_{{route.pk}}">{% trans "Arreglar!" %}</a>
-                                        {% else %}
+                                            {% endif %}
+                                            {% if route.status == 'DEACTIVATED' %}
                                         <a href="'edit' route.name" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Reactivar" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>
-                                        <a href="{% url 'exterminate' route.name %}" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar regla de REM-E-DDOS"><i class="bi-shield-fill-x text-dark"></i></a>
+                                        <a href="{% url 'exterminate' route.name %}" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar regla de REM-E-DDOS"><i class="bi-trash text-dark"></i></a>
                                     {% endif %}
                                 {% endif %}
                             </div>
@@ -175,14 +147,16 @@ td:first-child, th:first-child {
     <div class="row mb-3 pb-3">
         <div class="col">
             <div class="card float-left">
-                <h6 class="card-header text-muted">Iconografía</h6> 
+                <h6 class="card-header">Iconografía</h6> 
                 <div class="card-body">
                     <div class="card-text">
-                    <span>Editar regla:  </span><i class="bi-pencil text-dark"></i><br>
-                    <span>Reactivar regla:   </span><i class="bi-cloud-arrow-up text-dark"></i><br>
-                    <span>Desactivar regla:  </span>  <i class="bi-shield-x text-dark"></i><br>
-                    <span>Eliminar regla:   </span><i class="bi-shield-fill-x text-dark"></i><br>
-                    <span>Ver gráfico: </span> <i class="bi-graph-up text-dark"></i><br>
+                        <div class="col d-inline">
+                            <span class="">Editar regla:  <i class="bi-pencil text-info"></i></span>
+                            <span class="ml-1">Reactivar regla:   <i class="bi-cloud-arrow-up text-info"></i></span>
+                            <span class="ml-1">Desactivar regla:    <i class="bi-shield-x text-info"></i></span><br>
+                            <span class="">Eliminar regla:   <i class="bi-trash text-info"></i></span>
+                            <span class="ml-1">Ver gráfico: <i class="bi-graph-up text-info"></i></span>
+                </div>
                 </div>
             </div>
             </div>
@@ -217,7 +191,7 @@ $('.addbutton').click(function(){
 
 $(document).ready( function(){
     oTable = $('#routestable').dataTable( {
-        "order": [[ 0, "desc" ]],
+        "order": [[ 1, "desc" ]],
         "AutoWidth": true,
         "aLengthMenu" : [
             [5, 15, 20, -1],

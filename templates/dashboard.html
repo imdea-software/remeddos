@@ -53,24 +53,16 @@ td:first-child, th:first-child {
 {% block title %}{% trans "Dashboard" %}{% endblock %}
 {% block contentplaceholder %}
 {% csrf_token %}
-        
-			<section id="projects">
 				<div class="container">
-				  <!-- INFO -->
-				  <section id="hero">
-					<div class="container">
-					  <div class="row mb-5">
-						<div class="col">
-						  <h1 class="font-monospace">REM-e-DDOS</h1>
-						  <p>REM-e-DDOS es una aplicación diseñada para la mitigación de ataques, aquí podrá configurar reglas de firewall que le ayude a proteger su red. <br> 
+					<div class="row">
+						<div class="col mb-2">
+							<i class="fa fa-shield ml-2"></i><span class="text-info font-monospace">  REM-e-DDOS</span> <br>
+						  <small>Aplicación diseñada para la mitigación de ataques, aquí podrá configurar reglas de firewall que le ayude a proteger su red. <br> 
 							Está aplicación también recoge información desde REM-Golem para informarle a través de Slack sobre los últimos ataques que haya recibido, proponiendo a su vez
-							distintas reglas que usted podrá personalizar a su gusto. Para más información:</p>
-						  <div class="col-md-3  align-items-center" style="display:inline-block;">
-						  <!-- <a href="{% url 'pending-routes' %}" type="button" class="btn btn-outline-dark btn-sm  float-left">Reglas propuestas</a>
-						  <a href="{% url 'attack-list' %}" type="button" class="btn btn-outline-dark btn-sm float-right">REM-GOLEM</a> -->
-						</div>
+							distintas reglas que usted podrá personalizar a su gusto. Para más información:</small>
 						</div>
 					  </div>
+					  
 					  <div class="row cards">
 						<div class="col-md-3 d-flex justify-content-center">
 						  <div class="card" style="width: 18rem;">
@@ -111,8 +103,7 @@ td:first-child, th:first-child {
 						  
 
 					  </div>
-					</div>
-				  </section>
+				  <!-- </section> -->
 				  <!--ENDINFO -->
 				  
 				 
@@ -120,23 +111,20 @@ td:first-child, th:first-child {
 				  <div class="row p-2 mt-3">
 				  <div class="col">
 					{% if routes  %}
-        			<table id="routes_table" class="table table-hover table-responsive display compact w-100">
+        			<table id="routes_table" class="table table-hover table-responsive">
 						<thead class="">
 						<tr>
-							<th><small>Nombre</small></th>
-							<th><small>Creada</small></th>
-							<th><small>Mas información</small></th>
-							<th><small>Estado</small></th>
-							</tr>
+							<th><small>Nombre</small></th><th><small>Creada</small></th><th><small>Mas información</small></th><th><small>Estado</small></th>
+						</tr>
 						</thead>
 						<tbody>
 							{% for route in routes %}
 							<tr>
-								<td><small><a href="{% url 'route-details' route.name %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Gráficos y más información">{{route.name}}</a></small></td>
+								<td><small><a href="{% url 'route-details' route.name %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Gráficos y más información" class="text-decoration-none">{{route.name}}</a></small></td>
 								<td><small>{{route.filed|time:"H:i"}}, {{route.filed|date:"d M Y"}}</small></td>
 								<td> 
 									{% if route.destination %} <small id="routeDestination" value="{{route.destination}}">{{route.destination}}</small> {% endif %} <br> 
-									{% if route.source %} <small onmouseover="whoisAddressSrc()" id="routeSource" value="{{route.source}}">{{route.source}}</small> {% endif %} <br>
+									{% if route.source %} <small id="routeSource" value="{{route.source}}">{{route.source}}</small> {% endif %} <br>
 									{% if route.protocol %} <small>Protocolo: {% for p in route.protocol.all %} {{p}} {% endfor %}</small><br> {% endif %} 
 									{% if route.port %} <small>Port: {{route.port}}</small><br> {% endif %}
 									{% if route.tcpflag %} <small>Tcpflag: {{route.tcpflag}}</small><br> {% endif %}
@@ -176,52 +164,20 @@ td:first-child, th:first-child {
               }
             });
      });
-	 $(document).ready(function(){
-		$('#routeDestionation').mouseover(function(){
-			console.log('bfff')
-				$.ajax({
-					url: "{% url 'destWhois' %}",
-					type: "POST",
-					dataType: "json",
-					data:{'value':value},
-					headers: {
-						"X-Requested-With": "XMLHttpRequest",
-						"X-CSRFToken": getCookie("csrftoken"),  // don't forget to include the 'getCookie' function
-					},
-					sucess: (data) => {
-						console.log('sucess'+ value);
-					},
-					error:(error) => {
-						console.log(error);
-					}
-				});
-
-	 });
 
 	 //======================
 		$('#routes_table').DataTable({
 			"order": [[ 1, "desc" ]],
 			"AutoWidth": true,
 			"Processing": true,
-			/* "buttons": [
-					{
-   						extend: 'edit',
-   						editor: editor,
-   						className: 'btn btn-default btn-sm,
-					} */
+			"aLengthMenu" : [
+                [5, 15, 20, -1],
+                [5, 15, 20, "All"]
+            ],
+            
+            "bProcessing": true, 
+            "iDisplayLength": 5,
     		});
-	 });
-	function whoisAddressDest(){
-		var value = document.getElementById('routeDestination').innerHTML;
-		
-
-	 }
-	
-
-	 function whoisAddressSrc(){
-		var value = document.getElementById('routeSource').innerHTML;
-		console.log('its working src '+value);
-	 }
 </script>
 
 {% endblock %}

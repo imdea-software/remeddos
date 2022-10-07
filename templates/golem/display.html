@@ -55,7 +55,9 @@ td:first-child, th:first-child {
 
 <div class="row rows-cols-4 p-5">
     <div class="mb-2">
-      <i class="fa fa-shield"></i><span class="font-weight-light font-monospace">  Ataques recibidos desde <a href=""></a> <span class="text-info">REM-GOLEM</span></span>
+      <i class="fa fa-shield"></i><span class="font-weight-light font-monospace">  Ataques recibidos desde <a href="https://193.145.15.26/"><span class="text-info">REM-GOLEM</span></a> </span> <br>
+      <small>Las reglas se crean en base a la información que se recibe desde la aplicación REM-GOLEM.Los valores seleccionados son ip origen, protocolo y puerto con mas tráfico así como los valores propio del
+        protocolo como pueden ser tcpflags, icmptype e icmpcode.</small>
     </div>
 </div>
 
@@ -65,13 +67,14 @@ td:first-child, th:first-child {
         <!-- <thead class="bg-dark text-white"> -->
           <thead>
            <tr>
-               <th>ID </th><th>Tipo</th><th>Tiempo</th><th>Institución</th><th>Más Información</th> <th>Estado</th> 
-               <!-- <th>Max Value</th> <th>Threshold </th> --><th>Gráfica Golem</th> <th>Otros</th>
+               <th>Comienzo</th><th>ID </th><th>Tipo</th><th>Tiempo</th><th>Institución</th><th>Más Información</th> <th>Estado</th> 
+               <th>Gráfica Golem</th> <th>Otros</th>
             </tr>
         </thead>
         <tbody>
                {% for attack in attacks %}
             <tr>
+              <td><small>{{attack.received_at|date:"d M Y" }}</small></td>
                 <td><small>
                     <a href="{% url 'golem-routes' attack.id_name %}" class="fw-bold text-danger" style="text-decoration:None;">{{attack.id_name}}</a>
                 </small></td>
@@ -109,9 +112,9 @@ td:first-child, th:first-child {
                     <td>
                     <div class="row">
                         <div clas="col col-2 btn-group d-inline">
-                            <a href="{% url 'golem-routes' attack.id_name %}"  data-bs-toggle="tooltip" data-bs-placement="top" title="View rules" class="btn btn-sm btn-outline-dark m-1"><i class="bi bi-bookmark-plus"></i></a>
+                            <a href="{% url 'golem-routes' attack.id_name %}"  data-bs-toggle="tooltip" data-bs-placement="top" title="Ver reglas propuestas" class="btn m-1"><i class="bi bi-bookmark-plus"></i></a>
                             <!-- <a href="{% url 'golem-updates' attack.id_name %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Updates" class="btn btn-outline btn-sm btn-dark m-1"><i class="bi bi-gear-fill"></i></a> -->
-                            <a href="{% url 'golem-delete' attack.id_name %}"  data-bs-toggle="tooltip" data-bs-placement="top" title="Delete golem event" data-bs-toggle="modal" data-bs-target="#deleteconfirmModal" class="btn btn-sm btn-outline-dark m-1"><i class="bi bi-trash"></i></a>
+                            <a href="{% url 'golem-delete' attack.id_name %}"  data-bs-toggle="tooltip" data-bs-placement="top" title="Delete golem event" data-bs-toggle="modal" data-bs-target="#deleteconfirmModal" class="btn m-1"><i class="bi bi-trash"></i></a>
                         </div>    
                     </div>
                     </td>
@@ -131,12 +134,27 @@ td:first-child, th:first-child {
 </div>
 {% endif %}
 
-<div class="row">
-  <div class="float-right mt-3 pt-3">
-    {% include "../shortcuts.html" %}
+<div class="row mb-3 pb-3 mt-3">
+  <div class="col">
+      <div class="card float-left">
+          <h6 class="card-header">Iconografía</h6> 
+          <div class="card-body">
+              <div class="card-text">
+                  <div class="col d-inline">
+                      <span>Ver reglas propuestas:  <i class="bi-bookmark-plus text-info"></i></span> <br>
+                      <span>Eliminar eventos recibidos de REM-GOLEM:   <i class="bi-trash text-info"></i></span>
+          </div>
+          </div>
+      </div>
+      </div>
+  </div>
+  <div class="col">
+    {% include "shortcuts.html" %}
   </div>
 
 </div>
+
+
 </div>
 
 <!-- Commit to router Modal -->

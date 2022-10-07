@@ -8,23 +8,17 @@
 
 {% block contentplaceholder %}
 <div class="container-fluid p-5">
+  
 <div class="row">
+  <div class="col"></div>
+
+
   <div class="col">
-    <h4 class="fw-light">{% trans "RediMadrid REM-E-DDoS" %}</h4>
-    </div>
-    </div>
-
-
-<!-- <div class="row">
-    <div class="col">
-      <p>{% blocktrans %}If you don't have a profile registered yet, please visit the next <a href="{{ signup_url }}"> link </a>.{% endblocktrans %}</p>
-    </div>
-</div> -->
-
-      <form method="POST" action="{% url 'account_login' %}" class="row g-3">
+    <h4 class="fw-light">REM-E-DDoS</h4>
+      <form method="POST" action="{% url 'account_login' %}">
         {% csrf_token %}
         <div class="row g-3">
-        <div class="col col-md-6">
+        <div class="col">
           <label for="id_name" class="form-label"><b>{% trans "Nombre de usuario" %}</b></label>
           {% render_field form.login class+="form-control" placeholder="Introduce tu nombre de usuario" %}
           {% if form.login.errors %} <span class="help-block"> {{ form.login.errors|join:", " }} </span>
@@ -32,7 +26,7 @@
         </div>
       </div>
         <div class="row">
-        <div class="col col-6">
+        <div class="col">
           <label for="id_password" class="form-label"><b>{% trans "Contraseña" %}</b></label>
           {% render_field form.password class+="form-control" placeholder="Introduce tu contraseña" %}
           {% if form.password.errors %} <span class="help-block"> {{ form.password.errors|join:", " }} </span>
@@ -43,26 +37,26 @@
         <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
         {% endif %}
         <div class="row">
-        <div class="col col-6">
+        <div class="col">
         <a class="secondaryAction" href="{% url 'account_reset_password' %}">{% trans "¿Olvisdaste tu contraseña?" %}</a>
         </div>
       </div>
-      <div class="col col-6">
+      <div class="col">
       <button type="submit" class="primaryAction btn btn-outline-info">{% trans "Acceder" %}</button>
     </div>
   </form>
-  
+  <figure class="figure col">
+    <img src="{% static 'logos/rem_logo_horizontal_compacto_derecha_pos.png' %}" alt="RediMadrid logo" class="figure-img img-fluid w-75">
+  </figure>
+  <figure class="figure col">
+    <img src="{% static 'logos/imdea_white_background.png' %}" class="figure-img img-fluid w-50 h-50" alt="IMDEA Software Madrid Logo">
+    <figcaption class="figure-caption text-center">RediMadrid - IMDEA Software Institute</figcaption>
+  </figure> 
 
-  <div class="row g-3 p-5">
-    <figure class="figure col col-3">
-      <img src="{% static 'logos/rem_logo_horizontal_compacto_derecha_pos.png' %}" alt="RediMadrid logo" class="figure-img img-fluid w-75">
-    </figure>
-    <figure class="figure col col-3">
-      <img src="{% static 'logos/imdea_white_background.png' %}" class="figure-img img-fluid w-50 h-50" alt="IMDEA Software Madrid Logo">
-      <figcaption class="figure-caption text-center">RediMadrid - IMDEA Software Institute</figcaption>
-    </figure>  
-  </div>
-  
+</div>
+
+  <div class="col"></div>
+</div>
 
 
 </div>
