@@ -47,46 +47,98 @@ def add(route, callback=None):
         commit, response = applier.apply()
         
         backup_applier = PR.Backup_Applier(route_object=route)
-        try: 
-            backup_applier.apply()
+        try:
+            b_commit, b_response = backup_applier.apply()
         except Exception as e:
-            message = (f"There was an error when trying to add the route on to the second router {e}")
+            message = (f"Ha habido un error cuando se intentaba configurar la regla en el back up router. Porfavor contacte con su administrador.")
             send_message(message,peer,superuser=False)
-        
         if commit:            
             status = "ACTIVE"
         else:
             status = "ERROR"
-        route.status = status
-        route.response = response
-        route.save()
-        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
-        send_message(message,peer,superuser=False)
-    except TimeLimitExceeded:
+            if b_commit:            
+                status = "OUTOFSYNC"
+            else:
+                status = "ERROR"
+            route.status = status
+            route.response = b_response
+            route.save()
+            message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
+            send_message(message,peer,superuser=False)
+            message = (f"Ha habido un error cuando se intentaba configurar la regla en el primer router. Regla activa en el back up router. Porfavor contacte con su administrador.")
+            send_message(message,peer,superuser=False)
+    except TimeLimitExceeded as error:
         route.status = "ERROR"
         route.response = "Task timeout"
-        route.save()
-        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
-        send_message(message,peer,superuser=False)
+        try: 
+            if b_commit:            
+                status = "OUTOFSYNC"
+            else:
+                status = "ERROR"
+            route.status = status
+            route.response = b_response
+            route.save()
+            message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
+            send_message(message,peer,superuser=False)
+            message = (f"Ha habido un error cuando se intentaba configurar la regla en el primer router. Regla activa en el back up router. Porfavor contacte con su administrador.")
+            send_message(message,peer,superuser=False)
+        except Exception as e:
+            message = (f"Ha habido un error cuando se intentaba configurar la ruta en el back up router. Porfavor contacte con su administrador.")
+            send_message(message,peer,superuser=False)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
-        route.save()
-        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
-        send_message(message,peer,superuser=False)
+        try: 
+            if b_commit:            
+                status = "OUTOFSYNC"
+            else:
+                status = "ERROR"
+            route.status = status
+            route.response = b_response
+            route.save()
+            message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
+            send_message(message,peer,superuser=False)
+            message = (f"Ha habido un error cuando se intentaba configurar la regla en el primer router. Regla activa en el back up router. Porfavor contacte con su administrador.")
+            send_message(message,peer,superuser=False)
+        except Exception as e:
+            message = (f"Ha habido un error cuando se intentaba configurar la ruta en el back up router. Porfavor contacte con su administrador.")
+            send_message(message,peer,superuser=False)
     except Exception as e:
         route.status = "ERROR"
         route.response = "Error"
-        route.save()
-        print('Error: ', e)
-        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response} - Error: {e}.")
-        #send_message(message,peer,superuser=False)
+        try: 
+            if b_commit:            
+                status = "OUTOFSYNC"
+            else:
+                status = "ERROR"
+            route.status = status
+            route.response = b_response
+            route.save()
+            message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
+            send_message(message,peer,superuser=False)
+            message = (f"Ha habido un error cuando se intentaba configurar la regla en el primer router. Regla activa en el back up router. Porfavor contacte con su administrador.")
+            send_message(message,peer,superuser=False)
+        except Exception as e:
+            message = (f"Ha habido un error cuando se intentaba configurar la ruta en el back up router. Porfavor contacte con su administrador.")
+            send_message(message,peer,superuser=False)
     except TransactionManagementError: 
         route.status = "ERROR"
         route.response = "Transaction Management Error"
-        route.save()
-        message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
-        send_message(message,peer,superuser=False)
+        try: 
+            if b_commit:            
+                status = "OUTOFSYNC"
+            else:
+                status = "ERROR"
+            route.status = status
+            route.response = b_response
+            route.save()
+            message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
+            send_message(message,peer,superuser=False)
+            message = (f"Ha habido un error cuando se intentaba configurar la regla en el primer router. Regla activa en el back up router. Porfavor contacte con su administrador.")
+            send_message(message,peer,superuser=False)
+        except Exception as e:
+            message = (f"Ha habido un error cuando se intentaba configurar la ruta en el back up router. Porfavor contacte con su administrador.")
+            send_message(message,peer,superuser=False)
 
 @shared_task(ignore_result=True)
 def edit(route, callback=None):
@@ -96,41 +148,89 @@ def edit(route, callback=None):
     peer = get_peer_with_name(route.name)
     try:
         applier = PR.Applier(route_object=route)
-        commit, response = applier.apply(operation="replace")
-
-        backup_applier = PR.Backup_Applier(route_object=route)
-        try: 
-            backup_applier.apply(operation="replace")
-        except Exception as e:
-            message = (f"There was an error when trying to edit the route on to the second router {e}")
+        commit, response = applier.apply(operation="replace")   
+        try:
+            backup_applier = PR.Backup_Applier(route_object=route)
+            b_commit, b_response = backup_applier.apply(operation="replace")
+        except:
+            message = (f"Ha habido un error cuando se intentaba editar la regla en el segundo back up router. Porfavor contacte con su administrador.")
             send_message(message,peer,superuser=False)
+        
         if commit:
             status = "ACTIVE"
+            route.status = status
+            route.response = response
+            route.save()
+            message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
+            send_message(message,peer,superuser=False)
         else:
             status = "ERROR"
-        route.status = status
-        route.response = response
-        route.save()
-        message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
-        send_message(message,peer,superuser=False)
+            if b_commit:            
+                status = "OUTOFSYNC"
+            else:
+                status = "ERROR"
+            route.status = status
+            route.response = b_response
+            route.save()
+            message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.b_response}")
+            send_message(message,peer,superuser=False)
+            message = (f"Ha habido un error cuando se intentaba editar la regla en el primer router. Error: {response}. Regla activa y actualizada en el back up router. Porfavor contacte con su administrador.")
+            send_message(message,peer,superuser=False)
+        
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
-        route.save()
-        message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
-        send_message(message,peer,superuser=False)
+        try: 
+            if b_commit:            
+                status = "OUTOFSYNC"
+            else:
+                status = "ERROR"
+            route.status = status
+            route.response = b_response
+            route.save()
+            message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
+            send_message(message,peer,superuser=False)
+            message = (f"Ha habido un error cuando se intentaba editar la regla en el primer router. Regla activa y actualizada en el segundo back up router. Porfavor contacte con su administrador.")
+            send_message(message,peer,superuser=False)
+        except Exception as e:
+            message = (f"There was an error when trying to edit the route on to the second router {e}")
+            send_message(message,peer,superuser=False)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
-        route.save()
-        message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
-        send_message(message,peer,superuser=False)
+        try: 
+            if b_commit:            
+                status = "OUTOFSYNC"
+            else:
+                status = "ERROR"
+            route.status = status
+            route.response = b_response
+            route.save()
+            message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
+            send_message(message,peer,superuser=False)
+            message = (f"Ha habido un error cuando se intentaba editar la regla en el primer router. Regla activa y actualizada en el segundo back up router. Porfavor contacte con su administrador.")
+            send_message(message,peer,superuser=False)
+        except Exception as e:
+            message = (f"There was an error when trying to edit the route on to the second router {e}")
+            send_message(message,peer,superuser=False)
     except Exception:
         route.status = "ERROR"
         route.response = "Error"
-        route.save()
-        message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
-        send_message(message,peer,superuser=False)
+        try: 
+            if b_commit:            
+                status = "OUTOFSYNC"
+            else:
+                status = "ERROR"
+            route.status = status
+            route.response = b_response
+            route.save()
+            message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
+            send_message(message,peer,superuser=False)
+            message = (f"Ha habido un error cuando se intentaba editar la regla en el primer router. Regla activa y actualizada en el back up router. Porfavor contacte con su administrador.")
+            send_message(message,peer,superuser=False)
+        except Exception as e:
+            message = (f"There was an error when trying to edit the route on to the second router {e}")
+            send_message(message,peer,superuser=False)
 
 
 @shared_task(ignore_result=True)
@@ -144,10 +244,10 @@ def delete(route, **kwargs):
         commit, response = applier.apply(operation="delete")
         
         backup_applier = PR.Backup_Applier(route_object=route)
-        try: 
-            backup_applier.apply(operation="delete")
-        except Exception as e:
-            message = (f"There was an error when trying to delete the route on to the second router {e}")
+        try:
+            b_commit, b_response = backup_applier.apply(operation="delete")
+        except:
+            message = (f"Ha habido un error cuando se intentaba eliminar la regla en el segundo back up router. Porfavor contacte con su administrador.")
             send_message(message,peer,superuser=False)
         
         if commit:
@@ -157,29 +257,79 @@ def delete(route, **kwargs):
                 reason_text = " Reason: %s " % status
         else:
             status = "ERROR"
-        route.status = status
-        route.response = response
-        route.save()
-        message = (f"Suspending rule:  {route.name}")
-        send_message(message,peer,superuser=False)
+            if b_commit:
+                status = "OUTOFSYNC"
+                if "reason" in kwargs and kwargs['reason'] == 'EXPIRED':
+                    status = 'EXPIRED'
+                else: 
+                    status = 'ERROR'
+                route.status = status
+                route.response = b_response
+                route.save()
+                message = (f"Suspending rule:  {route.name}")
+                send_message(message,peer,superuser=False)
+                message = (f"Ha habido un error cuando se intentaba eliminar la regla en el primer router. Regla suspendida en el back up router. Porfavor contacte con su administrador.")
+                send_message(message,peer,superuser=False)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
-        route.save()
-        message = (f"[{route.applier}] Suspending rule:  {route.name} - Result: {response}")
-        send_message(message,peer,superuser=False)
+        try: 
+            if b_commit:            
+                status = "OUTOFSYNC"
+                if "reason" in kwargs and kwargs['reason'] == 'EXPIRED':
+                    status = 'EXPIRED'
+            else:
+                status = "ERROR"
+            route.status = status
+            route.response = b_response
+            route.save()
+            message = (f"[{route.applier}] Suspending rule:  {route.name} - Result: {b_response}")
+            send_message(message,peer,superuser=False)
+            message = (f"Ha habido un error cuando se intentaba eliminar la regla en el primer router. Regla suspendida en el back up router. Porfavor contacte con su administrador.")
+            send_message(message,peer,superuser=False)
+        except Exception as e:
+            message = (f"Ha habido un error cuando se intentaba eliminar la regla en el segundo router. Porfavor contacte con su administrador. Error: {e}")
+            send_message(message,peer,superuser=False)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
-        route.save()
-        message = (f"[{route.applier}] Suspending rule:  {route.name} - Result: {response}")
-        send_message(message,peer,superuser=False)
+        try: 
+            if b_commit:            
+                status = "OUTOFSYNC"
+                if "reason" in kwargs and kwargs['reason'] == 'EXPIRED':
+                    status = 'EXPIRED'
+            else:
+                status = "ERROR"
+            route.status = status
+            route.response = b_response
+            route.save()
+            message = (f"[{route.applier}] Suspending rule:  {route.name} - Result: {response}")
+            send_message(message,peer,superuser=False)
+            message = (f"Ha habido un error cuando se intentaba eliminar la regla en el primer router. Regla suspendida en el back up router. Porfavor contacte con su administrador.")
+            send_message(message,peer,superuser=False)
+        except Exception as e:
+            message = (f"Ha habido un error cuando se intentaba eliminar la regla en el back up router. Porfavor contacte con su administrador. Error: {e}")
+            send_message(message,peer,superuser=False)
     except Exception as e:
         route.status = "ERROR"
         route.response = "Error"
-        route.save()
-        message = (f"[{route.applier}] Suspending rule:  {route.name} - Result: {response}")
-        send_message(message,peer,superuser=False)
+        try: 
+            if b_commit:            
+                status = "OUTOFSYNC"
+                if "reason" in kwargs and kwargs['reason'] == 'EXPIRED':
+                    status = 'EXPIRED'
+            else:
+                status = "ERROR"
+            route.status = status
+            route.response = b_response
+            route.save()
+            message = (f"[{route.applier}] Suspending rule:  {route.name} - Result: {response}")
+            send_message(message,peer,superuser=False)
+            message = (f"Ha habido un error cuando se intentaba eliminar la regla en el primer router. Regla suspendida en el back up router. Porfavor contacte con su administrador.")
+            send_message(message,peer,superuser=False)
+        except Exception as e:
+            message = (f"Ha habido un error cuando se intentaba eliminar la regla en el back up router. Porfavor contacte con su administrador. Error: {e}")
+            send_message(message,peer,superuser=False)
 
 
 # May not work in the first place... proxy is not aware of Route models
