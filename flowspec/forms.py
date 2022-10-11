@@ -231,154 +231,14 @@ class RouteForm(forms.ModelForm):
             raise forms.ValidationError(res)
         return res
 
-    def clean(self):
-        if self.errors:
-            raise forms.ValidationError(_('Errors in form. Please review and fix them: %s' % ", ".join(self.errors)))
-        error = clean_route_form(self.cleaned_data)
-        if error:
-            raise forms.ValidationError(error)
-
-        # check if same rule exists with other name
-        user = self.cleaned_data['applier']
-        if user.is_superuser:
-            peers = Peer.objects.all()
-        else:
-            # have changed user.userprofile.peers.all() for:
-            peers = user.profile.peers.all()
-        existing_routes = Route.objects.all()
-        existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
-        name = self.cleaned_data.get('name', None)
-        protocols = self.cleaned_data.get('protocol', None)
-        source = self.cleaned_data.get('source', None)
-        sourceports = self.cleaned_data.get('sourceport', None)
-        port = self.cleaned_data.get('port', None)
-        destination = self.cleaned_data.get('destination', None)
-        destinationports = self.cleaned_data.get('destinationport', None)
-        icmptype = self.cleaned_data.get('icmptype', None)
-        icmpcode = self.cleaned_data.get('icmpcode', None)
-        packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
-        user = self.cleaned_data.get('applier', None)
-
-        if source:
-            source = IPNetwork(source).compressed
-            existing_routes = existing_routes.filter(source=source)
-        else:
-            existing_routes = existing_routes.filter(source=None)
-        if protocols:
-            route_pk_list=get_matchingprotocol_route_pks(protocols, existing_routes)
-            if route_pk_list:
-                existing_routes = existing_routes.filter(pk__in=route_pk_list)
-            else:
-                existing_routes = existing_routes.filter(protocol=None)
-            if "icmp" in [str(i) for i in protocols] and (destinationports or sourceports or port):
-                raise forms.ValidationError(_('It is not allowed to specify ICMP protocol and source/destination ports at the same time.'))
-        else:
-            existing_routes = existing_routes.filter(protocol=None)
-        if sourceports:
-            route_pk_list=get_matchingport_route_pks(sourceports, existing_routes)
-            if route_pk_list:
-                existing_routes = existing_routes.filter(pk__in=route_pk_list)
-        else:
-            existing_routes = existing_routes.filter(sourceport=None)
-        if destinationports:
-            route_pk_list=get_matchingport_route_pks(destinationports, existing_routes)
-            if route_pk_list:
-                existing_routes = existing_routes.filter(pk__in=route_pk_list)
-        else:
-            existing_routes = existing_routes.filter(destinationport=None)
-        if port:
-            route_pk_list=get_matchingport_route_pks(port, existing_routes)
-            if route_pk_list:
-                existing_routes = existing_routes.filter(pk__in=route_pk_list)
-        else:
-            existing_routes = existing_routes.filter(port=None)
-        if icmpcode:
-            if int(icmpcode) not in range(0,255):
-                raise forms.ValidationError(_('The ICMP code {} introduced does not match any registered code.').format(icmpcode))
-        
-        if icmptype:
-            if int(icmptype) not in range(0,255):
-                raise forms.ValidationError(_('The ICMP type {} introduced does not match any registered type.').format(icmptype))
-        if packetlength:
-            regxp = re.compile(r"^[0-9]+([-,][0-9]+)*$")
-            r = re.match(regxp, packetlength)
-            if r:
-                res = []
-                plength = packetlength.split(",")
-                for packet in plength:
-                    p = int(packet)
-                    if p < 0 or p > 65535:
-                        raise forms.ValidationError(_('Packet length should be < 65535 and >= 0'))
-            else:
-                raise forms.ValidationError(_('Malformed packet'))        
-
-        for route in existing_routes:
-            if name != route.name:
-                existing_url = reverse('edit-route', args=[route.name])
-                if IPNetwork(destination) in IPNetwork(route.destination) or IPNetwork(route.destination) in IPNetwork(destination):
-                    raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
-        return self.cleaned_data
+    
 
 
-#============= ROUTE FORM IMDEA
 
-class Route_IMDEAForm(forms.ModelForm):
-    sourceport = PortRangeForm()
-    destinationport = PortRangeForm()
-    port = PortRangeForm()
-
+class Route_IMDEAForm(RouteForm):
     class Meta:
         model = Route_IMDEA
         fields = '__all__'
-    
-
-    def clean_applier(self):
-        applier = self.cleaned_data['applier']
-        if applier:
-            return self.cleaned_data["applier"]
-        else:
-            raise forms.ValidationError('This field is required.')
-
-    def clean_source(self):
-        # run validator which is used by rest framework too
-        source = self.cleaned_data['source']
-        if source:
-            res = clean_source(
-                User.objects.get(pk=self.data['applier']),
-                source
-            )
-            if res != source:
-                raise forms.ValidationError(res)
-            else:
-                return res
-        else:
-            source = '0.0.0.0'
-            return source
-
-    def clean_destination(self):
-        destination = self.cleaned_data.get('destination')
-        if destination:
-            res = clean_destination(
-                User.objects.get(pk=self.data['applier']),
-                destination
-            )
-            if destination != res:
-                raise forms.ValidationError(res)
-            else:
-                print(res,type(res))
-                return res
-        else:
-            destination = '0.0.0.0'
-            return destination
-
-    def clean_expires(self):
-        date = self.cleaned_data['expires']
-        res = clean_expires(date)
-        if date != res:
-            raise forms.ValidationError(res)
-        return res
-
     def clean(self):
         if self.errors:
             raise forms.ValidationError(_('Errors in form. Please review and fix them: %s' % ", ".join(self.errors)))
@@ -393,7 +253,7 @@ class Route_IMDEAForm(forms.ModelForm):
         else:
             # have changed user.userprofile.peers.all() for:
             peers = user.profile.peers.all()
-        existing_routes = Route.objects.all()
+        existing_routes = Route_IMDEA.objects.all()
         existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
         name = self.cleaned_data.get('name', None)
         protocols = self.cleaned_data.get('protocol', None)
@@ -468,62 +328,10 @@ class Route_IMDEAForm(forms.ModelForm):
                     raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
         return self.cleaned_data
 
-#==============================
-class Route_CVForm(forms.ModelForm):
-    sourceport = PortRangeForm()
-    destinationport = PortRangeForm()
-    port = PortRangeForm()
-
+class Route_CVForm(RouteForm):
     class Meta:
         model = Route_CV
         fields = '__all__'
-    
-
-    def clean_applier(self):
-        applier = self.cleaned_data['applier']
-        if applier:
-            return self.cleaned_data["applier"]
-        else:
-            raise forms.ValidationError('This field is required.')
-
-    def clean_source(self):
-        # run validator which is used by rest framework too
-        source = self.cleaned_data['source']
-        if source:
-            res = clean_source(
-                User.objects.get(pk=self.data['applier']),
-                source
-            )
-            if res != source:
-                raise forms.ValidationError(res)
-            else:
-                return res
-        else:
-            source = '0.0.0.0'
-            return source
-
-    def clean_destination(self):
-        destination = self.cleaned_data.get('destination')
-        if destination:
-            res = clean_destination(
-                User.objects.get(pk=self.data['applier']),
-                destination
-            )
-            if destination != res:
-                raise forms.ValidationError(res)
-            else:
-                print(res,type(res))
-                return res
-        else:
-            destination = '0.0.0.0'
-            return destination
-
-    def clean_expires(self):
-        date = self.cleaned_data['expires']
-        res = clean_expires(date)
-        if date != res:
-            raise forms.ValidationError(res)
-        return res
 
     def clean(self):
         if self.errors:
@@ -539,7 +347,7 @@ class Route_CVForm(forms.ModelForm):
         else:
             # have changed user.userprofile.peers.all() for:
             peers = user.profile.peers.all()
-        existing_routes = Route.objects.all()
+        existing_routes = Route_CV.objects.all()
         existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
         name = self.cleaned_data.get('name', None)
         protocols = self.cleaned_data.get('protocol', None)
@@ -614,62 +422,201 @@ class Route_CVForm(forms.ModelForm):
                     raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
         return self.cleaned_data
 
-class Route_CIBForm(forms.ModelForm):
-    sourceport = PortRangeForm()
-    destinationport = PortRangeForm()
-    port = PortRangeForm()
+class Route_REMForm(RouteForm):
+    class Meta:
+        model = Route_REM
+        fields = '__all__'
 
+    def clean(self):
+        if self.errors:
+            raise forms.ValidationError(_('Errors in form. Please review and fix them: %s' % ", ".join(self.errors)))
+        error = clean_route_form(self.cleaned_data)
+        if error:
+            raise forms.ValidationError(error)
+
+        # check if same rule exists with other name
+        user = self.cleaned_data['applier']
+        if user.is_superuser:
+            peers = Peer.objects.all()
+        else:
+            # have changed user.userprofile.peers.all() for:
+            peers = user.profile.peers.all()
+        existing_routes = Route_REM.objects.all()
+        existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
+        name = self.cleaned_data.get('name', None)
+        protocols = self.cleaned_data.get('protocol', None)
+        source = self.cleaned_data.get('source', None)
+        sourceports = self.cleaned_data.get('sourceport', None)
+        port = self.cleaned_data.get('port', None)
+        destination = self.cleaned_data.get('destination', None)
+        destinationports = self.cleaned_data.get('destinationport', None)
+        icmptype = self.cleaned_data.get('icmptype', None)
+        icmpcode = self.cleaned_data.get('icmpcode', None)
+        packetlength = self.cleaned_data.get('packetlength', None)
+        tcpflag = self.cleaned_data.get('tcpflag', None)
+        user = self.cleaned_data.get('applier', None)
+
+        if source:
+            source = IPNetwork(source).compressed
+            existing_routes = existing_routes.filter(source=source)
+        else:
+            existing_routes = existing_routes.filter(source=None)
+        if protocols:
+            route_pk_list=get_matchingprotocol_route_pks(protocols, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(protocol=None)
+            if "icmp" in [str(i) for i in protocols] and (destinationports or sourceports or port):
+                raise forms.ValidationError(_('It is not allowed to specify ICMP protocol and source/destination ports at the same time.'))
+        else:
+            existing_routes = existing_routes.filter(protocol=None)
+        if sourceports:
+            route_pk_list=get_matchingport_route_pks(sourceports, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+        else:
+            existing_routes = existing_routes.filter(sourceport=None)
+        if destinationports:
+            route_pk_list=get_matchingport_route_pks(destinationports, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+        else:
+            existing_routes = existing_routes.filter(destinationport=None)
+        if port:
+            route_pk_list=get_matchingport_route_pks(port, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+        else:
+            existing_routes = existing_routes.filter(port=None)
+        if icmpcode:
+            if int(icmpcode) not in range(0,255):
+                raise forms.ValidationError(_('The ICMP code {} introduced does not match any registered code.').format(icmpcode))
+        
+        if icmptype:
+            if int(icmptype) not in range(0,255):
+                raise forms.ValidationError(_('The ICMP type {} introduced does not match any registered type.').format(icmptype))
+        if packetlength:
+            regxp = re.compile(r"^[0-9]+([-,][0-9]+)*$")
+            r = re.match(regxp, packetlength)
+            if r:
+                res = []
+                plength = packetlength.split(",")
+                for packet in plength:
+                    p = int(packet)
+                    if p < 0 or p > 65535:
+                        raise forms.ValidationError(_('Packet length should be < 65535 and >= 0'))
+            else:
+                raise forms.ValidationError(_('Malformed packet'))        
+
+        for route in existing_routes:
+            if name != route.name:
+                existing_url = reverse('edit-route', args=[route.name])
+                if IPNetwork(destination) in IPNetwork(route.destination) or IPNetwork(route.destination) in IPNetwork(destination):
+                    raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
+        return self.cleaned_data
+
+
+class Route_PunchForm(RouteForm):
+    class Meta:
+        model = Route_Punch
+        fields = '__all__'
+
+    def clean(self):
+        if self.errors:
+            raise forms.ValidationError(_('Errors in form. Please review and fix them: %s' % ", ".join(self.errors)))
+        error = clean_route_form(self.cleaned_data)
+        if error:
+            raise forms.ValidationError(error)
+
+        # check if same rule exists with other name
+        user = self.cleaned_data['applier']
+        if user.is_superuser:
+            peers = Peer.objects.all()
+        else:
+            # have changed user.userprofile.peers.all() for:
+            peers = user.profile.peers.all()
+        existing_routes = Route_Punch.objects.all()
+        existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
+        name = self.cleaned_data.get('name', None)
+        protocols = self.cleaned_data.get('protocol', None)
+        source = self.cleaned_data.get('source', None)
+        sourceports = self.cleaned_data.get('sourceport', None)
+        port = self.cleaned_data.get('port', None)
+        destination = self.cleaned_data.get('destination', None)
+        destinationports = self.cleaned_data.get('destinationport', None)
+        icmptype = self.cleaned_data.get('icmptype', None)
+        icmpcode = self.cleaned_data.get('icmpcode', None)
+        packetlength = self.cleaned_data.get('packetlength', None)
+        tcpflag = self.cleaned_data.get('tcpflag', None)
+        user = self.cleaned_data.get('applier', None)
+
+        if source:
+            source = IPNetwork(source).compressed
+            existing_routes = existing_routes.filter(source=source)
+        else:
+            existing_routes = existing_routes.filter(source=None)
+        if protocols:
+            route_pk_list=get_matchingprotocol_route_pks(protocols, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(protocol=None)
+            if "icmp" in [str(i) for i in protocols] and (destinationports or sourceports or port):
+                raise forms.ValidationError(_('It is not allowed to specify ICMP protocol and source/destination ports at the same time.'))
+        else:
+            existing_routes = existing_routes.filter(protocol=None)
+        if sourceports:
+            route_pk_list=get_matchingport_route_pks(sourceports, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+        else:
+            existing_routes = existing_routes.filter(sourceport=None)
+        if destinationports:
+            route_pk_list=get_matchingport_route_pks(destinationports, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+        else:
+            existing_routes = existing_routes.filter(destinationport=None)
+        if port:
+            route_pk_list=get_matchingport_route_pks(port, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+        else:
+            existing_routes = existing_routes.filter(port=None)
+        if icmpcode:
+            if int(icmpcode) not in range(0,255):
+                raise forms.ValidationError(_('The ICMP code {} introduced does not match any registered code.').format(icmpcode))
+        
+        if icmptype:
+            if int(icmptype) not in range(0,255):
+                raise forms.ValidationError(_('The ICMP type {} introduced does not match any registered type.').format(icmptype))
+        if packetlength:
+            regxp = re.compile(r"^[0-9]+([-,][0-9]+)*$")
+            r = re.match(regxp, packetlength)
+            if r:
+                res = []
+                plength = packetlength.split(",")
+                for packet in plength:
+                    p = int(packet)
+                    if p < 0 or p > 65535:
+                        raise forms.ValidationError(_('Packet length should be < 65535 and >= 0'))
+            else:
+                raise forms.ValidationError(_('Malformed packet'))        
+
+        for route in existing_routes:
+            if name != route.name:
+                existing_url = reverse('edit-route', args=[route.name])
+                if IPNetwork(destination) in IPNetwork(route.destination) or IPNetwork(route.destination) in IPNetwork(destination):
+                    raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
+        return self.cleaned_data
+
+class Route_CIBForm(RouteForm):
     class Meta:
         model = Route_CIB
         fields = '__all__'
+
     
-
-    def clean_applier(self):
-        applier = self.cleaned_data['applier']
-        if applier:
-            return self.cleaned_data["applier"]
-        else:
-            raise forms.ValidationError('This field is required.')
-
-    def clean_source(self):
-        # run validator which is used by rest framework too
-        source = self.cleaned_data['source']
-        if source:
-            res = clean_source(
-                User.objects.get(pk=self.data['applier']),
-                source
-            )
-            if res != source:
-                raise forms.ValidationError(res)
-            else:
-                return res
-        else:
-            source = '0.0.0.0'
-            return source
-
-    def clean_destination(self):
-        destination = self.cleaned_data.get('destination')
-        if destination:
-            res = clean_destination(
-                User.objects.get(pk=self.data['applier']),
-                destination
-            )
-            if destination != res:
-                raise forms.ValidationError(res)
-            else:
-                print(res,type(res))
-                return res
-        else:
-            destination = '0.0.0.0'
-            return destination
-
-    def clean_expires(self):
-        date = self.cleaned_data['expires']
-        res = clean_expires(date)
-        if date != res:
-            raise forms.ValidationError(res)
-        return res
-
     def clean(self):
         if self.errors:
             raise forms.ValidationError(_('Errors in form. Please review and fix them: %s' % ", ".join(self.errors)))
@@ -684,7 +631,7 @@ class Route_CIBForm(forms.ModelForm):
         else:
             # have changed user.userprofile.peers.all() for:
             peers = user.profile.peers.all()
-        existing_routes = Route.objects.all()
+        existing_routes = Route_CIB.objects.all()
         existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
         name = self.cleaned_data.get('name', None)
         protocols = self.cleaned_data.get('protocol', None)
@@ -759,206 +706,10 @@ class Route_CIBForm(forms.ModelForm):
                     raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
         return self.cleaned_data
 
-class Route_CSICForm(forms.ModelForm):
-    sourceport = PortRangeForm()
-    destinationport = PortRangeForm()
-    port = PortRangeForm()
-
-    class Meta:
-        model = Route_CSIC
-        fields = '__all__'
-    
-
-    def clean_applier(self):
-        applier = self.cleaned_data['applier']
-        if applier:
-            return self.cleaned_data["applier"]
-        else:
-            raise forms.ValidationError('This field is required.')
-
-    def clean_source(self):
-        # run validator which is used by rest framework too
-        source = self.cleaned_data['source']
-        if source:
-            res = clean_source(
-                User.objects.get(pk=self.data['applier']),
-                source
-            )
-            if res != source:
-                raise forms.ValidationError(res)
-            else:
-                return res
-        else:
-            source = '0.0.0.0'
-            return source
-
-    def clean_destination(self):
-        destination = self.cleaned_data.get('destination')
-        if destination:
-            res = clean_destination(
-                User.objects.get(pk=self.data['applier']),
-                destination
-            )
-            if destination != res:
-                raise forms.ValidationError(res)
-            else:
-                print(res,type(res))
-                return res
-        else:
-            destination = '0.0.0.0'
-            return destination
-
-    def clean_expires(self):
-        date = self.cleaned_data['expires']
-        res = clean_expires(date)
-        if date != res:
-            raise forms.ValidationError(res)
-        return res
-
-    def clean(self):
-        if self.errors:
-            raise forms.ValidationError(_('Errors in form. Please review and fix them: %s' % ", ".join(self.errors)))
-        error = clean_route_form(self.cleaned_data)
-        if error:
-            raise forms.ValidationError(error)
-
-        # check if same rule exists with other name
-        user = self.cleaned_data['applier']
-        if user.is_superuser:
-            peers = Peer.objects.all()
-        else:
-            # have changed user.userprofile.peers.all() for:
-            peers = user.profile.peers.all()
-        existing_routes = Route.objects.all()
-        existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
-        name = self.cleaned_data.get('name', None)
-        protocols = self.cleaned_data.get('protocol', None)
-        source = self.cleaned_data.get('source', None)
-        sourceports = self.cleaned_data.get('sourceport', None)
-        port = self.cleaned_data.get('port', None)
-        destination = self.cleaned_data.get('destination', None)
-        destinationports = self.cleaned_data.get('destinationport', None)
-        icmptype = self.cleaned_data.get('icmptype', None)
-        icmpcode = self.cleaned_data.get('icmpcode', None)
-        packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
-        user = self.cleaned_data.get('applier', None)
-
-        if source:
-            source = IPNetwork(source).compressed
-            existing_routes = existing_routes.filter(source=source)
-        else:
-            existing_routes = existing_routes.filter(source=None)
-        if protocols:
-            route_pk_list=get_matchingprotocol_route_pks(protocols, existing_routes)
-            if route_pk_list:
-                existing_routes = existing_routes.filter(pk__in=route_pk_list)
-            else:
-                existing_routes = existing_routes.filter(protocol=None)
-            if "icmp" in [str(i) for i in protocols] and (destinationports or sourceports or port):
-                raise forms.ValidationError(_('It is not allowed to specify ICMP protocol and source/destination ports at the same time.'))
-        else:
-            existing_routes = existing_routes.filter(protocol=None)
-        if sourceports:
-            route_pk_list=get_matchingport_route_pks(sourceports, existing_routes)
-            if route_pk_list:
-                existing_routes = existing_routes.filter(pk__in=route_pk_list)
-        else:
-            existing_routes = existing_routes.filter(sourceport=None)
-        if destinationports:
-            route_pk_list=get_matchingport_route_pks(destinationports, existing_routes)
-            if route_pk_list:
-                existing_routes = existing_routes.filter(pk__in=route_pk_list)
-        else:
-            existing_routes = existing_routes.filter(destinationport=None)
-        if port:
-            route_pk_list=get_matchingport_route_pks(port, existing_routes)
-            if route_pk_list:
-                existing_routes = existing_routes.filter(pk__in=route_pk_list)
-        else:
-            existing_routes = existing_routes.filter(port=None)
-        if icmpcode:
-            if int(icmpcode) not in range(0,255):
-                raise forms.ValidationError(_('The ICMP code {} introduced does not match any registered code.').format(icmpcode))
-        
-        if icmptype:
-            if int(icmptype) not in range(0,255):
-                raise forms.ValidationError(_('The ICMP type {} introduced does not match any registered type.').format(icmptype))
-        if packetlength:
-            regxp = re.compile(r"^[0-9]+([-,][0-9]+)*$")
-            r = re.match(regxp, packetlength)
-            if r:
-                res = []
-                plength = packetlength.split(",")
-                for packet in plength:
-                    p = int(packet)
-                    if p < 0 or p > 65535:
-                        raise forms.ValidationError(_('Packet length should be < 65535 and >= 0'))
-            else:
-                raise forms.ValidationError(_('Malformed packet'))        
-
-        for route in existing_routes:
-            if name != route.name:
-                existing_url = reverse('edit-route', args=[route.name])
-                if IPNetwork(destination) in IPNetwork(route.destination) or IPNetwork(route.destination) in IPNetwork(destination):
-                    raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
-        return self.cleaned_data
-
-class Route_CEUForm(forms.ModelForm):
-    sourceport = PortRangeForm()
-    destinationport = PortRangeForm()
-    port = PortRangeForm()
-
+class Route_CEUForm(RouteForm):
     class Meta:
         model = Route_CEU
         fields = '__all__'
-    
-
-    def clean_applier(self):
-        applier = self.cleaned_data['applier']
-        if applier:
-            return self.cleaned_data["applier"]
-        else:
-            raise forms.ValidationError('This field is required.')
-
-    def clean_source(self):
-        # run validator which is used by rest framework too
-        source = self.cleaned_data['source']
-        if source:
-            res = clean_source(
-                User.objects.get(pk=self.data['applier']),
-                source
-            )
-            if res != source:
-                raise forms.ValidationError(res)
-            else:
-                return res
-        else:
-            source = '0.0.0.0'
-            return source
-
-    def clean_destination(self):
-        destination = self.cleaned_data.get('destination')
-        if destination:
-            res = clean_destination(
-                User.objects.get(pk=self.data['applier']),
-                destination
-            )
-            if destination != res:
-                raise forms.ValidationError(res)
-            else:
-                print(res,type(res))
-                return res
-        else:
-            destination = '0.0.0.0'
-            return destination
-
-    def clean_expires(self):
-        date = self.cleaned_data['expires']
-        res = clean_expires(date)
-        if date != res:
-            raise forms.ValidationError(res)
-        return res
 
     def clean(self):
         if self.errors:
@@ -974,7 +725,7 @@ class Route_CEUForm(forms.ModelForm):
         else:
             # have changed user.userprofile.peers.all() for:
             peers = user.profile.peers.all()
-        existing_routes = Route.objects.all()
+        existing_routes = Route_CEU.objects.all()
         existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
         name = self.cleaned_data.get('name', None)
         protocols = self.cleaned_data.get('protocol', None)
@@ -1049,61 +800,105 @@ class Route_CEUForm(forms.ModelForm):
                     raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
         return self.cleaned_data
 
-class Route_CUNEFForm(forms.ModelForm):
-    sourceport = PortRangeForm()
-    destinationport = PortRangeForm()
-    port = PortRangeForm()
+class Route_CSICForm(RouteForm):
+    class Meta:
+        model = Route_CSIC
+        fields = '__all__'
 
+    def clean(self):
+        if self.errors:
+            raise forms.ValidationError(_('Errors in form. Please review and fix them: %s' % ", ".join(self.errors)))
+        error = clean_route_form(self.cleaned_data)
+        if error:
+            raise forms.ValidationError(error)
+
+        # check if same rule exists with other name
+        user = self.cleaned_data['applier']
+        if user.is_superuser:
+            peers = Peer.objects.all()
+        else:
+            # have changed user.userprofile.peers.all() for:
+            peers = user.profile.peers.all()
+        existing_routes = Route_CSIC.objects.all()
+        existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
+        name = self.cleaned_data.get('name', None)
+        protocols = self.cleaned_data.get('protocol', None)
+        source = self.cleaned_data.get('source', None)
+        sourceports = self.cleaned_data.get('sourceport', None)
+        port = self.cleaned_data.get('port', None)
+        destination = self.cleaned_data.get('destination', None)
+        destinationports = self.cleaned_data.get('destinationport', None)
+        icmptype = self.cleaned_data.get('icmptype', None)
+        icmpcode = self.cleaned_data.get('icmpcode', None)
+        packetlength = self.cleaned_data.get('packetlength', None)
+        tcpflag = self.cleaned_data.get('tcpflag', None)
+        user = self.cleaned_data.get('applier', None)
+
+        if source:
+            source = IPNetwork(source).compressed
+            existing_routes = existing_routes.filter(source=source)
+        else:
+            existing_routes = existing_routes.filter(source=None)
+        if protocols:
+            route_pk_list=get_matchingprotocol_route_pks(protocols, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(protocol=None)
+            if "icmp" in [str(i) for i in protocols] and (destinationports or sourceports or port):
+                raise forms.ValidationError(_('It is not allowed to specify ICMP protocol and source/destination ports at the same time.'))
+        else:
+            existing_routes = existing_routes.filter(protocol=None)
+        if sourceports:
+            route_pk_list=get_matchingport_route_pks(sourceports, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+        else:
+            existing_routes = existing_routes.filter(sourceport=None)
+        if destinationports:
+            route_pk_list=get_matchingport_route_pks(destinationports, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+        else:
+            existing_routes = existing_routes.filter(destinationport=None)
+        if port:
+            route_pk_list=get_matchingport_route_pks(port, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+        else:
+            existing_routes = existing_routes.filter(port=None)
+        if icmpcode:
+            if int(icmpcode) not in range(0,255):
+                raise forms.ValidationError(_('The ICMP code {} introduced does not match any registered code.').format(icmpcode))
+        
+        if icmptype:
+            if int(icmptype) not in range(0,255):
+                raise forms.ValidationError(_('The ICMP type {} introduced does not match any registered type.').format(icmptype))
+        if packetlength:
+            regxp = re.compile(r"^[0-9]+([-,][0-9]+)*$")
+            r = re.match(regxp, packetlength)
+            if r:
+                res = []
+                plength = packetlength.split(",")
+                for packet in plength:
+                    p = int(packet)
+                    if p < 0 or p > 65535:
+                        raise forms.ValidationError(_('Packet length should be < 65535 and >= 0'))
+            else:
+                raise forms.ValidationError(_('Malformed packet'))        
+
+        for route in existing_routes:
+            if name != route.name:
+                existing_url = reverse('edit-route', args=[route.name])
+                if IPNetwork(destination) in IPNetwork(route.destination) or IPNetwork(route.destination) in IPNetwork(destination):
+                    raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
+        return self.cleaned_data
+
+class Route_CUNEFForm(RouteForm):
     class Meta:
         model = Route_CUNEF
         fields = '__all__'
-    
 
-    def clean_applier(self):
-        applier = self.cleaned_data['applier']
-        if applier:
-            return self.cleaned_data["applier"]
-        else:
-            raise forms.ValidationError('This field is required.')
-
-    def clean_source(self):
-        # run validator which is used by rest framework too
-        source = self.cleaned_data['source']
-        if source:
-            res = clean_source(
-                User.objects.get(pk=self.data['applier']),
-                source
-            )
-            if res != source:
-                raise forms.ValidationError(res)
-            else:
-                return res
-        else:
-            source = '0.0.0.0'
-            return source
-
-    def clean_destination(self):
-        destination = self.cleaned_data.get('destination')
-        if destination:
-            res = clean_destination(
-                User.objects.get(pk=self.data['applier']),
-                destination
-            )
-            if destination != res:
-                raise forms.ValidationError(res)
-            else:
-                print(res,type(res))
-                return res
-        else:
-            destination = '0.0.0.0'
-            return destination
-
-    def clean_expires(self):
-        date = self.cleaned_data['expires']
-        res = clean_expires(date)
-        if date != res:
-            raise forms.ValidationError(res)
-        return res
 
     def clean(self):
         if self.errors:
@@ -1119,7 +914,7 @@ class Route_CUNEFForm(forms.ModelForm):
         else:
             # have changed user.userprofile.peers.all() for:
             peers = user.profile.peers.all()
-        existing_routes = Route.objects.all()
+        existing_routes = Route_CUNEF.objects.all()
         existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
         name = self.cleaned_data.get('name', None)
         protocols = self.cleaned_data.get('protocol', None)
@@ -1194,61 +989,11 @@ class Route_CUNEFForm(forms.ModelForm):
                     raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
         return self.cleaned_data
 
-class Route_IMDEANETForm(forms.ModelForm):
-    sourceport = PortRangeForm()
-    destinationport = PortRangeForm()
-    port = PortRangeForm()
+class Route_IMDEANETForm(RouteForm):
 
     class Meta:
         model = Route_IMDEANET
         fields = '__all__'
-    
-
-    def clean_applier(self):
-        applier = self.cleaned_data['applier']
-        if applier:
-            return self.cleaned_data["applier"]
-        else:
-            raise forms.ValidationError('This field is required.')
-
-    def clean_source(self):
-        # run validator which is used by rest framework too
-        source = self.cleaned_data['source']
-        if source:
-            res = clean_source(
-                User.objects.get(pk=self.data['applier']),
-                source
-            )
-            if res != source:
-                raise forms.ValidationError(res)
-            else:
-                return res
-        else:
-            source = '0.0.0.0'
-            return source
-
-    def clean_destination(self):
-        destination = self.cleaned_data.get('destination')
-        if destination:
-            res = clean_destination(
-                User.objects.get(pk=self.data['applier']),
-                destination
-            )
-            if destination != res:
-                raise forms.ValidationError(res)
-            else:
-                print(res,type(res))
-                return res
-        else:
-            destination = '0.0.0.0'
-            return destination
-
-    def clean_expires(self):
-        date = self.cleaned_data['expires']
-        res = clean_expires(date)
-        if date != res:
-            raise forms.ValidationError(res)
-        return res
 
     def clean(self):
         if self.errors:
@@ -1264,7 +1009,7 @@ class Route_IMDEANETForm(forms.ModelForm):
         else:
             # have changed user.userprofile.peers.all() for:
             peers = user.profile.peers.all()
-        existing_routes = Route.objects.all()
+        existing_routes = Route_IMDEANET.objects.all()
         existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
         name = self.cleaned_data.get('name', None)
         protocols = self.cleaned_data.get('protocol', None)
@@ -1337,63 +1082,12 @@ class Route_IMDEANETForm(forms.ModelForm):
                 existing_url = reverse('edit-route', args=[route.name])
                 if IPNetwork(destination) in IPNetwork(route.destination) or IPNetwork(route.destination) in IPNetwork(destination):
                     raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
-        return self.cleaned_data
+        return self.cleaned_data    
 
-class Route_UAMForm(forms.ModelForm):
-    sourceport = PortRangeForm()
-    destinationport = PortRangeForm()
-    port = PortRangeForm()
-
+class Route_UAMForm(RouteForm):
     class Meta:
         model = Route_UAM
         fields = '__all__'
-    
-
-    def clean_applier(self):
-        applier = self.cleaned_data['applier']
-        if applier:
-            return self.cleaned_data["applier"]
-        else:
-            raise forms.ValidationError('This field is required.')
-
-    def clean_source(self):
-        # run validator which is used by rest framework too
-        source = self.cleaned_data['source']
-        if source:
-            res = clean_source(
-                User.objects.get(pk=self.data['applier']),
-                source
-            )
-            if res != source:
-                raise forms.ValidationError(res)
-            else:
-                return res
-        else:
-            source = '0.0.0.0'
-            return source
-
-    def clean_destination(self):
-        destination = self.cleaned_data.get('destination')
-        if destination:
-            res = clean_destination(
-                User.objects.get(pk=self.data['applier']),
-                destination
-            )
-            if destination != res:
-                raise forms.ValidationError(res)
-            else:
-                print(res,type(res))
-                return res
-        else:
-            destination = '0.0.0.0'
-            return destination
-
-    def clean_expires(self):
-        date = self.cleaned_data['expires']
-        res = clean_expires(date)
-        if date != res:
-            raise forms.ValidationError(res)
-        return res
 
     def clean(self):
         if self.errors:
@@ -1409,7 +1103,7 @@ class Route_UAMForm(forms.ModelForm):
         else:
             # have changed user.userprofile.peers.all() for:
             peers = user.profile.peers.all()
-        existing_routes = Route.objects.all()
+        existing_routes = Route_UAM.objects.all()
         existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
         name = self.cleaned_data.get('name', None)
         protocols = self.cleaned_data.get('protocol', None)
@@ -1484,62 +1178,13 @@ class Route_UAMForm(forms.ModelForm):
                     raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
         return self.cleaned_data
 
-class Route_UAHForm(forms.ModelForm):
-    sourceport = PortRangeForm()
-    destinationport = PortRangeForm()
-    port = PortRangeForm()
 
+class Route_UAHForm(RouteForm):
     class Meta:
         model = Route_UAH
         fields = '__all__'
+
     
-
-    def clean_applier(self):
-        applier = self.cleaned_data['applier']
-        if applier:
-            return self.cleaned_data["applier"]
-        else:
-            raise forms.ValidationError('This field is required.')
-
-    def clean_source(self):
-        # run validator which is used by rest framework too
-        source = self.cleaned_data['source']
-        if source:
-            res = clean_source(
-                User.objects.get(pk=self.data['applier']),
-                source
-            )
-            if res != source:
-                raise forms.ValidationError(res)
-            else:
-                return res
-        else:
-            source = '0.0.0.0'
-            return source
-
-    def clean_destination(self):
-        destination = self.cleaned_data.get('destination')
-        if destination:
-            res = clean_destination(
-                User.objects.get(pk=self.data['applier']),
-                destination
-            )
-            if destination != res:
-                raise forms.ValidationError(res)
-            else:
-                print(res,type(res))
-                return res
-        else:
-            destination = '0.0.0.0'
-            return destination
-
-    def clean_expires(self):
-        date = self.cleaned_data['expires']
-        res = clean_expires(date)
-        if date != res:
-            raise forms.ValidationError(res)
-        return res
-
     def clean(self):
         if self.errors:
             raise forms.ValidationError(_('Errors in form. Please review and fix them: %s' % ", ".join(self.errors)))
@@ -1554,7 +1199,7 @@ class Route_UAHForm(forms.ModelForm):
         else:
             # have changed user.userprofile.peers.all() for:
             peers = user.profile.peers.all()
-        existing_routes = Route.objects.all()
+        existing_routes = Route_UAH.objects.all()
         existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
         name = self.cleaned_data.get('name', None)
         protocols = self.cleaned_data.get('protocol', None)
@@ -1629,62 +1274,10 @@ class Route_UAHForm(forms.ModelForm):
                     raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
         return self.cleaned_data
 
-
-class Route_UC3MForm(forms.ModelForm):
-    sourceport = PortRangeForm()
-    destinationport = PortRangeForm()
-    port = PortRangeForm()
-
+class Route_UC3MForm(RouteForm):
     class Meta:
         model = Route_UC3M
         fields = '__all__'
-    
-
-    def clean_applier(self):
-        applier = self.cleaned_data['applier']
-        if applier:
-            return self.cleaned_data["applier"]
-        else:
-            raise forms.ValidationError('This field is required.')
-
-    def clean_source(self):
-        # run validator which is used by rest framework too
-        source = self.cleaned_data['source']
-        if source:
-            res = clean_source(
-                User.objects.get(pk=self.data['applier']),
-                source
-            )
-            if res != source:
-                raise forms.ValidationError(res)
-            else:
-                return res
-        else:
-            source = '0.0.0.0'
-            return source
-
-    def clean_destination(self):
-        destination = self.cleaned_data.get('destination')
-        if destination:
-            res = clean_destination(
-                User.objects.get(pk=self.data['applier']),
-                destination
-            )
-            if destination != res:
-                raise forms.ValidationError(res)
-            else:
-                print(res,type(res))
-                return res
-        else:
-            destination = '0.0.0.0'
-            return destination
-
-    def clean_expires(self):
-        date = self.cleaned_data['expires']
-        res = clean_expires(date)
-        if date != res:
-            raise forms.ValidationError(res)
-        return res
 
     def clean(self):
         if self.errors:
@@ -1700,7 +1293,7 @@ class Route_UC3MForm(forms.ModelForm):
         else:
             # have changed user.userprofile.peers.all() for:
             peers = user.profile.peers.all()
-        existing_routes = Route.objects.all()
+        existing_routes = Route_UC3M.objects.all()
         existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
         name = self.cleaned_data.get('name', None)
         protocols = self.cleaned_data.get('protocol', None)
@@ -1775,61 +1368,10 @@ class Route_UC3MForm(forms.ModelForm):
                     raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
         return self.cleaned_data
 
-class Route_UCMForm(forms.ModelForm):
-    sourceport = PortRangeForm()
-    destinationport = PortRangeForm()
-    port = PortRangeForm()
-
+class Route_UCMForm(RouteForm):
     class Meta:
         model = Route_UCM
         fields = '__all__'
-    
-
-    def clean_applier(self):
-        applier = self.cleaned_data['applier']
-        if applier:
-            return self.cleaned_data["applier"]
-        else:
-            raise forms.ValidationError('This field is required.')
-
-    def clean_source(self):
-        # run validator which is used by rest framework too
-        source = self.cleaned_data['source']
-        if source:
-            res = clean_source(
-                User.objects.get(pk=self.data['applier']),
-                source
-            )
-            if res != source:
-                raise forms.ValidationError(res)
-            else:
-                return res
-        else:
-            source = '0.0.0.0'
-            return source
-
-    def clean_destination(self):
-        destination = self.cleaned_data.get('destination')
-        if destination:
-            res = clean_destination(
-                User.objects.get(pk=self.data['applier']),
-                destination
-            )
-            if destination != res:
-                raise forms.ValidationError(res)
-            else:
-                print(res,type(res))
-                return res
-        else:
-            destination = '0.0.0.0'
-            return destination
-
-    def clean_expires(self):
-        date = self.cleaned_data['expires']
-        res = clean_expires(date)
-        if date != res:
-            raise forms.ValidationError(res)
-        return res
 
     def clean(self):
         if self.errors:
@@ -1845,7 +1387,7 @@ class Route_UCMForm(forms.ModelForm):
         else:
             # have changed user.userprofile.peers.all() for:
             peers = user.profile.peers.all()
-        existing_routes = Route.objects.all()
+        existing_routes = Route_UCM.objects.all()
         existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
         name = self.cleaned_data.get('name', None)
         protocols = self.cleaned_data.get('protocol', None)
@@ -1920,61 +1462,10 @@ class Route_UCMForm(forms.ModelForm):
                     raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
         return self.cleaned_data
 
-class Route_UEMForm(forms.ModelForm):
-    sourceport = PortRangeForm()
-    destinationport = PortRangeForm()
-    port = PortRangeForm()
-
+class Route_UEMForm(RouteForm):
     class Meta:
         model = Route_UEM
         fields = '__all__'
-    
-
-    def clean_applier(self):
-        applier = self.cleaned_data['applier']
-        if applier:
-            return self.cleaned_data["applier"]
-        else:
-            raise forms.ValidationError('This field is required.')
-
-    def clean_source(self):
-        # run validator which is used by rest framework too
-        source = self.cleaned_data['source']
-        if source:
-            res = clean_source(
-                User.objects.get(pk=self.data['applier']),
-                source
-            )
-            if res != source:
-                raise forms.ValidationError(res)
-            else:
-                return res
-        else:
-            source = '0.0.0.0'
-            return source
-
-    def clean_destination(self):
-        destination = self.cleaned_data.get('destination')
-        if destination:
-            res = clean_destination(
-                User.objects.get(pk=self.data['applier']),
-                destination
-            )
-            if destination != res:
-                raise forms.ValidationError(res)
-            else:
-                print(res,type(res))
-                return res
-        else:
-            destination = '0.0.0.0'
-            return destination
-
-    def clean_expires(self):
-        date = self.cleaned_data['expires']
-        res = clean_expires(date)
-        if date != res:
-            raise forms.ValidationError(res)
-        return res
 
     def clean(self):
         if self.errors:
@@ -1990,7 +1481,7 @@ class Route_UEMForm(forms.ModelForm):
         else:
             # have changed user.userprofile.peers.all() for:
             peers = user.profile.peers.all()
-        existing_routes = Route.objects.all()
+        existing_routes = Route_UEM.objects.all()
         existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
         name = self.cleaned_data.get('name', None)
         protocols = self.cleaned_data.get('protocol', None)
@@ -2065,206 +1556,10 @@ class Route_UEMForm(forms.ModelForm):
                     raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
         return self.cleaned_data
 
-class Route_UNEDForm(forms.ModelForm):
-    sourceport = PortRangeForm()
-    destinationport = PortRangeForm()
-    port = PortRangeForm()
-
-    class Meta:
-        model = Route_UNED
-        fields = '__all__'
-    
-
-    def clean_applier(self):
-        applier = self.cleaned_data['applier']
-        if applier:
-            return self.cleaned_data["applier"]
-        else:
-            raise forms.ValidationError('This field is required.')
-
-    def clean_source(self):
-        # run validator which is used by rest framework too
-        source = self.cleaned_data['source']
-        if source:
-            res = clean_source(
-                User.objects.get(pk=self.data['applier']),
-                source
-            )
-            if res != source:
-                raise forms.ValidationError(res)
-            else:
-                return res
-        else:
-            source = '0.0.0.0'
-            return source
-
-    def clean_destination(self):
-        destination = self.cleaned_data.get('destination')
-        if destination:
-            res = clean_destination(
-                User.objects.get(pk=self.data['applier']),
-                destination
-            )
-            if destination != res:
-                raise forms.ValidationError(res)
-            else:
-                print(res,type(res))
-                return res
-        else:
-            destination = '0.0.0.0'
-            return destination
-
-    def clean_expires(self):
-        date = self.cleaned_data['expires']
-        res = clean_expires(date)
-        if date != res:
-            raise forms.ValidationError(res)
-        return res
-
-    def clean(self):
-        if self.errors:
-            raise forms.ValidationError(_('Errors in form. Please review and fix them: %s' % ", ".join(self.errors)))
-        error = clean_route_form(self.cleaned_data)
-        if error:
-            raise forms.ValidationError(error)
-
-        # check if same rule exists with other name
-        user = self.cleaned_data['applier']
-        if user.is_superuser:
-            peers = Peer.objects.all()
-        else:
-            # have changed user.userprofile.peers.all() for:
-            peers = user.profile.peers.all()
-        existing_routes = Route.objects.all()
-        existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
-        name = self.cleaned_data.get('name', None)
-        protocols = self.cleaned_data.get('protocol', None)
-        source = self.cleaned_data.get('source', None)
-        sourceports = self.cleaned_data.get('sourceport', None)
-        port = self.cleaned_data.get('port', None)
-        destination = self.cleaned_data.get('destination', None)
-        destinationports = self.cleaned_data.get('destinationport', None)
-        icmptype = self.cleaned_data.get('icmptype', None)
-        icmpcode = self.cleaned_data.get('icmpcode', None)
-        packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
-        user = self.cleaned_data.get('applier', None)
-
-        if source:
-            source = IPNetwork(source).compressed
-            existing_routes = existing_routes.filter(source=source)
-        else:
-            existing_routes = existing_routes.filter(source=None)
-        if protocols:
-            route_pk_list=get_matchingprotocol_route_pks(protocols, existing_routes)
-            if route_pk_list:
-                existing_routes = existing_routes.filter(pk__in=route_pk_list)
-            else:
-                existing_routes = existing_routes.filter(protocol=None)
-            if "icmp" in [str(i) for i in protocols] and (destinationports or sourceports or port):
-                raise forms.ValidationError(_('It is not allowed to specify ICMP protocol and source/destination ports at the same time.'))
-        else:
-            existing_routes = existing_routes.filter(protocol=None)
-        if sourceports:
-            route_pk_list=get_matchingport_route_pks(sourceports, existing_routes)
-            if route_pk_list:
-                existing_routes = existing_routes.filter(pk__in=route_pk_list)
-        else:
-            existing_routes = existing_routes.filter(sourceport=None)
-        if destinationports:
-            route_pk_list=get_matchingport_route_pks(destinationports, existing_routes)
-            if route_pk_list:
-                existing_routes = existing_routes.filter(pk__in=route_pk_list)
-        else:
-            existing_routes = existing_routes.filter(destinationport=None)
-        if port:
-            route_pk_list=get_matchingport_route_pks(port, existing_routes)
-            if route_pk_list:
-                existing_routes = existing_routes.filter(pk__in=route_pk_list)
-        else:
-            existing_routes = existing_routes.filter(port=None)
-        if icmpcode:
-            if int(icmpcode) not in range(0,255):
-                raise forms.ValidationError(_('The ICMP code {} introduced does not match any registered code.').format(icmpcode))
-        
-        if icmptype:
-            if int(icmptype) not in range(0,255):
-                raise forms.ValidationError(_('The ICMP type {} introduced does not match any registered type.').format(icmptype))
-        if packetlength:
-            regxp = re.compile(r"^[0-9]+([-,][0-9]+)*$")
-            r = re.match(regxp, packetlength)
-            if r:
-                res = []
-                plength = packetlength.split(",")
-                for packet in plength:
-                    p = int(packet)
-                    if p < 0 or p > 65535:
-                        raise forms.ValidationError(_('Packet length should be < 65535 and >= 0'))
-            else:
-                raise forms.ValidationError(_('Malformed packet'))        
-
-        for route in existing_routes:
-            if name != route.name:
-                existing_url = reverse('edit-route', args=[route.name])
-                if IPNetwork(destination) in IPNetwork(route.destination) or IPNetwork(route.destination) in IPNetwork(destination):
-                    raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
-        return self.cleaned_data
-
-class Route_UPMForm(forms.ModelForm):
-    sourceport = PortRangeForm()
-    destinationport = PortRangeForm()
-    port = PortRangeForm()
-
+class Route_UPMForm(RouteForm):
     class Meta:
         model = Route_UPM
         fields = '__all__'
-    
-
-    def clean_applier(self):
-        applier = self.cleaned_data['applier']
-        if applier:
-            return self.cleaned_data["applier"]
-        else:
-            raise forms.ValidationError('This field is required.')
-
-    def clean_source(self):
-        # run validator which is used by rest framework too
-        source = self.cleaned_data['source']
-        if source:
-            res = clean_source(
-                User.objects.get(pk=self.data['applier']),
-                source
-            )
-            if res != source:
-                raise forms.ValidationError(res)
-            else:
-                return res
-        else:
-            source = '0.0.0.0'
-            return source
-
-    def clean_destination(self):
-        destination = self.cleaned_data.get('destination')
-        if destination:
-            res = clean_destination(
-                User.objects.get(pk=self.data['applier']),
-                destination
-            )
-            if destination != res:
-                raise forms.ValidationError(res)
-            else:
-                print(res,type(res))
-                return res
-        else:
-            destination = '0.0.0.0'
-            return destination
-
-    def clean_expires(self):
-        date = self.cleaned_data['expires']
-        res = clean_expires(date)
-        if date != res:
-            raise forms.ValidationError(res)
-        return res
 
     def clean(self):
         if self.errors:
@@ -2280,7 +1575,7 @@ class Route_UPMForm(forms.ModelForm):
         else:
             # have changed user.userprofile.peers.all() for:
             peers = user.profile.peers.all()
-        existing_routes = Route.objects.all()
+        existing_routes = Route_UPM.objects.all()
         existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
         name = self.cleaned_data.get('name', None)
         protocols = self.cleaned_data.get('protocol', None)
@@ -2355,61 +1650,10 @@ class Route_UPMForm(forms.ModelForm):
                     raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
         return self.cleaned_data
 
-class Route_URJCForm(forms.ModelForm):
-    sourceport = PortRangeForm()
-    destinationport = PortRangeForm()
-    port = PortRangeForm()
-
+class Route_UNEDForm(RouteForm):
     class Meta:
-        model = Route
+        model = Route_UNED
         fields = '__all__'
-    
-
-    def clean_applier(self):
-        applier = self.cleaned_data['applier']
-        if applier:
-            return self.cleaned_data["applier"]
-        else:
-            raise forms.ValidationError('This field is required.')
-
-    def clean_source(self):
-        # run validator which is used by rest framework too
-        source = self.cleaned_data['source']
-        if source:
-            res = clean_source(
-                User.objects.get(pk=self.data['applier']),
-                source
-            )
-            if res != source:
-                raise forms.ValidationError(res)
-            else:
-                return res
-        else:
-            source = '0.0.0.0'
-            return source
-
-    def clean_destination(self):
-        destination = self.cleaned_data.get('destination')
-        if destination:
-            res = clean_destination(
-                User.objects.get(pk=self.data['applier']),
-                destination
-            )
-            if destination != res:
-                raise forms.ValidationError(res)
-            else:
-                print(res,type(res))
-                return res
-        else:
-            destination = '0.0.0.0'
-            return destination
-
-    def clean_expires(self):
-        date = self.cleaned_data['expires']
-        res = clean_expires(date)
-        if date != res:
-            raise forms.ValidationError(res)
-        return res
 
     def clean(self):
         if self.errors:
@@ -2425,7 +1669,7 @@ class Route_URJCForm(forms.ModelForm):
         else:
             # have changed user.userprofile.peers.all() for:
             peers = user.profile.peers.all()
-        existing_routes = Route.objects.all()
+        existing_routes = Route_UNED.objects.all()
         existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
         name = self.cleaned_data.get('name', None)
         protocols = self.cleaned_data.get('protocol', None)
@@ -2499,3 +1743,98 @@ class Route_URJCForm(forms.ModelForm):
                 if IPNetwork(destination) in IPNetwork(route.destination) or IPNetwork(route.destination) in IPNetwork(destination):
                     raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
         return self.cleaned_data
+
+class Route_URJCForm(RouteForm):
+    class Meta:
+        model = Route_URJC
+        fields = '__all__'
+
+    def clean(self):
+        if self.errors:
+            raise forms.ValidationError(_('Errors in form. Please review and fix them: %s' % ", ".join(self.errors)))
+        error = clean_route_form(self.cleaned_data)
+        if error:
+            raise forms.ValidationError(error)
+
+        # check if same rule exists with other name
+        user = self.cleaned_data['applier']
+        if user.is_superuser:
+            peers = Peer.objects.all()
+        else:
+            # have changed user.userprofile.peers.all() for:
+            peers = user.profile.peers.all()
+        existing_routes = Route_URJC.objects.all()
+        existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
+        name = self.cleaned_data.get('name', None)
+        protocols = self.cleaned_data.get('protocol', None)
+        source = self.cleaned_data.get('source', None)
+        sourceports = self.cleaned_data.get('sourceport', None)
+        port = self.cleaned_data.get('port', None)
+        destination = self.cleaned_data.get('destination', None)
+        destinationports = self.cleaned_data.get('destinationport', None)
+        icmptype = self.cleaned_data.get('icmptype', None)
+        icmpcode = self.cleaned_data.get('icmpcode', None)
+        packetlength = self.cleaned_data.get('packetlength', None)
+        tcpflag = self.cleaned_data.get('tcpflag', None)
+        user = self.cleaned_data.get('applier', None)
+
+        if source:
+            source = IPNetwork(source).compressed
+            existing_routes = existing_routes.filter(source=source)
+        else:
+            existing_routes = existing_routes.filter(source=None)
+        if protocols:
+            route_pk_list=get_matchingprotocol_route_pks(protocols, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(protocol=None)
+            if "icmp" in [str(i) for i in protocols] and (destinationports or sourceports or port):
+                raise forms.ValidationError(_('It is not allowed to specify ICMP protocol and source/destination ports at the same time.'))
+        else:
+            existing_routes = existing_routes.filter(protocol=None)
+        if sourceports:
+            route_pk_list=get_matchingport_route_pks(sourceports, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+        else:
+            existing_routes = existing_routes.filter(sourceport=None)
+        if destinationports:
+            route_pk_list=get_matchingport_route_pks(destinationports, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+        else:
+            existing_routes = existing_routes.filter(destinationport=None)
+        if port:
+            route_pk_list=get_matchingport_route_pks(port, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+        else:
+            existing_routes = existing_routes.filter(port=None)
+        if icmpcode:
+            if int(icmpcode) not in range(0,255):
+                raise forms.ValidationError(_('The ICMP code {} introduced does not match any registered code.').format(icmpcode))
+        
+        if icmptype:
+            if int(icmptype) not in range(0,255):
+                raise forms.ValidationError(_('The ICMP type {} introduced does not match any registered type.').format(icmptype))
+        if packetlength:
+            regxp = re.compile(r"^[0-9]+([-,][0-9]+)*$")
+            r = re.match(regxp, packetlength)
+            if r:
+                res = []
+                plength = packetlength.split(",")
+                for packet in plength:
+                    p = int(packet)
+                    if p < 0 or p > 65535:
+                        raise forms.ValidationError(_('Packet length should be < 65535 and >= 0'))
+            else:
+                raise forms.ValidationError(_('Malformed packet'))        
+
+        for route in existing_routes:
+            if name != route.name:
+                existing_url = reverse('edit-route', args=[route.name])
+                if IPNetwork(destination) in IPNetwork(route.destination) or IPNetwork(route.destination) in IPNetwork(destination):
+                    raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
+        return self.cleaned_data
+

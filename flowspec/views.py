@@ -93,19 +93,38 @@ def service_desc(request):
 @verified_email_required
 @login_required
 @never_cache
+def check_sync(request,route_slug):
+    try:
+        route = get_specific_route(applier=None, peer=None, route_slug=route_slug)
+        route.is_synced()
+        route.check_sync()
+        return HttpResponseRedirect(reverse('group-routes'))
+    except Exception as e: 
+        
+        return HttpResponseRedirect(reverse('group-routes'))
+
+
+@verified_email_required
+@login_required
+@never_cache
 def dashboard(request):
+    print('inside method')
     user = request.user
+    print('user: ',user)
     all_group_routes = []
     message = ''
     try:
         peers = request.user.profile.peers.prefetch_related('user_profile')
-        route_name = Route.objects.filter(applier=request.user).values_list('name',flat=True)
+        print('inside method 3 pper:s', peers)
+        #route_name = Route.objects.filter(applier=request.user).values_list('name',flat=True)
     except UserProfile.DoesNotExist:
         error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
         return render(request,'error.html',{'error': error})
+    
     if peers:
         if request.user.is_superuser:
             all_group_routes = find_all_routes()
+            print('inside method 4')
             if all_group_routes != None:
                 all_routes = []
                 for groute in all_group_routes:
@@ -113,10 +132,10 @@ def dashboard(request):
                         if group_route.status=='ACTIVE': 
                             group_route.has_expired()
                             all_routes.append(group_route)
-                return render(request,'dashboard.html',{'routes': all_routes,'messages': message,'file' : '','route_slug':route_name},)
+                return render(request,'dashboard.html',{'routes': all_routes,'messages': message,'file' : ''},)
             else:
                 message = 'You have not added any rules yet'
-                return render(request,'dashboard.html',{'routes': all_group_routes.prefetch_related('applier', 'applier','protocol','dscp'),'messages': message,'file' : '','route_slug':route_name})
+                return render(request,'dashboard.html',{'routes': all_group_routes.prefetch_related('applier', 'applier','protocol','dscp'),'messages': message,'file' : ''})
 
         else:
             all_group_routes = find_routes(user.username)
@@ -127,10 +146,10 @@ def dashboard(request):
                     if group_route.status=='ACTIVE':
                         group_route.has_expired()
                         routes.append(group_route)
-                return render(request,'dashboard.html',{'routes': routes,'messages': message,'file' : '','route_slug':route_name})
+                return render(request,'dashboard.html',{'routes': routes,'messages': message,'file' : ''})
             else:
                 message = 'You have not added any rules yet'
-                return render(request,'dashboard.html',{'routes': all_group_routes.prefetch_related('applier', 'applier','protocol','dscp'),'messages': message,'file' : '','route_slug':route_name})
+                return render(request,'dashboard.html',{'routes': all_group_routes.prefetch_related('applier', 'applier','protocol','dscp'),'messages': message,'file' : ''})
     else:
         message = 'You are not associated with a peer.'
         return render(request,'dashboard.html',{'messages': message})
@@ -526,7 +545,7 @@ def edit_route(request, route_slug):
         form = find_edit_post_route(username, request_data, route_edit)
         critical_changed_values = ['source', 'destination', 'sourceport', 'destinationport', 'port', 'protocol', 'then', 'packetlenght','tcpflags']
         try:
-            if form.is_valid():            
+            if form.is_valid():   
                 changed_data = form.changed_data
                 route = form.save(commit=False)
                 route.name = route_original.name
@@ -932,6 +951,7 @@ def pending_routes(request):
         if r.applier == None:
             all_routes.append(r)    
     return render(request,'pending_routes.html',{'routes':all_routes})
+
 
 
 

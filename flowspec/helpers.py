@@ -46,12 +46,13 @@ def send_new_mail(subject, message, recipient_list, bcc_list):
 def send_message(message, peer=None, superuser=False):
   slack_channels = {'CEU':'C03GQM0MN0K','CIB':'C03GA4HK8FR','CSIC':'C03HEF23RAL','CUNEF':'C03H3B3G3G9','CV':'C03GQMFQ519','IMDEA':'C03H3B7GBND','IMDEANET':'C03GJ3M124E',
   'Punch':'C03H3B7GBND','UAH':'C03H3B9BTGR','UAM':'C03GQML0JP5','UC3M':'C03GQN6P9MG','UCM':'C03GJ3RENLE','UEM':'C03H3BE7EBB',
-  'UNED':'C03GA56STTR','UPM':'C03GJ3W32KY', 'URJC':'C03GJ3X931C'}
+  'UNED':'C03GA56STTR','UPM':'C03GJ3W32KY', 'URJC':'C03GJ3X931C','REM':'C03H3B7GBND', 'RediMadrid':'C03H3B7GBND'}
   # if there is no peer, the message will be sent to the default testing slack channel, the one used for redimadrid staff
   if not peer or superuser:
     client = slack.WebClient(token=settings.SLACK_TOKEN)
     client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
   else:
+    print('el peer: ', peer)
     channel = slack_channels[peer]
     client = slack.WebClient(token=settings.REM_SLACK_TOKEN)
     client.chat_postMessage(channel=channel, text=message) 
@@ -350,9 +351,9 @@ def get_default_graph(routename, username):
 """ Route helpers """
 
 def find_route_pk(applier, pk):
-  from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
+  from flowspec.models import Route_Punch,Route_REM, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   route = {
-    'Punch': Route.objects.get(id=pk), 'IMDEA': Route_IMDEA.objects.get(id=pk), 'CV': Route_CV.objects.get(id=pk), 'CIB' : Route_CIB.objects.get(id=pk),'CSIC' : Route_CSIC.objects.get(id=pk),
+  'Punch': Route_Punch.objects.get(id=pk),'REM':Route_REM.objects.get(id=pk) , 'IMDEA': Route_IMDEA.objects.get(id=pk), 'CV': Route_CV.objects.get(id=pk), 'CIB' : Route_CIB.objects.get(id=pk),'CSIC' : Route_CSIC.objects.get(id=pk),
   'CEU' : Route_CEU.objects.get(id=pk),'CUNEF' : Route_CUNEF.objects.get(id=pk),'IMDEANET': Route_IMDEANET.objects.get(id=pk), 'UAM' : Route_UAM.objects.get(id=pk),'UC3M' : Route_UC3M.objects.get(id=pk),
     'UCM' : Route_UCM.objects.get(id=pk),'UAH' : Route_UAH.objects.get(id=pk),'UEM' : Route_UEM.objects.get(id=pk),'UNED' : Route_UNED.objects.get(id=pk),'UPM' : Route_UPM.objects.get(id=pk),'URJC' : Route_URJC.objects.get(id=pk),
   }
@@ -361,9 +362,10 @@ def find_route_pk(applier, pk):
   return user_route
 
 def find_routes(applier=None, peer=None):
-  from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
+  from flowspec.models import Route_Punch,Route_REM, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   routes = {
-    'Punch': Route.objects.all(),
+    'Punch': Route_Punch.objects.all(),
+    'REM' : Route_REM.objects.all(),
     'IMDEA': Route_IMDEA.objects.all(),
     'CV': Route_CV.objects.all(),
     'CIB' : Route_CIB.objects.all(),
@@ -417,9 +419,10 @@ def get_routes_backuprouter():
     return routes
 
 def get_route(applier,peer):
-  from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
+  from flowspec.models import Route_Punch,Route_REM, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   routes = {
-    'Punch': Route(),
+    'Punch': Route_Punch(),
+    'REM' : Route_REM(),
     'IMDEA': Route_IMDEA(),
     'CV': Route_CV(),
     'CIB' : Route_CIB(),
@@ -445,9 +448,10 @@ def get_route(applier,peer):
     return user_routes
 
 def get_edit_route(applier,rname):
-  from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
+  from flowspec.models import Route_Punch,Route_REM, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   routes = {
-    'Punch': Route,
+    'Punch': Route_Punch,
+    'REM' : Route_REM,
     'IMDEA': Route_IMDEA,
     'CV': Route_CV,
     'CIB' : Route_CIB,
@@ -471,7 +475,7 @@ def get_edit_route(applier,rname):
 
 def find_all_routes():
   from peers.models import Peer
-  from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
+
   peers = Peer.objects.all()
   routes = []
   for peer in peers:
@@ -479,9 +483,10 @@ def find_all_routes():
   return routes
 
 def find_edit_post_route(applier, data, route_edit):
-  from flowspec.forms import RouteForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm
+  from flowspec.forms import Route_PunchForm,Route_REMForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm
   route_forms = {
-    'Punch': RouteForm(data, instance=route_edit),
+    'Punch': Route_PunchForm(data, instance=route_edit),
+    'REM' : Route_REMForm(data, instance=route_edit),
     'IMDEA': Route_IMDEAForm(data, instance=route_edit),
     'CV': Route_CVForm(data, instance=route_edit),
     'CIB' : Route_CIBForm(data, instance=route_edit),
@@ -503,9 +508,10 @@ def find_edit_post_route(applier, data, route_edit):
   return form_class
 
 def find_get_form(applier):
-  from flowspec.forms import RouteForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm
+  from flowspec.forms import Route_PunchForm,Route_REMForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm
   route_forms = {
-    'Punch': RouteForm(),
+    'Punch': Route_PunchForm(),
+    'REM': Route_REMForm(),
     'IMDEA': Route_IMDEAForm(),
     'CV': Route_CVForm(),
     'CIB' : Route_CIBForm(),
@@ -527,9 +533,10 @@ def find_get_form(applier):
   return form_class
 
 def find_post_form(applier, data):
-  from flowspec.forms import RouteForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm
+  from flowspec.forms import Route_PunchForm, Route_REMForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm
   route_forms = {
-    'Punch': RouteForm(data),
+    'Punch': Route_PunchForm(data),
+    'REM': Route_REMForm(data),
     'IMDEA': Route_IMDEAForm(data),
     'CV': Route_CVForm(data),
     'CIB' : Route_CIBForm(data),
@@ -551,10 +558,11 @@ def find_post_form(applier, data):
   return form_class
 
 def get_instance_form(applier, route):
-  from flowspec.forms import RouteForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm
+  from flowspec.forms import Route_PunchForm, Route_REMForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm
   peer_tag = get_peer_tag(applier)
   route_form = {
-    'Punch' : RouteForm(instance = route),
+    'Punch' : Route_PunchForm(instance = route),
+    'REM' : Route_REMForm(instance = route),
     'IMDEA' : Route_IMDEAForm(instance = route),
     'CV': Route_CVForm(instance=route),
     'CIB' : Route_CIBForm(instance=route),
@@ -576,7 +584,7 @@ def get_instance_form(applier, route):
 
 def get_specific_route(applier,peer, route_slug):
   from peers.models import Peer
-  from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
+  from flowspec.models import Route_Punch,Route_REM, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   peers = Peer.objects.all()
   peer_tag = get_peer_with_name(route_slug)
   for r in peers:
@@ -670,9 +678,15 @@ def get_specific_route(applier,peer, route_slug):
         return route
       except ObjectDoesNotExist:
         logger.info('There has been an error when trying to find the route')
+    elif peer_tag == 'REM':
+      try:
+        route = Route_REM.objects.get(name=route_slug)
+        return route
+      except ObjectDoesNotExist:
+        logger.info('There has been an error when trying to find the route')    
     elif peer_tag == 'Punch':
       try:
-        route = Route.objects.get(name=route_slug)
+        route = Route_Punch.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
         logger.info('There has been an error when trying to find the route')
@@ -681,7 +695,7 @@ def get_specific_route(applier,peer, route_slug):
 
 def get_specific_route_pk(username, pk):
   from peers.models import Peer
-  from flowspec.models import Route, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
+  from flowspec.models import Route_Punch,Route_REM, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   peers = Peer.objects.all()
   peer_tag = get_peer_tag(username)
   check = True
@@ -794,7 +808,14 @@ def get_specific_route_pk(username, pk):
           check = True
       elif peer_tag == 'Punch':
         try:
-          route = Route.objects.get(id=pk)
+          route = Route_Punch.objects.get(id=pk)
+          check = False
+          return route
+        except ObjectDoesNotExist:
+          check = True
+      elif peer_tag == 'REM':
+        try:
+          route = Route_REM.objects.get(id=pk)
           check = False
           return route
         except ObjectDoesNotExist:
@@ -805,7 +826,7 @@ def find_peer(peer_name):
   from peers.models import Peer
   find = peer_name.find('_')
   pn = peer_name[find+1::]
-  peers = ['CV', 'CIB', 'CSIC', 'CEU', 'CUNEF', 'IMDEANET', 'IMDEA', 'UAM', 'UC3M', 'UCM', 'UAH', 'UEM', 'UNED', 'UPM', 'URJC']
+  peers = Peer.objects.all()
   for peer in peers:
     if peer_name == 'punch.software.imdea.org' or peer_name == 'punch2.software.imdea.org' or peer_name == 'punch2.software.imdea.org(2)':
       return Peer.objects.get(peer_name='Punch')
