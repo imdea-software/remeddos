@@ -57,13 +57,13 @@ td:first-child, th:first-child {
 					<div class="row">
 						<div class="col mb-2">
 							<i class="fa fa-shield ml-2"></i><span class="text-info font-monospace">  REM-e-DDOS</span> <br>
-						  <small>Aplicación diseñada para la mitigación de ataques, aquí podrá configurar reglas de firewall que le ayude a proteger su red. <br> 
+						  <p>Aplicación diseñada para la mitigación de ataques, aquí podrá configurar reglas de firewall que le ayude a proteger su red. <br> 
 							Está aplicación también recoge información desde REM-Golem para informarle a través de Slack sobre los últimos ataques que haya recibido, proponiendo a su vez
-							distintas reglas que usted podrá personalizar a su gusto. Para más información:</small>
+							distintas reglas que usted podrá personalizar a su gusto. Para más información:</p>
 						</div>
 					  </div>
 					  
-					  <div class="row cards">
+					  <!-- <div class="row cards">
 						<div class="col-md-3 d-flex justify-content-center">
 						  <div class="card" style="width: 18rem;">
 							<div class="card-body">
@@ -100,6 +100,7 @@ td:first-child, th:first-child {
 							  </div>
 							</div>
 						  </div>
+						  </div> -->
 						  
 
 					  </div>
@@ -142,6 +143,20 @@ td:first-child, th:first-child {
 				  </div>
 				
 				  {% include "shortcuts.html" %}
+
+				  
+				</div>
+					<div class="col-sm-3 float-right">
+						<div class="card-sm float-right">
+									<h5 class="card-header text-info">Info</h5>
+									<div class="card-body btn-group">
+										<small class="card-text"> Status: <span class="badge bg-success">ACTIVE</span><br>
+											Cuando el estado de una regla es 'ACTIVE' significa que ha sido guardada en su base de datos y configurada en el router.</small>
+						  </div>
+				</div>
+				</div>
+
+
 			</div>				
 		</div>
 		

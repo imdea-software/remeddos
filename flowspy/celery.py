@@ -62,11 +62,11 @@ app.conf.beat_schedule = {
         "schedule":crontab(minute=0,hour=0),
         "args":(),
     },
-    "check-ongoing-golem-events":{
+   """  "check-ongoing-golem-events":{
         "task":"flowspec.tasks.check_ongoing_golem_events",
-        "schedule":crontab(minute='*/30'),
+        "schedule":crontab(hour='*/1'),
         "args":(),
-    },
+    }, """
     "sync-routers":{
         "task":"flowspec.tasks.sync_routers",
         "schedule":crontab(minute=0,hour=0),

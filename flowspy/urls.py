@@ -13,7 +13,7 @@ import golem.views
 
 
 from flowspec.viewsets import (
-    RouteViewSet,
+    
     PortViewSet,
     ThenActionViewSet,
     FragmentTypeViewSet,
@@ -25,7 +25,7 @@ admin.autodiscover()
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
-router.register(r'routes', RouteViewSet, basename='route')
+#router.register(r'routes', RouteViewSet, basename='route')
 router.register(r'ports', PortViewSet)
 router.register(r'thenactions', ThenActionViewSet)
 router.register(r'fragmentypes', FragmentTypeViewSet)

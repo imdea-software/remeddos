@@ -63,7 +63,7 @@ select.form-select > option {
                                 {% if route.destination_port %}<b>Puerto Destino:</b>{{route.destination_port}}<br> {% endif %}
                                 {% if route.protocol.all %}<b>Protocolo:</b> {% for p in route.protocol.all %} {{p}} {% endfor %}<br> {% endif %}
                                 {% if route.tcpflag %} <b>Tcpflag(s): </b>  {{route.tcpflag}} {% endif %}
-                                {% if route.then.action %} <b> Acción: {{route.then.action}} </b> {% endif %}
+                                {% if route.get_then %} <b> Acción: {{route.get_then}} </b> {% endif %}
                             </small></td>
                              
                             <td><small>{{route.applier_username_nice}}</small></td>
@@ -79,6 +79,8 @@ select.form-select > option {
                                 <span class="badge bg-dark">{{route.status}}</span>
                                 {% elif route.status == 'ERROR' %}
                                     <span class="badge bg-danger">{{route.status}}</span>
+                                {% elif route.status == 'OUTOFSYNC' %}
+                                    <span class="badge bg-warning">{{route.status}}</span>
                                 {% elif route.status == 'PENDING' %}
                                         <img src="{% static 'dots.gif' %}" alt="...">
                                 {% endif %}
@@ -98,7 +100,10 @@ select.form-select > option {
                                                     <a href="{% url 'display-graphs' route.name %}" class="btn btn-outline m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Mostrar gráficos!"><i class="bi-graph-up text-dark"></i></a>
                                                 {% endif %}
                                                 {% if route.status == 'ERROR' %}
-                                                    <a href="{% url 'edit-route' route.name %}" class="btn btn-outline-warning btn-sm" id="edit_button_{{route.pk}}">{% trans "Arreglar!" %}</a>
+                                                    <a href="{% url 'edit-route' route.name %}" class="btn btn-outline-warning btn-sm" id="edit_button_{{route.pk}}">{% trans "Arreglar" %}</a>
+                                                {% endif %}
+                                                {% if route.status == 'OUTOFSYNC' %}
+                                                    <a href="{% url 'edit-route' route.name %}" class="btn btn-outline-warning btn-sm" id="sync_button_{{route.pk}}">{% trans "Sincronizar" %}</a>
                                                 {% endif %}
                                                 
                                                 {% if route.status == 'DEACTIVATED' %}
@@ -125,7 +130,10 @@ select.form-select > option {
                                                     <a href="{% url 'exterminate' route.name %}" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar regla de REM-E-DDOS"><i class="bi-trash text-dark"></i></a>
                                                     {% endif %}
                                                 {% if route.status == 'ERROR' %}
-                                            <a href="{% url 'edit' route.name %}" class="btn btn-outline-warning btn-sm" id="edit_button_{{route.pk}}">{% trans "Arreglar!" %}</a>
+                                            <a href="{% url 'edit' route.name %}" class="btn btn-outline-warning btn-sm" id="edit_button_{{route.pk}}">{% trans "Arreglar" %}</a>
+                                            {% endif %}
+                                            {% if route.status == 'OUTOFSYNC' %}
+                                            <a href="{% url 'edit' route.name %}" class="btn btn-outline-warning btn-sm" id="sync_button_{{route.pk}}">{% trans "Sincronizar" %}</a>
                                             {% endif %}
                                             {% if route.status == 'DEACTIVATED' %}
                                         <a href="'edit' route.name" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Reactivar" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>

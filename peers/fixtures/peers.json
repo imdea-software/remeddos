@@ -158,6 +158,16 @@
             "networks":[1,2]
             
         }
+    },
+    {
+        "model":"peers.Peer",
+        "pk":16,
+        "fields":{
+            "peer_name":"RediMadrid",
+            "peer_tag":"REM",
+            "networks":[1,2]
+            
+        }
     }
     
 ]
