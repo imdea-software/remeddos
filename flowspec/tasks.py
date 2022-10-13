@@ -54,6 +54,13 @@ def add(route, callback=None):
             send_message(message,peer,superuser=False)
         if commit:            
             status = "ACTIVE"
+            print('here?')
+            route.status = status
+            route.response = response
+            print('hola')
+            route.save()
+            message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
+            send_message(message,peer,superuser=False)
         else:
             status = "ERROR"
             if b_commit:            
@@ -62,6 +69,7 @@ def add(route, callback=None):
                 status = "ERROR"
             route.status = status
             route.response = b_response
+            print('hola')
             route.save()
             message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
             send_message(message,peer,superuser=False)
@@ -341,7 +349,8 @@ def batch_delete(routes, **kwargs):
     peer = get_peer_with_name(route.name)
     if routes:
         for route in routes:
-            route.status = 'PENDING';route.save()
+            route.status = 'PENDING'
+            route.save()
         applier = PR.Applier(route_objects=routes)
         conf = applier.delete_routes()
         commit, response = applier.apply(configuration=conf)

@@ -52,7 +52,6 @@ def send_message(message, peer=None, superuser=False):
     client = slack.WebClient(token=settings.SLACK_TOKEN)
     client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
   else:
-    print('el peer: ', peer)
     channel = slack_channels[peer]
     client = slack.WebClient(token=settings.REM_SLACK_TOKEN)
     client.chat_postMessage(channel=channel, text=message) 
@@ -835,7 +834,7 @@ def find_peer(peer_name):
     elif peer_name == 'IMDEA_NETWORK' or peer_name == 'IMDEA_NETWORK(2)':
       return Peer.objects.get(peer_name='IMDEA Networks')
     elif peer_name == 'REDIMADRID' or peer_name == 'REDIMADRID(2)':
-      return Peer.objects.get(peer_name='IMDEA')
+      return Peer.objects.get(peer_name='RediMadrid')
     elif peer_name == 'CEU(2)' or peer_name == 'CEU':
       return Peer.objects.get(peer_name='CEU')
     elif peer_name == 'UEM' or peer_name == 'UEM(2)':
@@ -864,7 +863,7 @@ def find_peer(peer_name):
       return Peer.objects.get(peer_tag='UPM')
     elif peer == pn:
       return Peer.objects.get(peer_name=peer) 
-    elif peer in pn or pn in peer:
+    elif peer in pn or pn in peer_name:
       return Peer.objects.get(peer_tag=peer)
     else:
       logger.info(f'The following institution is not connected to REM-E-DDOS {peer_name}')

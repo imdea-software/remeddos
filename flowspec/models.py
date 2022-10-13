@@ -693,16 +693,12 @@ class Route_Punch(Route):
         logger.info('Got add job id: %s' % response)
         if not settings.DISABLE_EMAIL_NOTIFICATION:
             fqdn = Site.objects.get_current().domain
-            admin_url = 'https://%s%s' % (
-                fqdn,
-                reverse('edit-route', kwargs={'route_slug': self.name})
-            )
-            mail_body = render_to_string(
-                'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
+            admin_url = 'https://%s%s' % (fqdn,reverse('edit-route', kwargs={'route_slug': self.name}))
+            mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
             try:
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail,get_peer_techc_mails(self.applier, username))
+                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
             except Exception as e:
                 print('There was an exception when trying to notify the user via e-mail, ',e)
 
