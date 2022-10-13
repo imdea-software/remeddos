@@ -1,0 +1,49 @@
+<div class="col d-flex justify-content-center mt-4 mb-5">
+    <div class="card">
+                <h5 class="card-header text-dark font-monospace">Información</h5>
+                <div class="card-body btn-group">
+                    <small class="card-text"> 
+                        Status: <span class="badge bg-success">ACTIVE</span><br>
+                        Cuando el estado de una regla es 'ACTIVE' significa que ha sido guardada en su base de datos y configurada en el router.</small>
+                        <small class="card-text"> 
+                            Status: <span class="badge bg-dark">DEACTIVATED</span><br>
+                            Cuando el estado de una regla es 'DEACTIVATED' significa que ha la regla ha sido desactivada porque ha expirado.
+                        </small>
+                            <small class="card-text ml-3"> 
+                                Status: <span class="badge bg-warning">OUTOFSYNC</span><br>
+                                Cuando el estado de una regla es 'OUTOFSYNC' significa que ha habido algún tipo de problema y la regla solo ha sido configurada en uno de los routers.
+                            </small>
+                            <small class="card-text ml-3"> 
+                                Status: <span class="badge bg-info">PROPOSED</span><br>
+                                Cuando el estado de una regla es 'PROPOSED' significa que ha sido propuesta por REM-e-DDOS, está guardada en la base de datos y está a la espera de ser aplicada al router.
+                            </small>
+                            <small class="card-text ml-3"> 
+                                Status: <span class="badge bg-dark">INACTIVE</span><br>
+                                Cuando el estado de una regla es 'INACTIVE' significa que ha sido desactivada por el usuario.
+                            </small>
+                            <small class="card-text ml-3"> 
+                                Status: <span class="badge bg-danger">ERROR</span><br>
+                                Cuando el estado de una regla es 'ERROR' significa que ha habido un error a la hora de configurar o eliminar una regla del router, en ese caso 
+                                porfavor contacte con los administradores de la aplicación.
+
+                            </small>
+                  </div>
+                  <h5 class="card-header text-dark font-monospace">Proposición de reglas</h5>
+                  <div class="card-body">
+                    <small class="card-text">Las reglas se crean en base a la información que se recibe desde la aplicación REM-GOLEM.Los valores seleccionados son ip origen, protocolo y puerto con mas tráfico así como los valores propio del protocolo como pueden ser tcpflags, icmptype e icmpcode.</small>
+                  </div>
+                  <h5 class="card-header text-dark font-monospace">Iconografía</h5>
+                  <div class="card-body">
+                  <div class="card-text">
+                    <div class="col d-flex">
+                        <span class="">Editar regla:  <i class="bi-pencil text-danger"></i></span>
+                        <span class="ml-3">Reactivar regla:   <i class="bi-cloud-arrow-up text-danger"></i></span>
+                        <span class="ml-3">Desactivar regla:    <i class="bi-shield-x text-danger"></i></span>
+                        <span class="ml-3">Eliminar regla/evento de la BD:   <i class="bi-trash text-danger"></i></span>
+                        <span class="ml-3">Ver gráfico: <i class="bi-graph-up text-danger"></i></span>
+                        <span class="ml-3">Ver reglas propuestas:  <i class="bi-bookmark-plus text-danger"></i></span>
+            </div>
+            </div>
+        </div>
+</div>
+</div>

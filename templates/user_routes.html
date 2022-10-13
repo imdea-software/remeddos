@@ -89,7 +89,9 @@ select.form-select > option {
 
                             <td><small>{% if route.expires %}{{route.expires}}{% else %}'Esta regla no tiene fecha de caducidad establecida.'{% endif %}</small></td>
 
-                            <td><small>{{route.response}}</small></td>
+                            <td><small>{{route.response}}
+                                {% if route.comments %} <br> Otros comentarios: <br> {{route.comments}} {% endif %}
+                            </small></td>
 
                             <td>
                                     <div class="col-2 btn-group d-inline">
@@ -154,25 +156,13 @@ select.form-select > option {
 
     <div class="row mb-3 pb-3">
         <div class="col">
-            <div class="card float-left">
-                <h6 class="card-header">Iconografía</h6> 
-                <div class="card-body">
-                    <div class="card-text">
-                        <div class="col d-inline">
-                            <span class="">Editar regla:  <i class="bi-pencil text-info"></i></span>
-                            <span class="ml-1">Reactivar regla:   <i class="bi-cloud-arrow-up text-info"></i></span>
-                            <span class="ml-1">Desactivar regla:    <i class="bi-shield-x text-info"></i></span><br>
-                            <span class="">Eliminar regla:   <i class="bi-trash text-info"></i></span>
-                            <span class="ml-1">Ver gráfico: <i class="bi-graph-up text-info"></i></span>
-                </div>
-                </div>
-            </div>
-            </div>
-        </div>
-        <div class="col">
           {% include "shortcuts.html" %}
         </div>
       
+      </div>
+
+      <div class="row">
+        {% include "bitacora.html" %}
       </div>
 </div>
 

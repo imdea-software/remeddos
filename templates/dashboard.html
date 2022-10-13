@@ -10,6 +10,9 @@
 <link rel="stylesheet" href="{% static 'css/section_style.css' %}">
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.12.1/datatables.min.css"/>
 <style>
+	.container{
+		display: grid ;
+	}
 	.page-item.active .page-link {
     background-color: lightgrey !important;
     border: 1px solid lightgrey;
@@ -53,57 +56,19 @@ td:first-child, th:first-child {
 {% block title %}{% trans "Dashboard" %}{% endblock %}
 {% block contentplaceholder %}
 {% csrf_token %}
-				<div class="container">
+<div class="container">
 					<div class="row">
-						<div class="col mb-2">
+						<div class="col">
 							<i class="fa fa-shield ml-2"></i><span class="text-info font-monospace">  REM-e-DDOS</span> <br>
 						  <p>Aplicación diseñada para la mitigación de ataques, aquí podrá configurar reglas de firewall que le ayude a proteger su red. <br> 
 							Está aplicación también recoge información desde REM-Golem para informarle a través de Slack sobre los últimos ataques que haya recibido, proponiendo a su vez
 							distintas reglas que usted podrá personalizar a su gusto. Para más información:</p>
 						</div>
 					  </div>
-					  
-					  <!-- <div class="row cards">
-						<div class="col-md-3 d-flex justify-content-center">
-						  <div class="card" style="width: 18rem;">
-							<div class="card-body">
-								<p class="card-text"> Status: <span class="badge bg-success">ACTIVE</span><br>
-							 Cuando el estado de una regla es 'ACTIVE' significa que ha sido guardada en su base de datos y configurada en el router.</p>
-							</div>
-						  </div>
-						</div>
-				  
-						<div class="col-md-3 d-flex justify-content-center">
-						  <div class="card" style="width: 18rem;">
-							<div class="card-body">
-								<p class="card-text"> Status: <span class="badge bg-info">PROPOSED</span><br>
-									Cuando el estado de una regla es 'PROPOSED' significa que ha sido propuesta por REM-e-DDOS, está guardada en la base de datos y está a la espera de ser aplicada al router.
-							</div>
-						  </div>
-						</div>
-						
-						<div class="col-md-3 d-flex justify-content-center">
-							<div class="card" style="width: 18rem;">
-							  <div class="card-body">
-								  <p class="card-text"> Status: <span class="badge bg-dark">DEACTIVATED</span><br>
-									Cuando el estado de una regla es 'DEACTIVATED' significa que ha la regla ha sido desactivada porque ha expirado o porque un usuario la ha desactivado manualmente. </p>
-							  </div>
-							</div>
-						  </div>
 
-						  <div class="col-md-3 d-flex justify-content-center">
-							<div class="card" style="width: 18rem;">
-							  <div class="card-body">
-								  <p class="card-text"> Status: <span class="badge bg-danger">ERROR</span><br>
-									Cuando el estado de una regla es 'ERROR' significa que ha habido un error a la hora de configurar o eliminar una regla del router, en ese caso 
-									porfavor contacte con los administradores de la aplicación. </p>
-							  </div>
-							</div>
-						  </div>
-						  </div> -->
 						  
 
-					  </div>
+					  
 				  <!-- </section> -->
 				  <!--ENDINFO -->
 				  
@@ -146,19 +111,11 @@ td:first-child, th:first-child {
 
 				  
 				</div>
-					<div class="col-sm-3 float-right">
-						<div class="card-sm float-right">
-									<h5 class="card-header text-info">Info</h5>
-									<div class="card-body btn-group">
-										<small class="card-text"> Status: <span class="badge bg-success">ACTIVE</span><br>
-											Cuando el estado de una regla es 'ACTIVE' significa que ha sido guardada en su base de datos y configurada en el router.</small>
-						  </div>
-				</div>
-				</div>
+					
+				{% include "bitacora.html" %}
 
-
-			</div>				
-		</div>
+</div>		
+		
 		
 
   

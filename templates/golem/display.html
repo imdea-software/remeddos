@@ -2,11 +2,8 @@
 {% load static %}
 {% load i18n %}
 {% block extrahead %}
-<!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css"> -->
-<!-- <link rel="stylesheet" href="{% static 'css/dataTable_style.css' %}"> -->
 <link rel="stylesheet" href="{% static 'css/table_style.css' %}">
 <link rel="stylesheet" href="{% static 'css/section_style.css' %}">
-<!-- <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.12.1/datatables.min.css"/> -->
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.3/datatables.min.css">
 
 {% endblock %}
@@ -133,30 +130,13 @@ td:first-child, th:first-child {
 </div>
 </div>
 {% endif %}
-
-<div class="row mb-3 pb-3 mt-3">
-  <div class="col">
-      <div class="card float-left">
-          <h6 class="card-header">Iconografía</h6> 
-          <div class="card-body">
-              <div class="card-text">
-                  <div class="col d-inline">
-                      <span>Ver reglas propuestas:  <i class="bi-bookmark-plus text-info"></i></span> <br>
-                      <span>Eliminar eventos recibidos de REM-GOLEM:   <i class="bi-trash text-info"></i></span>
-          </div>
-          </div>
-      </div>
-      </div>
-  </div>
-  <div class="col">
+  <div class="row">
     {% include "shortcuts.html" %}
   </div>
-
+  <div class="row">
+{% include "bitacora.html" %}
 </div>
-
-
 </div>
-
 <!-- Commit to router Modal -->
 <div class="modal fade" id="deleteModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" role="dialog" aria-labelledby="deleteconfirmModalLabel" aria-hidden="true">
     <div class="modal-dialog">
