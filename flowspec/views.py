@@ -596,7 +596,6 @@ def edit_route(request, route_slug):
 @login_required
 @never_cache
 def verify_delete_user(request, route_slug):
-    print('hello')
     if not 'token' in request.COOKIES != None:
         if request.method =='GET':
             num = get_code()
@@ -938,16 +937,13 @@ def ajax_networks(request):
     applier_peer_networks = []
     networks = []
     user_peers = request.user.profile.peers.all()
-    print('am i at least being called?', user_peers)
     for peer in user_peers:
         applier_peer_networks.extend(peer.networks.all())
     
     for net in applier_peer_networks:
-        print(net)
         networks.append(net.network)
 
     data = {'networks': networks}
-    print(f"This is networks: ", data)
     if request.method == 'GET':      
         return JsonResponse(data,status=200)
     if request.method == 'POST':      
@@ -996,7 +992,6 @@ def sync_router(request):
         for child in children:
             if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
                 name_fw = child.text
-                print(f"el name {name_fw} el child tezt {child.text}")
                 peer = get_peer_with_name(name_fw)
                 if peers.filter(peer_name__icontains = peer):
                     #name_peer = child.text
@@ -1022,7 +1017,6 @@ def sync_router(request):
                     #route = get_route(username)
                 peer = get_peer_with_name(name_fw)
                 route = get_route(applier=None,peer=peer)
-                print('peer: ',peer)
                 route.name = name_fw
                 route.applier = None
                 route.source = source
@@ -1134,10 +1128,8 @@ def restore_backup(request):
         if request.method=='GET':
             CHOICES_FILES = []
             for peer in peers:
-                print(peer)
                 if peer.peer_tag != 'Punch':
                     for f in os.listdir(backup_dir+'/'+peer.peer_tag+'/'):
-                        print(f)
                         CHOICES_FILES.append(f)
                 else:
                     pass
