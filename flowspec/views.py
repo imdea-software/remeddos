@@ -156,7 +156,6 @@ def dashboard(request):
 @login_required
 @never_cache
 def group_routes(request):
-    print('hi')
     user = request.user
     if user.is_superuser:
         try:
