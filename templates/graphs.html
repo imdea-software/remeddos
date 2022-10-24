@@ -11,7 +11,8 @@
 <link rel="stylesheet" href="{% static 'css/section_style.css' %}">
 
 {% endblock %}
-{% block pagejs%}
+{% block pagejs %}
+<script src="{%  static 'js/functions.js' %}"></script>
     <script src="https://www.gstatic.com/charts/loader.js"></script> 
     <script src="{%  static 'datepicker/plugins/js/popper.js' %}"></script>
     <script src="{%  static 'datepicker/plugins/js/moment-with-locales.min.js' %}"></script>
@@ -41,40 +42,7 @@ $('#addRuleButton').click(function(){
             });
      });
 
-function sameOrigin(url) {
-    // test that a given url is a same-origin URL
-    // url could be relative or scheme relative or absolute
-    var host = document.location.host; // host + port
-    var protocol = document.location.protocol;
-    var sr_origin = '//' + host;
-    var origin = protocol + sr_origin;
-    // Allow absolute or scheme relative URLs to same origin
-    return (url == origin || url.slice(0, origin.length + 1) == origin + '/') ||
-        (url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
-        // or any other URL that isn't scheme relative or absolute i.e relative.
-        !(/^(\/\/|http:|https:).*/.test(url));
-};
 
-// usando jQuery
-function getCookie(name) {
-    var cookieValue = null;
-    if (document.cookie && document.cookie != '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = jQuery.trim(cookies[i]);
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-};
-  function csrfSafeMethod(method) {
-        // estos métodos no requieren CSRF
-        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-    };
 
 $("#dateForm").on('submit', function(event){
   var url = "{% url 'ajax-graphs' %}";

@@ -71,7 +71,10 @@ td:first-child, th:first-child {
         <tbody>
                {% for attack in attacks %}
             <tr>
-              <td><small>{{attack.received_at|date:"d M Y" }}</small></td>
+              <td><small>
+                {{attack.received_at|date:"d/m/Y" }}
+                {{attack.received_at|date:"H:i" }}
+              </small></td>
                 <td><small>
                     <a href="{% url 'golem-routes' attack.id_name %}" class="fw-bold text-danger" style="text-decoration:None;">{{attack.id_name}}</a>
                 </small></td>
@@ -130,7 +133,7 @@ td:first-child, th:first-child {
 </div>
 </div>
 {% endif %}
-  <div class="row">
+  <div class="row m-3">
     {% include "shortcuts.html" %}
   </div>
   <div class="row">

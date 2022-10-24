@@ -69,13 +69,8 @@
                     {% endif %}
                     <a href="{% url 'attack-list'  %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-table nav_icon text-danger' data-bs-toggle="tooltip" data-bs-placement="top" title="REM-GOLEM"></i> <span class="nav_name">REM - Golem</span></a>
                     {% if user.is_superuser %}
-                    <a href="#submenu1" class="nav_link text-white text-decoration-none font-weight-light" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="subMenu1"> <i class='bi-cloud nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Storage"></i> <span class="nav_name">Almacenamiento</span> </a>
-                        <div class="collapse" id="submenu1">
-                            <a href="#" class="nav_link text-white text-decoration-none font-weight-light text-wrap" data-bs-toggle="modal" data-bs-target="#confbModal" ><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Crear un back-up"></i><span class="nav_name text-wrap">Crear back-up</span></a>
-                            <a href="#" class="nav_link text-white text-decoration-none font-weight-light"data-bs-toggle="modal" data-bs-target="#confresfileModal"><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Restaurar a partir de un back-up"></i><span class="nav_name">Restaurar a partir de un back-up</span></a>
-                            <a href="#" class="nav_link text-white text-decoration-none font-weight-light" data-bs-toggle="modal" data-bs-target="#confresdbModal"><i class="bi-arrow-repeat" data-bs-toggle="tooltip" data-bs-placement="top" title="Sincronizar reglas con la BD"></i><span class="nav_name text-wrap">Sincronizar reglas con la BBDD</span></a>
-                            <a href="#" class="nav_link text-white text-decoration-none font-weight-light" data-bs-toggle="modal" data-bs-target="#confsrModal"><i class="bi-router" data-bs-toggle="tooltip" data-bs-placement="top" title="Sincronizar reglas con el router"></i><span class="nav_name text-wrap">Sincronizar reglas con el router</span></a>
-                          </div> 
+                        <a href="{% url 'storage-dashboard' %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-cloud nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Storage"></i> <span class="nav_name">Almacenamiento</span> </a>
+                    
                     {% endif %}
                     {% if user.is_superuser%} 
                     <a href="{% url 'admin:index'  %}" class="nav_link text-white text-decoration-none font-weight-light" target="_blank"> <i class='bi-gear nav_icon ' data-bs-toggle="tooltip" data-bs-placement="top" title="Admin Panel"></i> <span class="nav_name">Admin</span></a> 
@@ -112,6 +107,12 @@
 
 </div> 
 </body>
+
+
+
+
+
+
 
   
    <!-- ADD ROUTE - Modal -->

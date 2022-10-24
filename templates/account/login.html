@@ -7,58 +7,65 @@
 {% block title %}{% trans "Sign In" %}{% endblock %}
 
 {% block contentplaceholder %}
-<div class="container-fluid p-5">
-  
-<div class="row">
-  <div class="col"></div>
 
+    <div class="row mb-5">
+      <div class="col">
+        <i class="fa fa-shield ml-2"></i><span class="font-monospace">  REM-e-DDOS</span> <br>
+        <p class="font-monospace "> <small> Aplicación diseñada para la mitigación de ataques, aquí podrá configurar reglas de firewall que le ayude a proteger su red. <br> 
+        Está aplicación también recoge información desde REM-Golem para informarle a través de Slack sobre los últimos ataques que haya recibido, proponiendo a su vez
+        distintas reglas que usted podrá personalizar a su gusto. </small> </p>
+      </div>
+      </div>
+
+<div class="row">
+
+  <div class="col">     
+</div>
+  
+  
+  <div class="col col-md-6 mt-5 " style="max-width: 25rem;">
+    <div class="card text-center align-self-center">
+      <div class="card-header">
+        Login REM-e-DDoS
+      </div>
+      <div class="card-body">
+        <form action="" method="post">
+          {% csrf_token %}
+        {{ form.as_p }}
+      </div>
+      <div class="card-footer text-muted">
+        <button class="btn btn-outline-danger" type="submit">Log In</button>
+      </form>
+      </div>
+  </div>
+</div>
 
   <div class="col">
-    <h4 class="fw-light">REM-E-DDoS</h4>
-      <form method="POST" action="{% url 'account_login' %}">
-        {% csrf_token %}
-        <div class="row g-3">
-        <div class="col">
-          <label for="id_name" class="form-label"><b>{% trans "Nombre de usuario" %}</b></label>
-          {% render_field form.login class+="form-control" placeholder="Introduce tu nombre de usuario" %}
-          {% if form.login.errors %} <span class="help-block"> {{ form.login.errors|join:", " }} </span>
-						{% endif %}
-        </div>
-      </div>
-        <div class="row">
-        <div class="col">
-          <label for="id_password" class="form-label"><b>{% trans "Contraseña" %}</b></label>
-          {% render_field form.password class+="form-control" placeholder="Introduce tu contraseña" %}
-          {% if form.password.errors %} <span class="help-block"> {{ form.password.errors|join:", " }} </span>
-						{% endif %}
-        </div>
-        </div>    
-            {% if redirect_field_value %}
-        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
-        {% endif %}
-        <div class="row">
-        <div class="col">
-        <a class="secondaryAction" href="{% url 'account_reset_password' %}">{% trans "¿Olvisdaste tu contraseña?" %}</a>
-        </div>
-      </div>
-      <div class="col">
-      <button type="submit" class="primaryAction btn btn-outline-info">{% trans "Acceder" %}</button>
-    </div>
-  </form>
-  <figure class="figure col">
-    <img src="{% static 'logos/rem_logo_horizontal_compacto_derecha_pos.png' %}" alt="RediMadrid logo" class="figure-img img-fluid w-75">
-  </figure>
-  <figure class="figure col">
-    <img src="{% static 'logos/imdea_white_background.png' %}" class="figure-img img-fluid w-50 h-50" alt="IMDEA Software Madrid Logo">
-    <figcaption class="figure-caption text-center">RediMadrid - IMDEA Software Institute</figcaption>
-  </figure> 
-
+  </div>
 </div>
+
+<div class="row mt-5">
 
   <div class="col"></div>
+
+  <div class="col">
+    <figure class="figure col">
+      <img src="{% static 'logos/rem_logo_horizontal_compacto_derecha_pos.png' %}" alt="RediMadrid logo" class="figure-img img-fluid w-75">  
+    </figure>
+
+    <figure class="figure col">
+      <img src="{% static 'logos/imdea_white_background.png' %}" class="figure-img img-fluid w-50 h-50" alt="IMDEA Software Madrid Logo">
+      <figcaption class="figure-caption text-center">RediMadrid - IMDEA Software Institute</figcaption>
+    </figure>
+  </div>
+
+  <div class="col"></div>
+
 </div>
 
 
-</div>
+
+
+
 
 {% endblock %}

@@ -21,95 +21,12 @@
 </li>
 {% endblock %}
 {% block extrahead %}
-	<!-- <link href="{% static 'css/plugins/morris/morris-0.4.3.min.css' %}" rel="stylesheet">
-    <link href="{% static 'css/plugins/timeline/timeline.css' %}" rel="stylesheet"> -->
 	<link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
 	<link rel="stylesheet" href="{% static 'datepicker/plugins/css/style.css' %}">
 	<link rel="stylesheet" href="{% static 'datepicker/plugins/css/bootstrap-datetimepicker.min.css' %}">
 {% endblock %}
 
-{% block pagejsbottom %}
-    <script src="{%  static 'datepicker/plugins/js/popper.js' %}"></script>
-    <script src="{%  static 'datepicker/plugins/js/moment-with-locales.min.js' %}"></script>
-    <script src="{%  static 'datepicker/plugins/js/bootstrap-datetimepicker.min.js' %}"></script>
-    <script src="{%  static 'datepicker/plugins/js/bootstrap.min.js' %}"></script>
-    <script src="{% static 'datepicker/plugins/js/bootstrap-datetimepicker.min.js'%}"></script>
-    <script src="{% static 'datepicker/plugins/js/main.js' %}"></script>
-<script>
-	$(document).ready( function(){
-		$('#id_sourceport').removeAttr('required');
-		$('#id_destinationport').removeAttr('required');
-		$('#id_then').removeAttr("multiple");
-		$('#setFromAll').click(function(){
-			$("#id_source").val('0.0.0.0/0');
-		});
-		{% comment %}
-		$('#then_diag').dialog({
-			height: 220,
-            width: 340,
-			modal: true,
-			autoOpen: false,
-			buttons: {
-		'{% trans "Add" %}': function() {
-			$.ajax({
-			url:"{% url 'add-rate-limit' %}",
-			data:$("#add_rl_form").serialize(),
-			type: "POST",
-			cache: false,
-			success:function(data){
-					try {
-						value = data.pk;
-						text = data.value;
-						$('#id_then').append($("<option></option>").attr("value",value).text(text));
-						$('#then_diag').dialog('close');
-					}
-					catch (exception) {
-						$('#then_diag').html(data);
-					}
-				}
-				});
-		},
-		'{% trans "Cancel" %}': function() {
-			$('#then_diag').dialog('close');
-		}
-	}
-		});
-		{% endcomment %}
-
-		{% comment %}
-		$("#new_then_actions").button({
-            icons: {
-                primary: "ui-icon-plusthick"
-            },
-			})
-			.click(function(){
-				$.ajax({
-					url: "{% url 'add-rate-limit' %}",
-					cache: false,
-					success: function(data){
-						$("#then_diag").html(data);
-					}
-				});
-				$('#then_diag').dialog('open');
-				return false;
-			});
-
-			{% endcomment %}
-
-			function reArrangeSelect(elementId) {
- 			   $("#"+elementId).html($("#"+elementId+" option").sort(function(a, b) {
-        			return parseInt(a.text) == parseInt(b.text) ? 0 : parseInt(a.text) < parseInt(b.text) ? -1 : 1
-    			}));
-			}
-	}); 
-function avoidMultipleSubmitting(){
-	document.getElementById('applybutton').disabled=true; 
-	document.getElementById('applybutton').innerHTML='Submitting, please wait...';
-}
-
-</script>
-{% endblock %}
 {% block contentplaceholder %}
 <div class="container p-5">
             <div class="row">
@@ -179,10 +96,6 @@ function avoidMultipleSubmitting(){
                         </div>
                 </div>
                 {% endif %}
-					
-					<!-- <div class="row p-1 mt-2">
-						
-					</div> -->
 
                     <div class="row p-1 mt-3">
 						
@@ -198,20 +111,37 @@ function avoidMultipleSubmitting(){
 						<p class="font-italic">Para aplicar una regla con un origen '0.0.0.0/0' dejar el campo vacio o introducir '0.0.0.0'</p> 
 					</div>
                     
-                    <div class="row p-1 mt-2">
+                    <!-- <div class="row p-1 mt-2">
 					<div class="form-text {% if form.destination.errors %} has-error {% endif %}"></div>
 					<label for="id_destination" class="col form-label"><b>{% trans "Dirección de destinado (*):" %}</b></label>
-					<div class="col col-6">
-						{% render_field form.destination class+="form-control" placeholder=form.destination.help_text %}
+					<div class="col col-6">						
+						<select name="id_destination" id="id_destination" class="form-control">
+							<option selected>Selecciona una dirección de destino</option>
+						</select>
 						{% if form.destination.errors %} <span class="help-block"> {{ form.destination.errors|join:", " }} </span>
 						{% endif %}
 					</div>
 					<div class="col col-3">
 						<img src="{% static 'secure_destination.png' %}" style="height: 30px;"/>
 					</div>
-					</div>
+					</div> -->
 					
-                    
+					<!--  -->
+					<div class="row p-1 mt-2">
+						<div class="form-text {% if form.destination.errors %} has-error {% endif %}"></div>
+						<label for="id_destination" class="col form-label"><b>{% trans "Dirección de destinado (*):" %}</b></label>
+						<div class="col col-6">
+							{% render_field form.destination class+="form-control" placeholder=form.destination.help_text %}
+							{% if form.destination.errors %} <span class="help-block"> {{ form.destination.errors|join:", " }} </span>
+							{% endif %}
+						</div>
+						<div class="col col-3">
+							<img src="{% static 'secure_destination.png' %}" style="height: 30px;"/>
+						</div>
+						</div>
+
+			
+
                     <div class="row p-1 mt-2">
 					<div class="form-text {% if form.protocol.errors %} has-error {% endif %}">
 					<label for="id_protocol" class="col col-2 form-label"><b>{% trans "Protocolo(s)" %}</b></label>
@@ -294,9 +224,19 @@ function avoidMultipleSubmitting(){
 		        </div>
                 </div>
 
+
+				<div class="row p-1">
+                    <label for="id_port" class="col col-2 form-label"><b>{% trans "Puerto(s): " %}</b></label>
+		        <div class="col col-4">
+		            {% render_field form.port class+="form-control"  %}
+		            {% if form.port.errors %} <span class="help-block"> {{ form.port.errors|join:", " }} </span>
+		            {% endif %}
+		        </div>
+                </div>
+
 		        <!--  END OF PORTS -->
 				
-                <div class="row">
+                <div class="row pt-3">
                	<div class="form-text {% if form.then.errors %} has-error {% endif %}"></div>
         		<label for="id_then" class="col col-2 form-label"><b>{% trans "Acción: " %}</b></label>
 		        <div class="col col-8">
@@ -309,20 +249,25 @@ function avoidMultipleSubmitting(){
 				
 
 				
-                <div class="row">
+                <!-- <div class="row p-1">
+					<div class="form-text">
+						<label class="form-check-label" for="noexpires">
+							Indica si no quieres que caduque la siguiente regla: 
+						<input class="form-check-input ml-4" type="checkbox" value="" id="noexpires" onclick="disableDate();">
+					</label>	  
+					</div> -->
+			<div class="row">		
                 <div class="form-text {% if form.expires.errors %} has-error {% endif %}"></div>
-				<div class="form-group">
-                  <label for="id_expires" class="col col-2 form-label"><b>{% trans "Caduca (*): " %}</b></label>
-		        <div class="col col-8 date" id="id_expire">
-		            {% render_field form.expires class+="form-control js-timepicker"  placeholder="Fecha" %}
-		            {% if form.expires.errors %} <span class="help-block"> {{ form.expires.errors|join:", " }} </span>
-		            {% endif %}
+					<div class="form-group">
+					<label for="id_expires" class="col col-2 form-label"><b>{% trans "Caduca (*): " %}</b></label>
+					<div class="col col-8 date" id="id_expire">
+						{% render_field form.expires class+="form-control js-timepicker"  placeholder="Fecha" %}
+						{% if form.expires.errors %} <span class="help-block"> {{ form.expires.errors|join:", " }} </span>
+						{% endif %}
 		        </div>
 				</div>
 		        </div>
-				<div class="form-text">
-					<p class="font-italic">Si no quieres que una regla caduque dejar el campo vacío, la duración debe ser mínimo de 1 día. </p>
-				</div>
+				
 
 
 			
@@ -351,4 +296,102 @@ function avoidMultipleSubmitting(){
 
 </div>
 
+{% endblock %}
+
+
+
+
+
+{% block pagejsbottom %}
+    <script src="{%  static 'datepicker/plugins/js/popper.js' %}"></script>
+    <script src="{%  static 'datepicker/plugins/js/moment-with-locales.min.js' %}"></script>
+    <script src="{%  static 'datepicker/plugins/js/bootstrap-datetimepicker.min.js' %}"></script>
+    <script src="{%  static 'datepicker/plugins/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'datepicker/plugins/js/bootstrap-datetimepicker.min.js'%}"></script>
+    <script src="{% static 'datepicker/plugins/js/main.js' %}"></script>
+<script>
+	function sameOrigin(url) {
+    // test that a given url is a same-origin URL
+    // url could be relative or scheme relative or absolute
+    var host = document.location.host; // host + port
+    var protocol = document.location.protocol;
+    var sr_origin = '//' + host;
+    var origin = protocol + sr_origin;
+    // Allow absolute or scheme relative URLs to same origin
+    return (url == origin || url.slice(0, origin.length + 1) == origin + '/') ||
+        (url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
+        // or any other URL that isn't scheme relative or absolute i.e relative.
+        !(/^(\/\/|http:|https:).*/.test(url));
+};
+
+// usando jQuery
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie != '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+};
+	function csrfSafeMethod(method) {
+        // estos métodos no requieren CSRF
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    };
+
+
+	$(document).ready( function(){
+		$('#id_sourceport').removeAttr('required');
+		$('#id_destinationport').removeAttr('required');
+		$('#id_then').removeAttr("multiple");
+		const selectElement = document.getElementById('id_destination');
+		var url = "{% url 'ajax-networks' %}"
+		var csrftoken = getCookie('csrftoken');
+		$.ajaxSetup({
+		beforeSend: function(xhr, settings) {
+			if (!csrfSafeMethod(settings.type) && sameOrigin(settings.url)) {
+			xhr.setRequestHeader("X-CSRFToken", csrftoken);
+		}
+		}
+		});
+		$.ajax({
+		url : url,
+		type : "GET",
+		dataType:"json",
+		success: function(response){         
+			var data = response['networks'];
+			console.log('success: '+data.length);
+			for(var i = 0; i < data.length; i++){
+				var opt = document.createElement('option');
+				opt.value=data[i];
+				opt.innerHTML=data[i];
+				selectElement.appendChild(opt);
+			}
+			
+			},
+        error: function(){
+          console.log('error');
+            }
+          });
+
+		
+	});  
+function avoidMultipleSubmitting(){
+	document.getElementById('applybutton').disabled=true; 
+	document.getElementById('applybutton').innerHTML='Porfavor espere...';
+}
+function disableDate(){
+	input = document.getElementById('id_expires')
+	if (input.disabled=true){
+		input.disable=false;
+	}
+	document.getElementById('id_expires').value=null;
+}
+</script>
 {% endblock %}

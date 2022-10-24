@@ -48,6 +48,8 @@
                      <td><span class="badge bg-success">{{route.status}}</span></td>
                      {% elif route.status == 'PENDING' %}
                      <td><span class="badge bg-dark">{{route.status}}</span></td>
+                     {% elif route.status == 'PROPOSED' %}
+                     <td><span class="badge bg-info">{{route.status}}</span></td>
                      {% elif route.status == 'OUTOFSYNC' %}
                      <td><span class="badge bg-dark">{{route.status}}</span></td>
                      {% endif %}

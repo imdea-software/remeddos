@@ -26,9 +26,14 @@
         <h4 class="align-middle"> Almacenamiento </h4> 
     </div>
     </div>
+    {% if message %}
     <div class="row">
     <div class="col">
-        <p>{{message}}</p>
+        <div class="alert alert-primary" role="alert">
+           {{message}}
+          </div>
     </div>
+</div>
+{% endif %}
 </div>
 {% endblock %}

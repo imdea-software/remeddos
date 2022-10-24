@@ -9,16 +9,7 @@
     <link href="{% static 'b3theme/css/plugins/timeline/timeline.css' %}" rel="stylesheet"> -->
     <link rel="stylesheet" href="{% static 'css/table_style.css' %}">
     <link rel="stylesheet" href="{% static 'css/section_style.css' %}">
-    <style type="text/css">
 
-
-	.dl-horizontal dt {
-    width: 70px;
-}
-.dl-horizontal dd {
-    margin-left: 90px;
-}
-</style>
 {% endblock %}
 
 
@@ -34,7 +25,7 @@
         <form action="{% url 'restore' %}" class="row g-3 align-items-center" method='POST'>
         {% csrf_token %}
         {% load unescape %}
-        <table class="table table-hover table-responsive compact w-100">
+        <table class="table compact w-100">
             <thead><tr>
                 <th>Copia de seguridad</th>
 

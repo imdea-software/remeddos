@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Storage" %}{% endblock %}
+{% block contentplaceholder %}
+{% csrf_token %}
+<div class="container">
+					<div class="row">
+						<div class="col">
+							<i class="fa fa-shield ml-2"></i><span class="text-info font-monospace ml-2">Storage Options</span>
+						</div>
+					  </div>
+				  <div class="row p-2 mt-3">
+				  <div class="col">
+                    <div class="btn-group" role="group">
+                        <a href="#" class="nav_link text-decoration-none font-weight-light text-primary" data-bs-toggle="modal" data-bs-target="#confbModal" ><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Crear un back-up"></i><span class="nav_name text-wrap ml-2">Crear back-up</span></a>
+                        <a href="#" class="nav_link text-decoration-none font-weight-light text-primary" data-bs-toggle="modal" data-bs-target="#confresfileModal"><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Restaurar a partir de un back-up"></i><span class="nav_name text-wrap ml-2">Restaurar a partir de un back-up</span></a>
+                        <a href="#" class="nav_link text-decoration-none font-weight-light text-primary" data-bs-toggle="modal" data-bs-target="#confresdbModal"><i class="bi-arrow-repeat" data-bs-toggle="tooltip" data-bs-placement="top" title="Sincronizar la BBDD con el router"></i><span class="nav_name text-wrap">Sincronizar BBDD con el router</span></a>
+                        <a href="#" class="nav_link text-decoration-none font-weight-light text-primary" data-bs-toggle="modal" data-bs-target="#confsrModal"><i class="bi-router" data-bs-toggle="tooltip" data-bs-placement="top" title="Sincronizar router con la BBDD"></i><span class="nav_name text-wrap">Sincronizar router con la BBDD</span></a>
+                      </div>
+					<!-- 
+                        <div class="collapse" id="submenu1">
+                            
+                            
+                          </div>  -->
+				  </div>
+				
+				
+
+				  
+				</div>
+                <div class="row">
+                {% include "shortcuts.html" %}
+            </div>
+            <div class="row">
+				{% include "bitacora.html" %}
+            </div>
+</div>		
+		
+		
+
+  
+{% endblock %}
