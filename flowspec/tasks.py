@@ -54,10 +54,8 @@ def add(route, callback=None):
             send_message(message,peer,superuser=False)
         if commit:            
             status = "ACTIVE"
-            print('here?')
             route.status = status
             route.response = response
-            print('hola')
             route.save()
             message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
             send_message(message,peer,superuser=False)
@@ -69,7 +67,6 @@ def add(route, callback=None):
                 status = "ERROR"
             route.status = status
             route.response = b_response
-            print('hola')
             route.save()
             message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
             send_message(message,peer,superuser=False)
@@ -628,7 +625,7 @@ def daily_backup():
                 call_command('dumpdata', f'flowspec.Route_{peer.peer_tag}', format='json',output=f'_backup/{peer.peer_tag}/{peer.peer_tag}_{current_date}-{current_time}.json')
             else:
                 pass
-        call_command('dumpdata', format='json',output=f'_backup/REM_REMEDIOS/backup_{current_date}-{current_time}.json')
+        """ call_command('dumpdata', format='json',output=f'_backup/REM_REMEDIOS/backup_{current_date}-{current_time}.json') """
         logger.info(f'Copia de seguridad de toda la BBDD creada con éxito.')
     except Exception as e:
         send_message(f"Testing backup error: {e}", peer=None, superuser=True)

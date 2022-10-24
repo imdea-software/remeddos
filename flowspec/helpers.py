@@ -202,9 +202,9 @@ def translate_tcpflags(tf):
   return tcpflags
 
 def golem_translate_tcpflag(tf):
-  tcpdict = {'-----F':'1', '----S-':'2', '----SF':'3', '---R--':'4', '---R-F':'5', '---RS-':'6', '---RSF':'7', '--P---':'8', '--P--F':'9', '--P-S-':'10', '--P-SF':'11', '--PR--':'12', '--PR-F':'13', '--PRS-':'14', '--PRSF':'15',
-  '-A----':'16', '-A---F':'17', '-A--S-':'18', '-A--SF':'19', '-A-R--':'20', '-A-R-F':'21', '-A-RS-':'22', '-A-RSF':'23', '-AP---':'24', '-AP--F':'25', '-AP-S-':'26', '-AP-SF':'27', '-APR--':'28', '-APR-F':'29', '-APRS-':'30',
-  '-APRSF':'31'}
+  tcpdict = {'-----F':'fin', '----S-':'syn', '----SF':'syn fin', '---R--':'rst', '---R-F':'rst fin', '---RS-':'rst syn', '---RSF':'rst syn fin', '--P---':'push', '--P--F':'push fin', '--P-S-':'push syn', '--P-SF':'push syn fin', '--PR--':'push rst', '--PR-F':'push rst fin', '--PRS-':'push rst syn', '--PRSF':'push rst syn fin',
+  '-A----':'ack', '-A---F':'ack fin', '-A--S-':'ack syn', '-A--SF':'19', 'ack syn fin':'ack rst', '-A-R-F':'ack rst fin', '-A-RS-':'ack rst syn', '-A-RSF':'ack rst syn fin', '-AP---':'ack push', '-AP--F':'ack push fin', '-AP-S-':'ack push syn', '-AP-SF':'ack push syn fin', '-APR--':'ack push rst', '-APR-F':'ack push rst fin', '-APRS-':'ack push rst syn',
+  '-APRSF':'ack push rst syn fin'}
   tcpflags = tcpdict.get(tf,"Invalid Argument")
   return tcpflags
 
@@ -863,8 +863,6 @@ def find_peer(peer_name):
       return Peer.objects.get(peer_tag='UPM')
     elif peer == pn:
       return Peer.objects.get(peer_name=peer) 
-    elif peer in pn or pn in peer_name:
-      return Peer.objects.get(peer_tag=peer)
     else:
       logger.info(f'The following institution is not connected to REM-E-DDOS {peer_name}')
       return False 

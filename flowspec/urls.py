@@ -29,10 +29,12 @@ urlpatterns = [
     re_path(r'^routestats/(?P<route_slug>[\w-]+)/$', views.routestats, name="routestats"),
     re_path(r'^setup/', views.setup, name='setup'),
     path('ajax_graphs/',views.ajax_graphs, name='ajax-graphs'),
+    path('get_net/',views.ajax_networks, name='ajax-networks'),
     path('createdbackup/',views.create_db_backup, name='db-backup'),
     path('restoredb/',views.restore_complete_db, name='db-restore'),
     path('route_update/<slug:route_slug>',views.routes_update,name='route-updates'),
     path('check_sync/<slug:route_slug>',views.check_sync,name='check-sync'),
     path('delete_route/<slug:route_slug>',views.exterminate_route, name="exterminate"),
+    path('storage_dashboard/',views.storage_dashboard,name='storage-dashboard'),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

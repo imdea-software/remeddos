@@ -1,4 +1,5 @@
 import json
+from sqlite3 import IntegrityError
 from tkinter import N
 from django import forms
 from django.contrib.auth.decorators import login_required
@@ -108,14 +109,11 @@ def check_sync(request,route_slug):
 @login_required
 @never_cache
 def dashboard(request):
-    print('inside method')
     user = request.user
-    print('user: ',user)
     all_group_routes = []
     message = ''
     try:
         peers = request.user.profile.peers.prefetch_related('user_profile')
-        print('inside method 3 pper:s', peers)
         #route_name = Route.objects.filter(applier=request.user).values_list('name',flat=True)
     except UserProfile.DoesNotExist:
         error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
@@ -124,7 +122,6 @@ def dashboard(request):
     if peers:
         if request.user.is_superuser:
             all_group_routes = find_all_routes()
-            print('inside method 4')
             if all_group_routes != None:
                 all_routes = []
                 for groute in all_group_routes:
@@ -159,6 +156,7 @@ def dashboard(request):
 @login_required
 @never_cache
 def group_routes(request):
+    print('hi')
     user = request.user
     if user.is_superuser:
         try:
@@ -166,7 +164,7 @@ def group_routes(request):
             fw_routes = []
             for x in routes:
                 for route in x:
-                    if not route.applier == None:
+                    if not route.is_proposed:
                         fw_routes.append(route)
         except UserProfile.DoesNotExist:
             error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
@@ -178,7 +176,7 @@ def group_routes(request):
             routes = find_routes(user.username)
             fw_routes = []
             for route in routes:
-                if not route.applier == None:
+                if not route.is_proposed:
                     fw_routes.append(route)
                 else:
                     pass
@@ -346,7 +344,7 @@ def verify_add_user(request):
             if not 'token' in request.COOKIES:
                 num = get_code()
                 user = request.user
-                peer = get_peers(request.user.username)   
+                peer = user.profile.get_peer_tag()   
                 code = Validation(value=num,user=request.user)
                 code.save()
                 msg = "El usuario {user} ha solicitado un codigo de seguridad para añadir una nueva regla. Código: '{code}'.".format(user=user,code=num)
@@ -435,7 +433,6 @@ def add_route(request):
             except:
                 pass
         form = find_post_form(user, request_data)
-       # form = RouteForm(request_data)
         if form.is_valid():
             route = form.save(commit=False)
             if not request.user.is_superuser:
@@ -600,6 +597,7 @@ def edit_route(request, route_slug):
 @login_required
 @never_cache
 def verify_delete_user(request, route_slug):
+    print('hello')
     if not 'token' in request.COOKIES != None:
         if request.method =='GET':
             num = get_code()
@@ -933,7 +931,28 @@ def display_graphs(request,route_slug):
     route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
     return render(request,'graphs.html',{'route':route})
     
+@verified_email_required
+@login_required
+@never_cache
+def ajax_networks(request):
     
+    applier_peer_networks = []
+    networks = []
+    user_peers = request.user.profile.peers.all()
+    print('am i at least being called?', user_peers)
+    for peer in user_peers:
+        applier_peer_networks.extend(peer.networks.all())
+    
+    for net in applier_peer_networks:
+        print(net)
+        networks.append(net.network)
+
+    data = {'networks': networks}
+    print(f"This is networks: ", data)
+    if request.method == 'GET':      
+        return JsonResponse(data,status=200)
+    if request.method == 'POST':      
+        return JsonResponse(data,status=200)
 
 """ PENDING ROUTES """
 @verified_email_required
@@ -948,13 +967,19 @@ def pending_routes(request):
         return render(request,'error.html',{'error': error})
     all_routes = []
     for r in routes:
-        if r.applier == None:
+        if r.is_proposed:
             all_routes.append(r)    
     return render(request,'pending_routes.html',{'routes':all_routes})
 
 
 
+"""  STORAGE OPTIONS """
 
+def storage_dashboard(request):
+    if request.user.is_superuser:
+        return render(request,'storage/dashboard.html')
+    else: 
+        return HttpResponseRedirect(reverse("dashboard"))
 
 #synchronize routes from the router to the database 
 def sync_router(request):
@@ -964,6 +989,7 @@ def sync_router(request):
     applier = User.objects.get(pk=request.user.pk)
     routes = get_routes_router()
     fw_rules = []
+    name_fw=''
     message = ''
     # for getting the route parameters is needed to run through the xml 
     for children in routes:
@@ -971,6 +997,7 @@ def sync_router(request):
         for child in children:
             if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
                 name_fw = child.text
+                print(f"el name {name_fw} el child tezt {child.text}")
                 peer = get_peer_with_name(name_fw)
                 if peers.filter(peer_name__icontains = peer):
                     #name_peer = child.text
@@ -992,39 +1019,50 @@ def sync_router(request):
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type': icmptype = c.text 
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length' and c.text != '': packetlength = c.text
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source': source = c.text
-                try:
+                
                     #route = get_route(username)
-                    route = get_specific_route(applier=None, peer=None, route_slug = name_fw)
-                    route.name = name_fw
-                    route.applier = applier
-                    route.source = source
-                    route.sourceport = src_port
-                    route.destination = destination
-                    route.destinationport = dest_port
-                    route.icmpcode = icmpcode
-                    route.icmptype = icmptype
-                    route.packetlength = packetlength
-                    route.tcpflag = tcpflags
-                    route.status = 'ACTIVE'
+                peer = get_peer_with_name(name_fw)
+                route = get_route(applier=None,peer=peer)
+                print('peer: ',peer)
+                route.name = name_fw
+                route.applier = None
+                route.source = source
+                route.sourceport = src_port
+                route.destination = destination
+                route.destinationport = dest_port
+                route.icmpcode = icmpcode
+                route.icmptype = icmptype
+                route.packetlength = packetlength
+                route.tcpflag = tcpflags
+                route.status = 'ACTIVE'
+                try:
                     route.save()
+
+                    th_act, created = ThenAction.objects.get_or_create(action=then,action_value=then_action)
+                    route.then.add(th_act.pk)
+
                     if isinstance(protocol,(list)):
                         for p in protocol:
                             prot, created = MatchProtocol.objects.get_or_create(protocol=p)
                             route.protocol.add(prot.pk)
                     else:
                         prot, created = MatchProtocol.objects.get_or_create(protocol=protocol)
-                        route.protocol.add(prot)
-                    th_act, created = ThenAction.objects.get_or_create(action=then,action_value=then_action)
-                    route.then.add(th_act.pk)
-                    logger.info('Todas las reglas ya han sido sincronizadas con la base de datos.') 
-                        # check if the route is already in our DB
+                        route.protocol.add(prot.pk)
+
                 except Exception as e:                    
-                    #message = 'Routes have already been syncronised.'
-                    logger.info(f'Regla: {name_fw} ya ha está sincronizada con la base de datos.')
+                    logger.info(f"Ha habido un error cuando se quería guardar la regla en la base de datos. Error: {e}")
+
+                
+                logger.info('Todas las reglas ya han sido sincronizadas con la base de datos.') 
+                        # check if the route is already in our DB
+               
             else:
                 # means that the route does not belong to the user's peer
                 pass 
-    return render(request,'routes_synced.html',{'message':message})
+    message = 'Reglas sincronizadas con la base de datos.'
+    return render(request,'storage/routes_synced.html',{'message':message})
+
+
 
 @verified_email_required
 @login_required
@@ -1056,7 +1094,7 @@ def routes_sync(request):
                     if (route.has_expired()==False) and (route.status=='ACTIVE'):
                         add(route)
                         message = ('Estado: %s, regla de firewall no sincronizada: %s, guardando regla de firewall.' %(route.status, route.name))
-                        send_message(message,peer=None,superuser=True)
+                        #send_message(message,peer=None,superuser=True)
                     else:
                         if (route.has_expired()==True) or (route.status== 'EXPIRED' and route.status!= 'ADMININACTIVE' and route.status!= 'INACTIVE'): 
                             logger.info('Estado: %s, regla de firewall  %s, comprobando regla.' %(route.status, route.name))
@@ -1064,7 +1102,7 @@ def routes_sync(request):
                 except Exception as e:
                     logger.info(f"Ha ocurrido una excepción cuando se intentaban sincronizar las reglas: ", e)
             message = 'Reglas sincronizadas.'
-            send_message(message,peer=None,superuser=True)
+            #send_message(message,peer=None,superuser=True)
         else:
             logger.info('There are routes out of sync: ',diff, notsynced_routes)
     else:
@@ -1073,8 +1111,8 @@ def routes_sync(request):
                 route = get_specific_route(applier=None, peer=None,route_slug=route_db)
                 add(route)
                 message = ('Estado: %s, regla de firewall no sincronizada: %s, guardando regla de firewall.' %(route.status, route.name))
-                send_message(message,peer=None,superuser=True)
-    return HttpResponseRedirect(reverse('group-routes'))
+                #send_message(message,peer=None,superuser=True)
+    return render(request,'storage/routes_synced.html',{'message':message})
 
 @verified_email_required
 @login_required
@@ -1083,20 +1121,28 @@ def backup(request):
     daily_backup()
     message = 'Copia de seguridad creada con éxito.'
     send_message(message,peer=None,superuser=True)
-    return render(request,'routes_synced.html',{'message':message})
+    return render(request,'storage/routes_synced.html',{'message':message})
 
 @verified_email_required
 @login_required
 def restore_backup(request):
     user = request.user
+    peers = Peer.objects.all()
     
     if request.user.is_superuser:
-        backup_dir = (settings.BACK_UP_DIR+'REM_REMEDIOS'+'/')
+        
+        backup_dir = (settings.BACK_UP_DIR+'/')
         if request.method=='GET':
             CHOICES_FILES = []
-            for f in os.listdir(backup_dir):
-                CHOICES_FILES.append(f)
-            return render(request,'backup_menu.html',{'files':CHOICES_FILES})    
+            for peer in peers:
+                print(peer)
+                if peer.peer_tag != 'Punch':
+                    for f in os.listdir(backup_dir+'/'+peer.peer_tag+'/'):
+                        print(f)
+                        CHOICES_FILES.append(f)
+                else:
+                    pass
+            return render(request,'storage/backup_menu.html',{'files':CHOICES_FILES})    
         if request.method=='POST':
             filename = request.POST.get("value", "")
             fixture_path = (backup_dir+filename)
@@ -1104,9 +1150,9 @@ def restore_backup(request):
                 call_command(f"loaddata",fixture_path)
                 message = 'La copia de seguridad ha sido restaurada con éxito, recomendamos en caso de caida también sincronizar su router con la base de datos.'
                 send_message(message,peer_tag,superuser=True)
-                return render(request,'routes_synced.html',{'message':message}) 
+                return render(request,'storage/routes_synced.html',{'message':message}) 
             except Exception as e:
-                return render(request,'routes_synced.html')
+                return render(request,'storage/routes_synced.html')
     else:
         peer_tag = get_peer_tag(user.username)
         backup_dir = (settings.BACK_UP_DIR+peer_tag+'/')
@@ -1114,7 +1160,7 @@ def restore_backup(request):
             CHOICES_FILES = []
             for f in os.listdir(backup_dir):
                 CHOICES_FILES.append(f)
-            return render(request,'backup_menu.html',{'files':CHOICES_FILES})    
+            return render(request,'storage/backup_menu.html',{'files':CHOICES_FILES})    
         if request.method=='POST':
             filename = request.POST.get("value", "")
             fixture_path = (backup_dir+filename)
@@ -1122,9 +1168,9 @@ def restore_backup(request):
                 call_command(f"loaddata",fixture_path)
                 message = 'La copia de seguridad ha sido restaurada con éxito, recomendamos en caso de caida también sincronizar su router con la base de datos.'
                 send_message(message,peer_tag,superuser=True)
-                return render(request,'routes_synced.html',{'message':message}) 
+                return render(request,'storage/routes_synced.html',{'message':message}) 
             except Exception as e:
-                return render(request,'routes_synced.html')
+                return render(request,'storage/routes_synced.html')
 
 
 
@@ -1138,17 +1184,17 @@ def create_db_backup(request):
     current_date = now.strftime("%d-%B-%Y")
     if user.is_superuser: 
         try:
-            call_command('dumpdata', format='json',output=f'_backup/FOD/FOD_backup_{current_date}_{current_time}.json')
+            call_command('dumpdata', format='json',output=f'_backup/REMeDDoS/remeddos_backup_{current_date}_{current_time}.json')
             #call_command('dbbackup', output_filename=(f"redifod-{current_date}-{current_time}.psql"))
-            message = 'Copia de seguridad creada con éxito.'
+            message = 'Se ha generado una copia de seguridad de toda la base de datos. Copia de seguridad creada con éxito.'
             send_message(message)
-            return render(request,'routes_synced.html',{'message':message}) 
+            return render(request,'storage/routes_synced.html',{'message':message}) 
         except Exception as e:
             message = ('Ha ocurrido un error intentando crear la copia de seguridad. %s'%e)
             send_message(message)
-            return render(request,'routes_synced.html',{'message':message})
+            return render(request,'storage/routes_synced.html',{'message':message})
     else:
-        return render(request,'routes_synced.html',{'message':'Esta opción solo puede ser usada por un superusuario, disculpe las molestias.'})
+        return render(request,'storage/routes_synced.html',{'message':'Esta opción solo puede ser usada por un superusuario, disculpe las molestias.'})
 
 
 @verified_email_required
@@ -1159,22 +1205,22 @@ def restore_complete_db(request):
     if user.is_superuser:
         CHOICES_FILES = []
         if request.method=='GET':
-            for f in os.listdir(settings.BACK_UP_DIR+'/FOD/'):
+            for f in os.listdir(settings.BACK_UP_DIR+'/REMeDDoS/'):
                 CHOICES_FILES.append(f)
-            return render(request,'backup_menu.html',{'files':CHOICES_FILES[-1]})    
+            return render(request,'storage/backup_menu.html',{'files':CHOICES_FILES[-1]})    
     if request.method=='POST':
         filename = request.POST.get("value", "")
-        fixture_path = (settings.BACK_UP_DIR+'/FOD/'+filename)
+        fixture_path = (settings.BACK_UP_DIR+'/REMeDDoS/'+filename)
         try:
             call_command(f"loaddata",fixture_path)
             message = 'La copia de seguridad ha sido restaurada con éxito.'
             send_message(message,peer=None,superuser=None)
-            return render(request,'routes_synced.html',{'message':message}) 
+            return render(request,'storage/routes_synced.html',{'message':message}) 
         except Exception as e:
             message = ('Ha ocurrido un error y no se ha podido restaurar la base de datos. Error:  ',e)
             send_message(message,peer=None,superuser=None)
-            return render(request,'routes_synced.html')
+            return render(request,'storage/routes_synced.html')
     else:
-        return render(request,'routes_synced.html',{'message':'Esta opción solo puede ser usada por un superusuario, disculpe las molestias.'})
+        return render(request,'storage/routes_synced.html',{'message':'Esta opción solo puede ser usada por un superusuario, disculpe las molestias.'})
 
 

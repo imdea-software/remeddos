@@ -217,19 +217,22 @@ def commit_to_router(request,route_slug):
 
         peer = Peer.objects.get(pk__in=user_peers)
         network = peer.networks.filter(network__icontains=route.destination)
-        print('this is netwooork: ', network, peer)
-        if network:
+        print('fml ', route.destination, ' network: ', network )
+        if not network.exists():
+            print('this is netwooork: ', network, peer)
             messages.add_message(request,messages.WARNING,('Estás intentando aplicacar una regla con direcciones que no pertenecen a tu espacio administrativo. Contacte con su administrador.'))
             return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name})) 
-
+        
         route.applier = request.user
         route.expires = clean_expires(route.expires)
+        
         try:
             route.requesters_address = request.META['HTTP_X_FORWARDED_FOR']
         except:
             # in case the header is not provided
             route.requesters_address = 'unknown'
         try:
+            print('weak')
             route.save()
             route.commit_add()
             return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name}))
