@@ -100,6 +100,24 @@ def display_routes(request,golem_name):
             p = peer.peer_tag
             reglas = dic.get(p,'Institución invalida')
     return render(request,'golem/user_routes.html',{'routes':reglas,'golem_name':golem_name,'link':golem.link,'actions':actions})
+
+
+
+@verified_email_required
+@login_required
+@never_cache
+def display_proposed_routes(request):
+    try:
+        user = request.user
+        routes = find_routes(user.username)
+    except UserProfile.DoesNotExist:
+        error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
+        return render(request,'error.html',{'error': error})
+    all_routes = []
+    for r in routes:
+        if r.is_proposed :
+            all_routes.append(r)    
+    return render(request,'pending_routes.html',{'routes':all_routes})
     
 @verified_email_required
 @login_required
@@ -119,7 +137,7 @@ def delete_golem(request,golem_id):
         golem = GolemAttack.objects.get(id_name=golem_id)
         golem.delete()
     except Exception as e:
-        print (e)
+        logger.info(f"There was an error when trying to delete a golem event. Error: {e} ")
     if request.user.is_superuser:
         golem_attacks = GolemAttack.objects.all().order_by('-received_at')
         return render(request,'golem/display.html',{'attacks':golem_attacks})
@@ -191,10 +209,15 @@ def verify_commit_route(request, route_slug):
 @login_required
 @never_cache
 def commit_to_router(request,route_slug):
+    from datetime import datetime, timedelta
+
     applier_peer_networks = []
+    tomorrow = (datetime.now() + timedelta(days=1))
+
     fd = route_slug.find('_')
     peer_tag = route_slug[fd+1:-2]
     route = get_specific_route(applier=None,peer=peer_tag,route_slug=route_slug)
+    route.expires = tomorrow
     event_name = get_event_name(route_slug)
     if request.user.is_superuser:
         route.applier = request.user
@@ -217,9 +240,7 @@ def commit_to_router(request,route_slug):
 
         peer = Peer.objects.get(pk__in=user_peers)
         network = peer.networks.filter(network__icontains=route.destination)
-        print('fml ', route.destination, ' network: ', network )
         if not network.exists():
-            print('this is netwooork: ', network, peer)
             messages.add_message(request,messages.WARNING,('Estás intentando aplicacar una regla con direcciones que no pertenecen a tu espacio administrativo. Contacte con su administrador.'))
             return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name})) 
         
@@ -232,7 +253,6 @@ def commit_to_router(request,route_slug):
             # in case the header is not provided
             route.requesters_address = 'unknown'
         try:
-            print('weak')
             route.save()
             route.commit_add()
             return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name}))

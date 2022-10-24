@@ -21,11 +21,10 @@ def assemble_dic(traffic_event,event_info):
         if spt > dpt : 
             dic = {'id_attack':event_info['id'],'status':event_info['status'],'typeofattack':event_info['typeof_attack'],'max_value':event_info['max_value'],'th_value':event_info['threshold_value'],
             'attack_name':event_info['attack_name'],'institution_name':event_info['institution_name'],'typeofvalue':event_info['typeof_value'],
-            'ip_dest':ip_dest,'ip_src':ip_src,'source_port':src_port,'dest_port':dest_port,'tcp_flag':tcpflag,'port':srcport}
+            'ip_dest':ip_dest,'ip_src':ip_src,'source_port':src_port,'dest_port':dest_port,'tcp_flag':tcpflag,'port':srcport,'protocol':get_protocol(p)}
         else:
             dic = {'id_attack':event_info['id'],'status':event_info['status'],'typeofattack':event_info['typeof_attack'],'max_value':event_info['max_value'],'th_value':event_info['threshold_value'],
-            'attack_name':event_info['attack_name'],'institution_name':event_info['institution_name'],'typeofvalue':event_info['typeof_value'],
-            'ip_dest':ip_dest,'ip_src':ip_src,'source_port':src_port,'dest_port':dest_port,'tcp_flag':tcpflag,'port':destport}
+            'attack_name':event_info['attack_name'],'institution_name':event_info['institution_name'],'typeofvalue':event_info['typeof_value'],'protocol':get_protocol(p), 'ip_dest':ip_dest,'ip_src':ip_src,'source_port':src_port,'dest_port':dest_port,'tcp_flag':tcpflag,'port':destport}
         return dic
     except IndexError as e:
         logger.info('There was an exception when trying to assemble the dictionary for a proposed route. Error: ', e)
@@ -52,7 +51,7 @@ def petition_geni(id_event):
             'initial_date' : json_event['response']['result']['data'][0]['event']['datetime']['start_time'], 'attack_duration' : json_event['response']['result']['data'][0]['event']['datetime']['duration'], 'ip_attacked' : json_event['response']['result']['data'][0]['event']['resource']['ip'],
             'typeof_attack':json_event['response']['result']['data'][0]['event']['attack']['type'],'typeof_value':json_event['response']['result']['data'][0]['event']['attack']['counter']}
     except requests.exceptions.ConnectionError:
-        print(response.status_code)           
+        logger.info(f"Error cuando se realizaba la petición a REM-Golem. Error: {response.status_code}")
     return (response.json(),event_data)
 
 
@@ -85,12 +84,8 @@ def open_event(id_event):
             send_message(message = (f"Nuevo ataque DDoS contra el recurso '{ip}' con id {id_event} de tipo {event_info['attack_name']}. Consulte nuestra <https://remedios.redimadrid.es/|*web*> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link}."), peer=peer.peer_tag,superuser=False)          
             if not created:
                 geni_attack.save()        
-            route_dic = {'name':dic_regla['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla['ip_dest'],'ipsrc':dic_regla['ip_src'],'protocol':protocol.pk,'tcpflag':dic_regla['tcp_flag'],'port':dic_regla['port']}
-            try:
-                create_route(dic_regla['id_attack'],route_dic, peer.peer_tag)
-            except Exception as e:
-                logger.info('There was an error: {e}')
-                pass
+            route_dic = {'name':dic_regla['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla['ip_dest'],'ipsrc':dic_regla['ip_src'],'protocol':dic_regla['protocol'],'protocol_pk':protocol.pk,'tcpflag':dic_regla['tcp_flag'],'port':dic_regla['port']}
+            create_route(dic_regla['id_attack'],route_dic, peer.peer_tag, protocol)
             if isinstance(protocol,(list)):
                 for p in protocol:
                     fs = p.find('(')
@@ -127,14 +122,13 @@ def ongoing(id_event,peer):
         attack.save()
         protocol = traffic_characteristics[4]['data'][0][0]
         match_protocol = check_protocol(protocol)
-        route_info = {'name':dic_regla2['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla2['ip_dest'],'ipsrc':dic_regla2['ip_src'],'protocol':match_protocol.pk,'tcpflag':dic_regla2['tcp_flag'],'port':dic_regla2['port']}
+        route_info = {'name':dic_regla2['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla2['ip_dest'],'ipsrc':dic_regla2['ip_src'],'protocol_pk':match_protocol.pk,'tcpflag':dic_regla2['tcp_flag'],'port':dic_regla2['port']}
         try:
-            create_route(id_event,route_info,peer.peer_tag)
+            create_route(id_event,route_info,peer.peer_tag, match_protocol.protocol)
         except Exception as e:
-                logger.info('There was an error: ')
-                pass
+            logger.info(f"t2 There was an exception when creating a new proposed route. Error: {e}")
         send_message(f"El ataque DDoS con id {dic_regla2['id_attack']} de tipo {info['attack_name']} a la institución {dic_regla2['institution_name']} persiste y hemos actualizado los datos del ataque. Consulte nuestra <https://remedios.redimadrid.es/|web> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link1}.", peer=peer.peer_tag,superuser=False)
-    elif info['status'] == 'Recovered' or info['status'] =='Burst':
+    elif info['status'] == 'Recovered' or info['status'] == 'Burst':
         recovered(id_event,info, peer)
     
     not_recovered = True 
@@ -144,6 +138,8 @@ def ongoing(id_event,peer):
         if attack_info['status'] == 'Ongoing':
         # wait 4 min , rule proposition and send email to user , repeat process every 5 min until status equals 'recovered'
             traffic_data = attack_data['response']['result']['data'][0]['traffic_characteristics']
+            protocol = traffic_data[4]['data'][0][0]
+            match_protocol = check_protocol(protocol)
             dic_regla3 = assemble_dic(traffic_data,attack_info)
             link2 = get_link(id_event)                                
             attack = GolemAttack.objects.get(id_name=id_event)
@@ -152,12 +148,11 @@ def ongoing(id_event,peer):
             attack.threshold_value = dic_regla3['th_value']
             attack.link = link2
             attack.save()
-            route_info1 = {'name':dic_regla3['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla3['ip_dest'],'ipsrc':dic_regla3['ip_src'],'port':dic_regla3['port'],'protocol':match_protocol.pk,'tcpflag':dic_regla3['tcp_flag']}
+            route_info1 = {'name':dic_regla3['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla3['ip_dest'],'ipsrc':dic_regla3['ip_src'],'port':dic_regla3['port'],'protocol_pk':match_protocol.pk,'tcpflag':dic_regla3['tcp_flag']}
             try:
-                create_route(id_event,route_info1,peer.peer_tag)
+                create_route(id_event,route_info1,peer.peer_tag, match_protocol.protocol)
             except Exception as e:
-                logger.info('There was an error: ')
-            print('va a mandar mensaje al slack')
+                logger.info(f"Ha habido un error proponiendo la nueva regla para el ataque {dic_regla3['id_attack']}. Error: {e}")
             send_message(message=(f"El ataque DDoS con id {dic_regla3['id_attack']} de tipo {attack_info['attack_name']} a la institución {dic_regla3['institution_name']} persiste y hemos actualizado los datos del ataque. Consulte nuestra <https://remedios.redimadrid.es/|web> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información siga el siguiente link: {link2}."),peer=peer.peer_tag,superuser=False)
             not_recovered = True
         elif attack_info['status'] == 'Recovered' or attack_info['status'] == 'Burst':
@@ -182,8 +177,6 @@ def recovered(id_event, info, peer):
             attack.max_value = info['max_value']
             attack.threshold_value = info['threshold_value']
             attack.ends_at = timezone.now()
-            print('fin del ataque: ',attack.ends_at)
-            print('INFO: ', info)
             attack.finished = True
             attack.save()                          
             send_message(message=(f"El ataque DDoS con id {id_event} a la institución {info['institution_name']} ha terminado. Más información en <https://remedios.redimadrid.es/|REMeDDoS> o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
@@ -195,89 +188,101 @@ def recovered(id_event, info, peer):
         pass
 
 
-def create_route(golem_id,route_dic,peer):
+def create_route(golem_id,route_dic,peer,protocolo):
     from flowspec.helpers import get_route,find_routes
     from golem.models import GolemAttack
     from peers.models import Peer
+    
 
     #ip origen, ip destino, protocolo, puerto (que mas trafico tenga), la tcp flag q mas trafico que tenga, 
     #el tcp-flag si el protocolo es udp debe ser descartado porque siempre va a ser 0
     peers = Peer.objects.get(peer_tag=peer)
     golem_routes = []
+    
+   # protocolo = route_dic['protocol'].protocol
     try:
         routes = find_routes(applier=None, peer=peer)
         route = get_route(applier=None,peer=peer)
-        for r in routes:
-            name = r.name
-            fd = name.find('_')
-            if golem_id == name[:fd] :
-                golem_routes.append(r)
-        # busqueda de todas las reglas, ver ya se ha propuesto alguna regla para el ataque sino
-        # generar la primera regla 
-        if len(golem_routes)==0:
-            try: 
-                route.name = route_dic['name']+'_1'
-                route.peer = peers
-                route.status = 'PROPOSED'
-                route.is_proposed = True
-                if route_dic['protocol'] == 'tcp':
-                    tcpflag = golem_translate_tcpflag(route_dic['tcpflag'])
-                    route.source,route.destination,route.port,route.tcpflag = route_dic['ipsrc'],route_dic['ipdest'],route_dic['port'], tcpflag
-                    try: 
-                        route.save()
-                    except Exception as e:
-                        pass
-                else: 
-                    route.source,route.destination,route.port = route_dic['ipsrc'],route_dic['ipdest'],route_dic['port']
-                    try: 
-                        route.save()
-                    except Exception as e:
-                        pass
-                route.protocol.add(route_dic['protocol'])
-                g = GolemAttack.objects.get(id_name=golem_id)
-                g.set_route(route)
-                try: 
-                    g.save()
-                except Exception as e:
-                    pass
-                return route
-            except Exception as e:
-                logger.info('An exception happened: ',e)
-        else:
-            sorted_routes = [route.name for route in golem_routes]
-            last_element = sorted_routes[-1]
-            n = last_element[-1]
-            num = (int(n)+1)
-            dicname = route_dic['name']
-            name = str(f"{dicname}_{num}")
-            route.name = name
-            route.peer = peers
-            route.status = 'PROPOSED'
-            route.is_proposed = True
-            if route_dic['protocol'] == 'tcp':
-                tcpflag = golem_translate_tcpflag(route_dic['tcpflag'])
-                route.source,route.destination,route.port,route.tcpflag = route_dic['ipsrc'],route_dic['ipdest'],route_dic['port'], tcpflag
-                try: 
-                    route.save()
-                except Exception as e:
-                    pass
-            else:
-                route.source,route.destination,route.port = route_dic['ipsrc'],route_dic['ipdest'],route_dic['port']
-                try: 
-                    route.save()
-                except Exception as e:
-                    pass
-            route.protocol.add(route_dic['protocol'])
-            g = GolemAttack.objects.get(id_name=golem_id)
-            g.set_route(route)
-            try: 
-                route.save()
-            except Exception as e:
-                pass
-            return route
     except MultipleObjectsReturned:
         logger.info('Route has already being commited to the router')
         return None
+    for r in routes:
+        name = r.name
+        fd = name.find('_')
+        if golem_id == name[:fd] :
+            golem_routes.append(r)
+        # busqueda de todas las reglas, ver ya se ha propuesto alguna regla para el ataque sino generar la primera regla 
+    if len(golem_routes)==0:
+        route.name = route_dic['name']+'_1'
+        route.peer = peers
+        route.status = 'PROPOSED'
+        route.is_proposed = True
+        if protocolo == 'tcp':
+            tcpflag = golem_translate_tcpflag(route_dic['tcpflag'])
+            route.source = route_dic['ipsrc']                    
+            route.destination = route_dic['ipdest']
+            route.port = route_dic['port']
+            route.tcpflag = tcpflag
+            
+            try: 
+                route.save()
+            except Exception as e:
+                logger.info(f"There was an exception when creating a new proposed route. Error: {e}")
+
+        else: 
+            route.source = route_dic['ipsrc']
+            route.destination = route_dic['ipdest']
+            route.port = route_dic['port']
+            try: 
+                route.save()
+            except Exception as e:
+                logger.info(f"There was an exception when creating a new proposed route. Error: {e}")
+        route.protocol.add(route_dic['protocol_pk'])
+        g = GolemAttack.objects.get(id_name=golem_id)
+        g.set_route(route)
+        try: 
+            g.save()
+        except Exception as e:
+            logger.info(f"There was an exception when creating a new proposed route. Error: {e}")
+        return route
+    else:
+        sorted_routes = [route.name for route in golem_routes]
+        last_element = sorted_routes[-1]
+        n = last_element[-1]
+        num = (int(n)+1)
+        dicname = route_dic['name']
+        name = str(f"{dicname}_{num}")
+        route.name = name
+        route.peer = peers
+        route.status = 'PROPOSED'
+        route.is_proposed = True
+        if protocolo == 'tcp':
+            tcpflag = golem_translate_tcpflag(route_dic['tcpflag'])
+            route.source  = route_dic['ipsrc']
+            route.destination = route_dic['ipdest']
+            route.port = route_dic['port']
+            route.tcpflag = tcpflag
+            try: 
+                route.save()
+            except Exception as e:
+                logger.info(f"There was an exception when creating a new proposed route. Error: {e}")
+        else:
+            route.source = route_dic['ipsrc']
+            route.destination = route_dic['ipdest']
+            route.port = route_dic['port']
+            try: 
+                route.save()
+            except Exception as e:
+                logger.info(f"There was an exception when creating a new proposed route. Error: {e}")
+        route.protocol.add(route_dic['protocol_pk'])
+        g = GolemAttack.objects.get(id_name=golem_id)
+        g.set_route(route)
+        try: 
+            route.save()
+        except Exception as e:
+            logger.info(f"There was an exception when creating a new proposed route. Error: {e}")
+        return route
+    
 
 
 

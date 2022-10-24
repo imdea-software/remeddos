@@ -759,8 +759,10 @@ admin.site.register(ThenAction)
 admin.site.register(User, UserProfileAdmin)
 admin.site.disable_action('delete_selected')
 
-""" admin.site.register(Route_IMDEA,RouteIMDEAAdmin)
-admin.site.register(Route_CV,RouteCVAdmin)
+
+admin.site.register(Route_IMDEA)
+admin.site.register(Route_Punch)
+""" admin.site.register(Route_CV,RouteCVAdmin)
 admin.site.register(Route_CIB, RouteCIBAdmin)
 admin.site.register(Route_CSIC,RouteCSICAdmin)
 admin.site.register(Route_CEU,RouteCEUAdmin)
