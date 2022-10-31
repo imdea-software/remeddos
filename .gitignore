@@ -4,3 +4,5 @@ id_rsa
 _backup
 media
 flowspec/static
+flowspec/fixtures
+peers/fixtures
