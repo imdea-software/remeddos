@@ -113,8 +113,8 @@ td:first-child, th:first-child {
                     <div class="row">
                         <div clas="col col-2 btn-group d-inline">
                             <a href="{% url 'golem-routes' attack.id_name %}"  data-bs-toggle="tooltip" data-bs-placement="top" title="Ver reglas propuestas" class="btn m-1"><i class="bi bi-bookmark-plus"></i></a>
-                            <!-- <a href="{% url 'golem-updates' attack.id_name %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Updates" class="btn btn-outline btn-sm btn-dark m-1"><i class="bi bi-gear-fill"></i></a> -->
-                            <a href="{% url 'golem-delete' attack.id_name %}"  data-bs-toggle="tooltip" data-bs-placement="top" title="Delete golem event" data-bs-toggle="modal" data-bs-target="#deleteconfirmModal" class="btn m-1"><i class="bi bi-trash"></i></a>
+                            <!-- <a href="" data-bs-toggle="tooltip" data-bs-placement="top" title="Updates" class="btn btn-outline btn-sm btn-dark m-1"><i class="bi bi-gear-fill"></i></a> -->
+                            <a href="" data-bs-toggle="modal" data-bs-target="#delGolemEvent" data-bs-whatever="{{attack.id_name}}" class="btn m-1"><i class="bi bi-trash" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete golem event"></i></a>
                         </div>    
                     </div>
                     </td>
@@ -146,10 +146,9 @@ td:first-child, th:first-child {
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="staticBackdropLabel">Modal title</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-circle"></i></button>
           </div>
           <div class="modal-body">
-            ...
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -158,6 +157,32 @@ td:first-child, th:first-child {
         </div>
       </div>
         </div>
+        <!--  DEL GOLEM EVENT -->
+        <div class="modal fade" id="delGolemEvent" tabindex="-1" aria-labelledby="delGolemEventlLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Eliminar ataque</h5>
+                <button type="button" class="btn btn-close" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-circle"></i></button>
+              </div>
+              <div class="modal-body">
+                <form action="{% url 'golem-delete' %}" method="POST">
+                  {% csrf_token %}
+                    <input type="hidden" class="form-control" id="golem_id" name="golem_id">
+                  <div class="mb-3">
+                    <p class="form-control" id="text" name="text"></p>
+                  </div>
+                  
+              </div>
+              <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Sí</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
 {% endblock %}
 
 {% block pagejsbottom %}
@@ -183,13 +208,32 @@ $('#submitButton1').click(function(){
               type: "GET",
               dataType: "json",
               success: (data) => {
-                console.log('it worked');
               },
               error: (error) => {
                 console.log(error);
               }
             });
      });
+
+
+     var exampleModal = document.getElementById('delGolemEvent');
+            exampleModal.addEventListener('show.bs.modal', function (event) {
+            // Button that triggered the modal
+            var button = event.relatedTarget;
+            // Extract info from data-bs-* attributes
+            var recipient = button.getAttribute('data-bs-whatever');
+            // If necessary, you could initiate an AJAX request here
+            // and then do the updating in a callback.
+            //
+            // Update the modal's content.
+            var modalTitle = exampleModal.querySelector('#text');
+            var modalBodyInput = exampleModal.querySelector('#golem_id');
+
+            modalTitle.textContent = ('Ataque: ' + recipient);
+            modalBodyInput.value = recipient;
+        });
+
+
     })
      </script>
 {% endblock %}

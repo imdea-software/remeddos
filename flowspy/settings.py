@@ -1,25 +1,3 @@
-# -*- coding: utf-8 -*- vim:fileencoding=utf-8:
-# vim: tabstop=4:shiftwidth=4:softtabstop=4:expandtab
-# Django settings for flowspy project.
-# Copyright © 2011-2015 Greek Research and Technology Network (GRNET S.A.)
-# Copyright © 2011-2014 Leonidas Poulopoulos (@leopoul)
-# Copyright © 2014-2015 Stavros Kroustouris (@kroustou)
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-
-# _uuid_generate_random was deprecated and removed in newer python
 import uuid
 uuid._uuid_generate_random = None
 try:
@@ -59,6 +37,8 @@ NETCONF_USER_B=os.environ.get('NETCONF_USER_B')
 NETCONF_PASS_B=os.environ.get('NETCONF_PASS_B')
 NETCONF_PORT_B=os.environ.get('NETCONF_PORT_B')
 
+STAFF_MAIL = os.environ.get('STAFF_MAIL')
+
 DIR_GOLEM = os.environ.get('DIR_GOLEM')
 
 DEBUG = False
@@ -66,7 +46,7 @@ DEBUG_PROPAGATE_EXCEPTIONS = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
-    ('Remadmin', 'admin@example.com'),
+    ('Remadmin', STAFF_MAIL),
 )
 MANAGERS = ADMINS
 here = lambda x: os.path.join(os.path.abspath(os.path.dirname(__file__)), x)
@@ -78,6 +58,9 @@ SITE_ID = 1
 
 # Place a sequence of random chars here
 SECRET_KEY = os.environ.get('SECRET_KEY')
+
+USE_TZ = True
+TIME_ZONE = 'Europe/Madrid'
 
 # Set up database
 
@@ -355,10 +338,10 @@ REM_SLACK_TOKEN = os.environ.get('REM_SLACK_TOKEN')
 API_KEY_T=os.getenv('API_KEY_TG')
 
 # BCC mail addresses
-NOTIFY_ADMIN_MAILS = ["admin@example.com"]
+NOTIFY_ADMIN_MAILS = [STAFF_MAIL]
 
 # Then actions in the ui (dropdown)
-UI_USER_THEN_ACTIONS = ['discard', 'rate-limit']
+UI_USER_THEN_ACTIONS = ['discard', 'rate-limit','accept']
 UI_USER_PROTOCOLS = ['icmp', 'tcp', 'udp']
 ACCOUNT_ACTIVATION_DAYS = 7
 
@@ -392,7 +375,7 @@ BRANDING = {
     'facebook': '//facebook.com/',
     'twitter': '//twitter.com/',
     'phone': '800-example-com',
-    'email': 'helpdesk@example.com',
+    'email': STAFF_MAIL,
     'logo': 'logo.png',
     'favicon': 'favicon.ico',
 }

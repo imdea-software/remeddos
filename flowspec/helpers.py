@@ -586,6 +586,7 @@ def get_specific_route(applier,peer, route_slug):
   from flowspec.models import Route_Punch,Route_REM, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   peers = Peer.objects.all()
   peer_tag = get_peer_with_name(route_slug)
+  print('inside get_route: ', peer_tag, ' ', route_slug)
   for r in peers:
     if peer_tag == 'IMDEA': 
       try:
@@ -684,6 +685,7 @@ def get_specific_route(applier,peer, route_slug):
       except ObjectDoesNotExist:
         logger.info('There has been an error when trying to find the route')    
     elif peer_tag == 'Punch':
+      print('la plan B', route_slug)
       try:
         route = Route_Punch.objects.get(name=route_slug)
         return route

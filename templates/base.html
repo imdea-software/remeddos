@@ -87,7 +87,7 @@
     <!-- ENDOFNAVBAR-->
     
     <div class="content container-fluid p-5 height-100 bg-light">
-      <!-- {% if messages %}
+      {% if messages %}
         <div class="row">
               <div class="lg-col-12">
                   <div id="messages">
@@ -100,13 +100,13 @@
                       </div>
           </div>
       </div>
-		{% endif %} -->
+		{% endif %}
       
     {% block contentplaceholder %}
     {% endblock %}
 
 </div> 
-</body>
+
 
 
 
@@ -122,7 +122,7 @@
         <div class="modal-header">
               <h5 class="modal-title" id="addRouteMLabel">Añadir una nueva regla</h5>
                   <button type="button" class="btn btn-outline btn-info close" data-bs-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+                    <i class="bi bi-x-circle"></i>
                   </button>
                 </div>
                 <div class="modal-body">
@@ -156,7 +156,7 @@
         <div class="modal-header">
               <h5 class="modal-title" id="confbModalLabel">Back up</h5>
                   <button type="button" class="btn btn-sm close" data-bs-dismiss="modal" aria-label="Close" id="confbModalClose">
-                    <span aria-hidden="true">&times;</span>
+                    <i class="bi bi-x-circle"></i>
                   </button>
                 </div>
                 <div class="modal-body">
@@ -186,7 +186,7 @@
             <div class="modal-header">
                   <h5 class="modal-title" id="confsrModalLabel">Sync your routes.</h5>
                       <button type="button" class="btn btn-sm close" data-bs-dismiss="modal" aria-label="Close" >
-                        <span aria-hidden="true">&times;</span>
+                        <i class="bi bi-x-circle"></i>
                       </button>
                     </div>
                     <div class="modal-body">
@@ -216,7 +216,7 @@
         <div class="modal-header">
               <h5 class="modal-title" id="confresdbModalLabel">Sincroniza tu router con la BBDD.</h5>
                   <button type="button" class="btn btn-sm close" data-bs-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+                    <i class="bi bi-x-circle"></i>
                   </button>
                 </div>
                 <div class="modal-body">
@@ -247,7 +247,7 @@
                 <div class="modal-header">
                       <h5 class="modal-title" id="confresfModalLabel">Restore confirmation</h5>
                           <button type="button" class="btn btn-sm close" data-bs-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
+                            <i class="bi bi-x-circle"></i>
                           </button>
                         </div>
                         <div class="modal-body">
@@ -271,6 +271,39 @@
           </div>
         </div>
 
+
+          <!-- MODAL FOR SYNC BOTH ROUTERS -->
+          <div class="modal fade" id="syncRouters" tabindex="-1" role="dialog" aria-labelledby="syncRoutersLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                      <h5 class="modal-title" id="syncRoutersLabel">Restore confirmation</h5>
+                          <button type="button" class="btn btn-sm close" data-bs-dismiss="modal" aria-label="Close">
+                            <i class="bi bi-x-circle"></i>
+                          </button>
+                        </div>
+                        <div class="modal-body">
+                          <div class="row">
+                              <div class="col text-wrap">
+                              <p class="lh-base">Sincronizar routers</p>  
+                              </div>
+                          </div>
+                        </div>
+                        <div class="modal-footer m-2">
+                          {% if user.is_authenticated %}
+                          <button type="button" class="btn btn-outline secondary" data-bs-dismiss="modal">Cerrar</button>
+                          <form action="{% url 'sync-routers' %}">
+                            <button type="submit" class="btn btn-outline-primary">Sí</button>
+                          </form>
+                            {% else %}
+                            <p>Debe inciar sesión antes de realizar alguna acción.</p>
+                            {% endif %}
+                </div>
+              </div>
+          </div>
+        </div>
+
+      </body>
 <!-- Core Scripts - Include with every page -->
 <!-- <script src="{% static 'theme/js/jquery-1.10.2.js' %}"></script>
 <script src="{% static 'js/jquery_csrf_protect.js' %}" type="text/javascript"></script> -->

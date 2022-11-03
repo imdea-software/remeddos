@@ -126,7 +126,7 @@ def dashboard(request):
                 all_routes = []
                 for groute in all_group_routes:
                     for group_route in groute:
-                        if group_route.status=='ACTIVE': 
+                        if (group_route.status=='ACTIVE' or group_route.status=='OUTOFSYNC') and group_route.applier != None: 
                             group_route.has_expired()
                             all_routes.append(group_route)
                 return render(request,'dashboard.html',{'routes': all_routes,'messages': message,'file' : ''},)
@@ -140,7 +140,7 @@ def dashboard(request):
             if all_group_routes != None:
                 #for groute in all_group_routes:
                 for group_route in all_group_routes:
-                    if group_route.status=='ACTIVE':
+                    if group_route.status=='ACTIVE' or group_route.status=='OUTOFSYNC' :
                         group_route.has_expired()
                         routes.append(group_route)
                 return render(request,'dashboard.html',{'routes': routes,'messages': message,'file' : ''})
@@ -175,7 +175,7 @@ def group_routes(request):
             routes = find_routes(user.username)
             fw_routes = []
             for route in routes:
-                if not route.is_proposed:
+                if not (route.is_proposed and route.applier == None):
                     fw_routes.append(route)
                 else:
                     pass
@@ -406,7 +406,6 @@ def add_route(request):
         form.fields['destinationport'].required=False
         form.fields['sourceport'].required=False
         form.fields['port'].required=False
-        form.fields['expires'].required=False
         if request.user.is_superuser:
             peer = Peer.objects.filter(pk__in=user_peers)
             network = []
@@ -805,10 +804,6 @@ def routes_update(request, route_slug):
 @login_required
 @never_cache
 def routedetails(request, route_slug):
-    """ uname = request.user.username
-    route = get_specific_route(applier=uname,peer=None,route_slug=route_slug)
-    now = datetime.datetime.now()
-    return render(request, 'flowspy/route_details.html', {'route': route,'mytime': now,'tz' : settings.TIME_ZONE,'is_superuser' : request.user.is_superuser,'route_comments_len' : len(str(route.comments))}) """
     uname = request.user.username
     
     try:
@@ -969,13 +964,109 @@ def pending_routes(request):
 
 
 """  STORAGE OPTIONS """
-
+@verified_email_required
+@login_required
+@never_cache
 def storage_dashboard(request):
     if request.user.is_superuser:
         return render(request,'storage/dashboard.html')
     else: 
         return HttpResponseRedirect(reverse("dashboard"))
 
+@verified_email_required
+@login_required
+@never_cache
+def sync_routers(request):
+    print('hola')
+    try:
+        first_router = get_routes_router()
+        backup_router = get_routes_backuprouter()
+    except Exception as e:
+        messages.add_message(request,messages.WARNING,'Ha habido un problema cuando al intentar obtener información de los routers. Error: ',e)
+        return render(request,'storage/dashboard.html')
+
+    fw_routes = []
+    backup_fw_routes = []
+
+    for children in first_router:
+        for child in children:
+            if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
+                fw_routes.append(child.text)
+    
+    for children in backup_router:
+        for child in children:
+            if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
+                backup_fw_routes.append(child.text)
+
+    fw_routes.sort()
+    backup_fw_routes.sort()
+
+    if (fw_routes == backup_fw_routes):
+        logger.info('Routes between both routers are syncronised.')
+    else:
+        print('hola 2')
+        diff = set(fw_routes).difference(backup_fw_routes)
+        if not diff == set():
+            notsynced_routes = list(diff)
+            logger.info(f"The following routes have not been syncronised: {notsynced_routes}")
+            print('hola 3')
+            for route in notsynced_routes:
+                try:
+                    commit_route = get_specific_route(applier=None,peer=None, route_slug=route)
+                except ObjectDoesNotExist:
+                    commit_route = get_route(applier = None,peer =get_peer_with_name(route))
+                if not commit_route.has_expired():
+                    try:
+                        commit_route.commit_add()
+                    except Exception as e:
+                        message = (f"There was an error when trying to sync both routers: {e}")
+                        logger.info(message)
+                        return render(request,'storage/dashboard.html')
+                else:
+                    try:
+                        commit_route.commit_delete()
+                    except Exception as e:
+                        message = (f"There was an error when trying to delete an expired route ({commit_route.name}) from the routers. Error: {e}")
+                        logger.info(message)
+                        return render(request,'storage/dashboard.html')
+        else:
+            print('hola 4')
+            diff = set(backup_fw_routes).difference(fw_routes)
+            notsynced_routes = list(diff)
+            logger.info(f"The following routes have not been syncronised: {notsynced_routes}")
+            print('hola 5')
+            for route in notsynced_routes:
+                try:
+                    print('hola 6')
+                    commit_route = get_specific_route(applier=None,peer=None, route_slug=route)
+                except ObjectDoesNotExist:
+                    commit_route = get_route(applier = None,peer =get_peer_with_name(route))
+                if not commit_route.has_expired():
+                    try:
+                        commit_route.commit_add()
+                    except Exception as e :
+                        message = (f"There was an error when trying to sync both routers: {e}")
+                        logger.info(message)
+                        return render(request,'storage/dashboard.html')
+                else:
+                    ## in case route is expired
+                    try:
+                        commit_route.commit_delete()
+                    except Exception as e:
+                        message = (f"There was an error when trying to delete an expired route ({commit_route.name}) from the routers. Error: {e}")
+                        logger.info(message)
+                        return render(request,'storage/dashboard.html')
+                    
+
+
+    return render(request,'storage/dashboard.html')
+
+
+
+
+@verified_email_required
+@login_required
+@never_cache
 #synchronize routes from the router to the database 
 def sync_router(request):
     # find what peer organisation does the user belong to
@@ -1087,7 +1178,7 @@ def routes_sync(request):
                     if (route.has_expired()==False) and (route.status=='ACTIVE'):
                         add(route)
                         message = ('Estado: %s, regla de firewall no sincronizada: %s, guardando regla de firewall.' %(route.status, route.name))
-                        #send_message(message,peer=None,superuser=True)
+                        send_message(message,peer=None,superuser=True)
                     else:
                         if (route.has_expired()==True) or (route.status== 'EXPIRED' and route.status!= 'ADMININACTIVE' and route.status!= 'INACTIVE'): 
                             logger.info('Estado: %s, regla de firewall  %s, comprobando regla.' %(route.status, route.name))
@@ -1095,7 +1186,7 @@ def routes_sync(request):
                 except Exception as e:
                     logger.info(f"Ha ocurrido una excepción cuando se intentaban sincronizar las reglas: ", e)
             message = 'Reglas sincronizadas.'
-            #send_message(message,peer=None,superuser=True)
+            send_message(message,peer=None,superuser=True)
         else:
             logger.info('There are routes out of sync: ',diff, notsynced_routes)
     else:
@@ -1104,7 +1195,7 @@ def routes_sync(request):
                 route = get_specific_route(applier=None, peer=None,route_slug=route_db)
                 add(route)
                 message = ('Estado: %s, regla de firewall no sincronizada: %s, guardando regla de firewall.' %(route.status, route.name))
-                #send_message(message,peer=None,superuser=True)
+                send_message(message,peer=None,superuser=True)
     return render(request,'storage/routes_synced.html',{'message':message})
 
 @verified_email_required

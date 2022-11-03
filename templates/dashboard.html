@@ -97,7 +97,14 @@ td:first-child, th:first-child {
 									{% if route.icmptype %} <small>Icmptype: {{route.icmptype}</small><br> {% endif %}
 									{% if route.icmpcode %} <small>Icmpcode: {{route.icmpcode}}</small><br> {% endif %}
 								</td>
-								<td><span class="badge pill bg-success">{{route.status}}</span></td>
+								{% if route.status == 'ACTIVE' %}
+									<td><span class="badge pill bg-success">{{route.status}}</span></td>
+								{% elif route.status == 'OUTOFSYNC' %}
+								<td>
+									<span class="badge pill bg-warning">{{route.status}}</span>
+								
+								</td>
+								{% endif %}
 							</tr>
 							{% endfor %}
 							</tbody>

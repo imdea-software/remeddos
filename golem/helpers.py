@@ -21,13 +21,15 @@ def assemble_dic(traffic_event,event_info):
         if spt > dpt : 
             dic = {'id_attack':event_info['id'],'status':event_info['status'],'typeofattack':event_info['typeof_attack'],'max_value':event_info['max_value'],'th_value':event_info['threshold_value'],
             'attack_name':event_info['attack_name'],'institution_name':event_info['institution_name'],'typeofvalue':event_info['typeof_value'],
-            'ip_dest':ip_dest,'ip_src':ip_src,'source_port':src_port,'dest_port':dest_port,'tcp_flag':tcpflag,'port':srcport,'protocol':get_protocol(p)}
+            'ip_dest':ip_dest,'ip_src':ip_src,'source_port':src_port,'dest_port':dest_port,'tcp_flag':tcpflag,'port':srcport,'typeofport':'src','protocol':get_protocol(p)}
         else:
             dic = {'id_attack':event_info['id'],'status':event_info['status'],'typeofattack':event_info['typeof_attack'],'max_value':event_info['max_value'],'th_value':event_info['threshold_value'],
-            'attack_name':event_info['attack_name'],'institution_name':event_info['institution_name'],'typeofvalue':event_info['typeof_value'],'protocol':get_protocol(p), 'ip_dest':ip_dest,'ip_src':ip_src,'source_port':src_port,'dest_port':dest_port,'tcp_flag':tcpflag,'port':destport}
+            'attack_name':event_info['attack_name'],'institution_name':event_info['institution_name'],'typeofvalue':event_info['typeof_value'],'protocol':get_protocol(p), 'ip_dest':ip_dest,'ip_src':ip_src,'source_port':src_port,
+            'dest_port':dest_port,'typeofport':'dest','tcp_flag':tcpflag,'port':destport}
         return dic
     except IndexError as e:
-        logger.info('There was an exception when trying to assemble the dictionary for a proposed route. Error: ', e)
+        logger.info('There was an exception when trying to assemble the dictionary for a proposed route. Error: List index out of range.')
+        pass
 
 def get_event_name(route_slug):
     p = route_slug.find('_')
@@ -84,7 +86,7 @@ def open_event(id_event):
             send_message(message = (f"Nuevo ataque DDoS contra el recurso '{ip}' con id {id_event} de tipo {event_info['attack_name']}. Consulte nuestra <https://remedios.redimadrid.es/|*web*> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link}."), peer=peer.peer_tag,superuser=False)          
             if not created:
                 geni_attack.save()        
-            route_dic = {'name':dic_regla['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla['ip_dest'],'ipsrc':dic_regla['ip_src'],'protocol':dic_regla['protocol'],'protocol_pk':protocol.pk,'tcpflag':dic_regla['tcp_flag'],'port':dic_regla['port']}
+            route_dic = {'name':dic_regla['id_attack']+'_'+peer.peer_tag,'source_port':dic_regla['source_port'],'dest_port':dic_regla['dest_port'],'ipdest':dic_regla['ip_dest'],'ipsrc':dic_regla['ip_src'],'protocol':dic_regla['protocol'],'protocol_pk':protocol.pk,'tcpflag':dic_regla['tcp_flag'],'typeofport':dic_regla['typeofport'],'port':dic_regla['port']}
             create_route(dic_regla['id_attack'],route_dic, peer.peer_tag, protocol)
             if isinstance(protocol,(list)):
                 for p in protocol:
@@ -122,7 +124,7 @@ def ongoing(id_event,peer):
         attack.save()
         protocol = traffic_characteristics[4]['data'][0][0]
         match_protocol = check_protocol(protocol)
-        route_info = {'name':dic_regla2['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla2['ip_dest'],'ipsrc':dic_regla2['ip_src'],'protocol_pk':match_protocol.pk,'tcpflag':dic_regla2['tcp_flag'],'port':dic_regla2['port']}
+        route_info = {'name':dic_regla2['id_attack']+'_'+peer.peer_tag,'typeofport':dic_regla2['typeofport'],'ipdest':dic_regla2['ip_dest'],'ipsrc':dic_regla2['ip_src'],'protocol_pk':match_protocol.pk,'tcpflag':dic_regla2['tcp_flag'],'port':dic_regla2['port'],'source_port':dic_regla2['source_port'],'dest_port':dic_regla2['dest_port']}
         try:
             create_route(id_event,route_info,peer.peer_tag, match_protocol.protocol)
         except Exception as e:
@@ -148,7 +150,7 @@ def ongoing(id_event,peer):
             attack.threshold_value = dic_regla3['th_value']
             attack.link = link2
             attack.save()
-            route_info1 = {'name':dic_regla3['id_attack']+'_'+peer.peer_tag,'ipdest':dic_regla3['ip_dest'],'ipsrc':dic_regla3['ip_src'],'port':dic_regla3['port'],'protocol_pk':match_protocol.pk,'tcpflag':dic_regla3['tcp_flag']}
+            route_info1 = {'name':dic_regla3['id_attack']+'_'+peer.peer_tag,'typeofport':dic_regla3['typeofport'],'ipdest':dic_regla3['ip_dest'],'ipsrc':dic_regla3['ip_src'],'port':dic_regla3['port'],'protocol_pk':match_protocol.pk,'tcpflag':dic_regla3['tcp_flag'],'source_port':dic_regla3['source_port'],'dest_port':dic_regla3['dest_port']}
             try:
                 create_route(id_event,route_info1,peer.peer_tag, match_protocol.protocol)
             except Exception as e:
@@ -217,22 +219,21 @@ def create_route(golem_id,route_dic,peer,protocolo):
         route.peer = peers
         route.status = 'PROPOSED'
         route.is_proposed = True
+        route.source = route_dic['ipsrc']
+        route.destination = route_dic['ipdest']
+        if route_dic['typeofport'] == 'src':
+            route.sourceport = route_dic['port']
+        elif route_dic['typeofport'] == 'dest':
+            route.destinationport = route_dic['port']
+        
         if protocolo == 'tcp':
             tcpflag = golem_translate_tcpflag(route_dic['tcpflag'])
-            route.source = route_dic['ipsrc']                    
-            route.destination = route_dic['ipdest']
-            route.port = route_dic['port']
             route.tcpflag = tcpflag
-            
             try: 
                 route.save()
             except Exception as e:
                 logger.info(f"There was an exception when creating a new proposed route. Error: {e}")
-
-        else: 
-            route.source = route_dic['ipsrc']
-            route.destination = route_dic['ipdest']
-            route.port = route_dic['port']
+        else:             
             try: 
                 route.save()
             except Exception as e:
@@ -256,20 +257,20 @@ def create_route(golem_id,route_dic,peer,protocolo):
         route.peer = peers
         route.status = 'PROPOSED'
         route.is_proposed = True
+        route.source  = route_dic['ipsrc']
+        route.destination = route_dic['ipdest']
+        if route_dic['typeofport'] == 'src':
+            route.sourceport = route_dic['port']
+        elif route_dic['typeofport'] == 'dest':
+            route.destinationport = route_dic['port']
         if protocolo == 'tcp':
-            tcpflag = golem_translate_tcpflag(route_dic['tcpflag'])
-            route.source  = route_dic['ipsrc']
-            route.destination = route_dic['ipdest']
-            route.port = route_dic['port']
+            tcpflag = golem_translate_tcpflag(route_dic['tcpflag'])            
             route.tcpflag = tcpflag
             try: 
                 route.save()
             except Exception as e:
                 logger.info(f"There was an exception when creating a new proposed route. Error: {e}")
         else:
-            route.source = route_dic['ipsrc']
-            route.destination = route_dic['ipdest']
-            route.port = route_dic['port']
             try: 
                 route.save()
             except Exception as e:

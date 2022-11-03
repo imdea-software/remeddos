@@ -62,6 +62,7 @@ services:
             - redis  
     beat:
         build: .
+        restart: always
         command: "celery -A flowspy beat -l INFO"
         depends_on: 
             - redis

@@ -88,8 +88,8 @@ ROUTE_STATES = (
     ) 
 
 TCP_CHOICES =(
-    ("ack","ACK"),
-    ("rst","RST"),
+    ("ack","ack"),
+    ("rst","rst"),
     ("fin","FIN"),
     ("push","PUSH"),
     ("urgent","URGENT"),
@@ -168,8 +168,8 @@ class Route(models.Model):
     icmptype = models.CharField(max_length=32, blank=True, null=True, verbose_name="ICMP-Type")
     packetlength = models.CharField(max_length=65535, blank=True, null=True, verbose_name="Packet Length")
     protocol = models.ManyToManyField(MatchProtocol, blank=True, verbose_name=_("Protocol"))
-    tcpflag = models.CharField(max_length=50, choices=TCP_CHOICES, blank=True, null=True, verbose_name="TCP flag")
-    #tcpflag = models.ManyToManyField(TCPFlags, verbose_name=_("TCP Flag"))
+    tcpflag = models.CharField(max_length=50, choices=TCP_CHOICES, blank=False, null=True, verbose_name="TCP flag")
+    #tcpflag = models.ManyToManyField(MatchTcpFlag, blank=True,verbose_name="TCP Flag", null=True)
     then = models.ManyToManyField(ThenAction, verbose_name=_("Then"), default='discard')
     filed = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
@@ -179,7 +179,7 @@ class Route(models.Model):
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
     is_proposed = models.BooleanField(default=False)
-    history = HistoricalRecords(use_base_model_db=True)
+    history = HistoricalRecords(use_base_model_db=True, inherit=True)
     
 
     @property
@@ -569,6 +569,7 @@ class Route(models.Model):
         if self.source:
             ret = "%s <dt>Src Addr</dt><dd>%s</dd>" %(ret, self.source)
         if self.tcpflag:
+            print('this is tcpflags: ', self.tcpflag)
             flags = self.tcpflag.split(' ')
             if len(flags) > 1 :
                     for flag in flags:

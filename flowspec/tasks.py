@@ -43,16 +43,15 @@ def add(route, callback=None):
     peer = get_peer_with_name(route.name)
 
     try:
+        backup_applier = PR.Backup_Applier(route_object=route)
+        b_commit, b_response = backup_applier.apply()
+    except Exception as e:
+        pass
+    try:
         applier = PR.Applier(route_object=route)
         commit, response = applier.apply()
-        
-        backup_applier = PR.Backup_Applier(route_object=route)
-        try:
-            b_commit, b_response = backup_applier.apply()
-        except Exception as e:
-            message = (f"Ha habido un error cuando se intentaba configurar la regla en el back up router. Porfavor contacte con su administrador.")
-            send_message(message,peer,superuser=False)
-        if commit:            
+                
+        if commit and b_commit:            
             status = "ACTIVE"
             route.status = status
             route.response = response
@@ -60,26 +59,23 @@ def add(route, callback=None):
             message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
             send_message(message,peer,superuser=False)
         else:
-            status = "ERROR"
-            if b_commit:            
-                status = "OUTOFSYNC"
-            else:
-                status = "ERROR"
+            status = "OUTOFSYNC" if (commit or b_commit) else "ERROR"
             route.status = status
             route.response = b_response
             route.save()
-            message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}")
+            message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}, {response}")
             send_message(message,peer,superuser=False)
-            message = (f"Ha habido un error cuando se intentaba configurar la regla en el primer router. Regla activa en el back up router. Porfavor contacte con su administrador.")
-            send_message(message,peer,superuser=False)
+            if not commit:
+                message = (f"Ha habido un error cuando se intentaba configurar la regla en el primer router. Regla activa en el back up router. Porfavor contacte con su administrador.")
+                send_message(message,peer,superuser=False)
+            elif not b_commit:
+                message = (f"Ha habido un error cuando se intentaba configurar la regla en backup router. Regla activa en el router principal. Porfavor contacte con su administrador.")
+                send_message(message,peer,superuser=False)
     except TimeLimitExceeded as error:
         route.status = "ERROR"
         route.response = "Task timeout"
         try: 
-            if b_commit:            
-                status = "OUTOFSYNC"
-            else:
-                status = "ERROR"
+            status = "OUTOFSYNC" if (commit or b_commit) else "ERROR"
             route.status = status
             route.response = b_response
             route.save()
@@ -94,10 +90,7 @@ def add(route, callback=None):
         route.status = "ERROR"
         route.response = "Task timeout"
         try: 
-            if b_commit:            
-                status = "OUTOFSYNC"
-            else:
-                status = "ERROR"
+            status = "OUTOFSYNC" if (commit or b_commit) else "ERROR"
             route.status = status
             route.response = b_response
             route.save()
@@ -112,10 +105,7 @@ def add(route, callback=None):
         route.status = "ERROR"
         route.response = "Error"
         try: 
-            if b_commit:            
-                status = "OUTOFSYNC"
-            else:
-                status = "ERROR"
+            status = "OUTOFSYNC" if (commit or b_commit) else "ERROR"
             route.status = status
             route.response = b_response
             route.save()
@@ -130,10 +120,7 @@ def add(route, callback=None):
         route.status = "ERROR"
         route.response = "Transaction Management Error"
         try: 
-            if b_commit:            
-                status = "OUTOFSYNC"
-            else:
-                status = "ERROR"
+            status = "OUTOFSYNC" if (commit or b_commit) else "ERROR"
             route.status = status
             route.response = b_response
             route.save()
@@ -151,17 +138,20 @@ def edit(route, callback=None):
     from utils import proxy as PR
 
     peer = get_peer_with_name(route.name)
+    
+
     try:
         applier = PR.Applier(route_object=route)
         commit, response = applier.apply(operation="replace")   
+        
         try:
             backup_applier = PR.Backup_Applier(route_object=route)
             b_commit, b_response = backup_applier.apply(operation="replace")
-        except:
+        except Exception as e:
             message = (f"Ha habido un error cuando se intentaba editar la regla en el segundo back up router. Porfavor contacte con su administrador.")
             send_message(message,peer,superuser=False)
         
-        if commit:
+        if commit and b_commit:
             status = "ACTIVE"
             route.status = status
             route.response = response
@@ -169,27 +159,25 @@ def edit(route, callback=None):
             message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.response}")
             send_message(message,peer,superuser=False)
         else:
-            status = "ERROR"
-            if b_commit:            
-                status = "OUTOFSYNC"
-            else:
-                status = "ERROR"
+            status = "OUTOFSYNC" if (commit or b_commit) else "ERROR"
             route.status = status
             route.response = b_response
             route.save()
-            message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.b_response}")
+            message = (f"[{route.applier}] Rule edit:  {route.name} - Result: {route.b_response}, {response}")
             send_message(message,peer,superuser=False)
-            message = (f"Ha habido un error cuando se intentaba editar la regla en el primer router. Error: {response}. Regla activa y actualizada en el back up router. Porfavor contacte con su administrador.")
-            send_message(message,peer,superuser=False)
+            if not b_commit:
+                
+                message = (f"Ha habido un error cuando se intentaba editar la regla en el primer router. Error: {response}. Regla activa y actualizada en el back up router. Porfavor contacte con su administrador.")
+                send_message(message,peer,superuser=False)
+            elif not commit:
+                message = (f"Ha habido un error cuando se intentaba editar la regla en el backup router. Error: {response}. Regla activa y actualizada en el router principal. Porfavor contacte con su administrador.")
+                send_message(message,peer,superuser=False)
         
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         try: 
-            if b_commit:            
-                status = "OUTOFSYNC"
-            else:
-                status = "ERROR"
+            status = "OUTOFSYNC" if (commit or b_commit) else "ERROR"
             route.status = status
             route.response = b_response
             route.save()
@@ -204,10 +192,7 @@ def edit(route, callback=None):
         route.status = "ERROR"
         route.response = "Task timeout"
         try: 
-            if b_commit:            
-                status = "OUTOFSYNC"
-            else:
-                status = "ERROR"
+            status = "OUTOFSYNC" if (commit or b_commit) else "ERROR"
             route.status = status
             route.response = b_response
             route.save()
@@ -222,10 +207,7 @@ def edit(route, callback=None):
         route.status = "ERROR"
         route.response = "Error"
         try: 
-            if b_commit:            
-                status = "OUTOFSYNC"
-            else:
-                status = "ERROR"
+            status = "OUTOFSYNC" if (commit or b_commit) else "ERROR"
             route.status = status
             route.response = b_response
             route.save()
@@ -245,15 +227,14 @@ def delete(route, **kwargs):
 
     peer = get_peer_with_name(route.name)
     try:
+        backup_applier = PR.Backup_Applier(route_object=route)
+        b_commit, b_response = backup_applier.apply(operation="delete")
+    except:
+        message = (f"Ha habido un error cuando se intentaba eliminar la regla en el segundo back up router. Porfavor contacte con su administrador.")
+        send_message(message,peer,superuser=False)
+    try:
         applier = PR.Applier(route_object=route)
         commit, response = applier.apply(operation="delete")
-        
-        backup_applier = PR.Backup_Applier(route_object=route)
-        try:
-            b_commit, b_response = backup_applier.apply(operation="delete")
-        except:
-            message = (f"Ha habido un error cuando se intentaba eliminar la regla en el segundo back up router. Porfavor contacte con su administrador.")
-            send_message(message,peer,superuser=False)
         
         if commit:
             status = "INACTIVE"
@@ -499,18 +480,19 @@ def routes_sync():
             try:
                 peer_tag = get_peer_with_name(route)
                 route = get_specific_route(applier=None,peer=peer_tag,route_slug=route)
-                if (route is not None) and (route.status == 'PENDING' or route.status == 'DEACTIVATED' or route.status == 'OUTOFSYNC' or route.status == 'ERROR' or route.status == None) and route.applier == None:
-                    route.status = 'PENDING'
-                    route.save()
-                if (route is not None) and (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):
-                    route.commit_add()
-                    message = ('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
-                    send_message(message,peer_tag,superuser=False)
-                else:
-                    if (route.has_expired()==True) or (route.status == 'EXPIRED' or route.status != 'ADMININACTIVE' or route.status != 'INACTIVE'):
-                        #message = ('Route: %s route status: %s'%(route.status, route.name))
-                        #send_message(message,peer_tag,superuser=False)
-                        route.check_sync()                  
+                if route is not None:
+                    if (route is not None) and (route.status == 'PENDING' or route.status == 'DEACTIVATED' or route.status == 'OUTOFSYNC' or route.status == 'ERROR' or route.status == None) and route.applier == None:
+                        route.status = 'PENDING'
+                        route.save()
+                    if (route is not None) and (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):
+                        route.commit_add()
+                        message = ('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
+                        send_message(message,peer_tag,superuser=False)
+                    else:
+                        if (route.has_expired()==True) or (route.status == 'EXPIRED' or route.status != 'ADMININACTIVE' or route.status != 'INACTIVE'):
+                            #message = ('Route: %s route status: %s'%(route.status, route.name))
+                            #send_message(message,peer_tag,superuser=False)
+                            route.check_sync()                  
             except Exception as e:
                 logger.info('There was an exception when trying to sync the routes route: ', e)           
     else:
@@ -607,6 +589,25 @@ def sync_router_with_db():
        # print(f'Database syncronised {peer.peer_name}')
     
 
+@shared_task
+def create_db_backup():
+    from django.core.management import call_command
+    import datetime
+
+    now = datetime.datetime.now()
+    current_time = now.strftime("%H:%M")
+    current_date = now.strftime("%d-%B-%Y")
+    
+    try:
+        call_command('dumpdata', format='json',output=f'_backup/REMeDDoS/remeddos_backup_{current_date}_{current_time}.json')
+        message = 'Se ha generado una copia de seguridad de toda la base de datos. Copia de seguridad creada con éxito.'
+        send_message(message)
+    except Exception as e:
+        message = ('Ha ocurrido un error intentando crear la copia de seguridad. %s'%e)
+        send_message(message)
+    
+    
+
 
 @shared_task
 def daily_backup():
@@ -625,12 +626,26 @@ def daily_backup():
                 call_command('dumpdata', f'flowspec.Route_{peer.peer_tag}', format='json',output=f'_backup/{peer.peer_tag}/{peer.peer_tag}_{current_date}-{current_time}.json')
             else:
                 pass
-        """ call_command('dumpdata', format='json',output=f'_backup/REM_REMEDIOS/backup_{current_date}-{current_time}.json') """
         logger.info(f'Copia de seguridad de toda la BBDD creada con éxito.')
     except Exception as e:
         send_message(f"Testing backup error: {e}", peer=None, superuser=True)
         message = ('Ha ocurrido un error intentando crear la copia de seguridad. from %s'%e)
         send_message(message,peer=peer.peer_tag,superuser=False)
+
+
+def restore_complete_db():
+    from django.core.management import call_command
+    
+    CHOICES_FILES = []
+    for f in os.listdir(settings.BACK_UP_DIR+'/REMeDDoS/'):
+        CHOICES_FILES.append(f)
+    filename = CHOICES_FILES[-1]
+    fixture_path = (settings.BACK_UP_DIR+'/REMeDDoS/'+filename)
+    call_command(f"loaddata",fixture_path)
+    
+
+
+
 
 @shared_task
 def expired_backups():
@@ -643,10 +658,9 @@ def expired_backups():
     peers = Peer.objects.all()
     fixture = ''
     today = datetime.datetime.now()
-
     for peer in peers:
         if not peer.peer_tag == 'Punch':
-            backup_dir = (f"{BACK_UP_DIR}{peer.peer_tag}/")
+            backup_dir = (f"{BACK_UP_DIR}/{peer.peer_tag}/")
             for f in os.listdir(backup_dir):
                 fixture = (backup_dir+f)
                 fd = f.find('_')
@@ -657,6 +671,7 @@ def expired_backups():
                 expired_date = date_obj + datetime.timedelta(days=30)
                 if today > expired_date:
                     os.remove(fixture)
+                    logger.info(f"Removing back up file... {fixture}")
                 else:
                     pass                    
         else:

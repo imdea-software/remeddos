@@ -131,8 +131,9 @@ def display_golem_updates(request,golem_id):
 @verified_email_required
 @login_required
 @never_cache
-def delete_golem(request,golem_id):
+def delete_golem(request):
     username = request.user.username
+    golem_id = request.POST['golem_id']
     try:
         golem = GolemAttack.objects.get(id_name=golem_id)
         golem.delete()
@@ -209,10 +210,11 @@ def verify_commit_route(request, route_slug):
 @login_required
 @never_cache
 def commit_to_router(request,route_slug):
-    from datetime import datetime, timedelta
+    import datetime
 
     applier_peer_networks = []
-    tomorrow = (datetime.now() + timedelta(days=1))
+    tomorrow = (datetime.date.today() + datetime.timedelta(days=1))
+    print('si')
 
     fd = route_slug.find('_')
     peer_tag = route_slug[fd+1:-2]
@@ -225,40 +227,45 @@ def commit_to_router(request,route_slug):
         route.commit_add()
         return HttpResponseRedirect(reverse("golem-routes",kwargs={'golem_name': event_name}))
     if not request.user.is_superuser: 
+        print('s1')
         user_peers = request.user.profile.peers.all()
         for peer in user_peers:
             applier_peer_networks.extend(peer.networks.all())
     if not applier_peer_networks:
+        print('s2')
         messages.add_message(request,messages.WARNING,('Insufficient rights on administrative networks. Cannot add rule. Contact your administrator'))
         return HttpResponseRedirect(reverse("group-routes"))
     
     if not request.user.is_superuser:
+        print('s3')
         source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
         destination = IPNetwork('%s/%s' % (IPNetwork(route.destination).network.compressed, IPNetwork(route.destination).prefixlen)).compressed
         route.source = clean_source(request.user, source)
         route.destination = clean_destination(request.user, destination) 
-
+        print('s4')
         peer = Peer.objects.get(pk__in=user_peers)
         network = peer.networks.filter(network__icontains=route.destination)
+        print('s5', network, network.exists())
         if not network.exists():
             messages.add_message(request,messages.WARNING,('Estás intentando aplicacar una regla con direcciones que no pertenecen a tu espacio administrativo. Contacte con su administrador.'))
             return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name})) 
         
         route.applier = request.user
         route.expires = clean_expires(route.expires)
+        print('ss2')
         
-        try:
+        """ try:
             route.requesters_address = request.META['HTTP_X_FORWARDED_FOR']
         except:
             # in case the header is not provided
-            route.requesters_address = 'unknown'
-        try:
-            route.save()
-            route.commit_add()
-            return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name}))
-        except Exception as e:
+            route.requesters_address = 'unknown' """
+        
+        route.save()
+        route.commit_add()
+        return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name}))
+        """ except Exception as e:
             messages.add_message(request,messages.WARNING,('Estás intentando aplicacar una regla con direcciones que no pertenecen a tu espacio administrativo. Contacte con su administrador. Excepción: ',e))
-            return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name}))
+            return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name})) """
 
 
         

@@ -25,7 +25,7 @@
         "fields":{
             "peer_name":"CSIC",
             "peer_tag":"CSIC",
-            "networks":[1,2]
+            "networks":[1,2,15]
             
         }
     },
@@ -35,7 +35,7 @@
         "fields":{
             "peer_name":"RediMadrid",
             "peer_tag":"REM",
-            "networks":[1,2]
+            "networks":[1,2,16]
             
         }
     },
@@ -45,7 +45,7 @@
         "fields":{
             "peer_name":"CUNEF",
             "peer_tag":"CUNEF",
-            "networks":[1,2]
+            "networks":[1,2,4]
             
         }
     },
@@ -65,7 +65,7 @@
         "fields":{
             "peer_name":"IMDEA",
             "peer_tag":"IMDEA",
-            "networks":[1,2]
+            "networks":[1,2,12]
             
         }
     },
@@ -75,7 +75,7 @@
         "fields":{
             "peer_name":"IMDEA Networks",
             "peer_tag":"IMDEANET",
-            "networks":[1,2]
+            "networks":[1,2,13,14]
             
         }
     },
@@ -85,7 +85,7 @@
         "fields":{
             "peer_name":"UAH",
             "peer_tag":"UAH",
-            "networks":[1,2]
+            "networks":[1,2,5,6,7,8,9,10,11]
             
         }
     },
@@ -95,7 +95,7 @@
         "fields":{
             "peer_name":"UAM",
             "peer_tag":"UAM",
-            "networks":[1,2]
+            "networks":[1,2,18,19,20]
             
         }
     },
@@ -105,7 +105,7 @@
         "fields":{
             "peer_name":"UC3M",
             "peer_tag":"UC3M",
-            "networks":[1,2]
+            "networks":[1,2,21]
             
         }
     },
@@ -115,7 +115,7 @@
         "fields":{
             "peer_name":"UCM",
             "peer_tag":"UCM",
-            "networks":[1,2]
+            "networks":[1,2,22]
             
         }
     },
@@ -125,7 +125,7 @@
         "fields":{
             "peer_name":"UEM",
             "peer_tag":"UEM",
-            "networks":[1,2]
+            "networks":[1,2,23,24]
             
         }
     },
@@ -155,7 +155,7 @@
         "fields":{
             "peer_name":"URJC",
             "peer_tag":"URJC",
-            "networks":[1,2]
+            "networks":[1,2,25,26,27,28,29,30,31]
             
         }
     }

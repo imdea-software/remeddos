@@ -43,7 +43,8 @@
                 <td> {% if route.source %} <small>{{route.source}}</small><br> {% endif %} </td>
                 <td> 
                     {% if route.protocol %} <small>Protocolo: {% for p in route.protocol.all %} {{p}} {% endfor %}</small><br> {% endif %} 
-                    {% if route.port %} <small>Port: {{route.port}}</small><br> {% endif %}
+                    {% if route.sourceport %} <small>Puerto Origen: {{route.sourceport}}</small><br> {% endif %}
+                    {% if route.destinationport %} <small>Puerto Dest: {{route.destinationport}}</small><br> {% endif %}
                     {% if route.tcpflag %} <small>Tcpflag: {{route.tcpflag}}</small><br> {% endif %}
                     {% if route.icmptype %} <small>Icmptype: {{route.icmptype}</small><br> {% endif %}
                     {% if route.icmpcode %} <small>Icmpcode: {{route.icmpcode}}</small><br> {% endif %}
