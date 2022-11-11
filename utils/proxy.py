@@ -151,6 +151,12 @@ class Applier(object):
             except:
                 pass
             try:
+                if route_obj.tcpflag:
+                    for tcpflag in route_obj.tcpflag.all():
+                        route.match['tcp-flags'].append(tcpflag.flag)
+            except:
+                pass
+            try:
                 ports = []
                 if route_obj.port:
                     portrange = str(route_obj.port)
@@ -177,8 +183,7 @@ class Applier(object):
                 route.match['icmp-code'].append(route_obj.icmpcode)
             if route_obj.icmptype:
                 route.match['icmp-type'].append(route_obj.icmptype)
-            if route_obj.tcpflag:
-                route.match['tcp-flags'].append(route_obj.tcpflag)
+            
             if route_obj.packetlength:
                 route.match['packet-length'].append(route_obj.packetlength)
             try:
@@ -462,6 +467,12 @@ class Backup_Applier(object):
             except:
                 pass
             try:
+                if route_obj.tcpflag:
+                    for tcpflag in route_obj.tcpflag.all():
+                        route.match['tcp-flags'].append(tcpflag.flag)
+            except:
+                pass
+            try:
                 ports = []
                 if route_obj.port:
                     portrange = str(route_obj.port)
@@ -488,8 +499,6 @@ class Backup_Applier(object):
                 route.match['icmp-code'].append(route_obj.icmpcode)
             if route_obj.icmptype:
                 route.match['icmp-type'].append(route_obj.icmptype)
-            if route_obj.tcpflag:
-                route.match['tcp-flags'].append(route_obj.tcpflag)
             if route_obj.packetlength:
                 route.match['packet-length'].append(route_obj.packetlength)
             try:

@@ -62,8 +62,8 @@ select.form-select > option {
                                 {% if route.source_port %} <b>Puerto origent:</b> {{route.source_port}}<br> {% endif %}
                                 {% if route.port %} <b>Puerto(s):</b> {{route.port}}<br> {% endif %}
                                 {% if route.destination_port %}<b>Puerto Destino:</b>{{route.destination_port}}<br> {% endif %}
-                                {% if route.protocol.all %}<b>Protocolo:</b> {% for p in route.protocol.all %} {{p}} {% endfor %}<br> {% endif %}
-                                {% if route.tcpflag %} <b>Tcpflag(s): </b>  {{route.tcpflag}} <br>{% endif %}
+                                {% if route.protocol.all %}<b>Protocolo:</b> {% for p in route.protocol.all %} {{ p|upper }} {% endfor %}<br> {% endif %}
+                                {% if route.tcpflag %} <b>Tcpflag(s): </b>  {% for f in route.tcpflag.all %} {{ f|upper }} {% endfor %} <br>{% endif %}
                                 {% if route.get_then %} <b> Acción: {{route.get_then}} </b> {% endif %}
                             </small></td>
                              

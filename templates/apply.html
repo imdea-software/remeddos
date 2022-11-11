@@ -108,24 +108,11 @@
 					<div class="col col-3"><img src="{% static 'threat_source.png' %}" style="height: 30px;"/></div>					
 					</div>
 					<div class="form-text">
-						<p class="font-italic">Para aplicar una regla con un origen '0.0.0.0/0' dejar el campo vacio o introducir '0.0.0.0'</p> 
+						<p class="font-italic">
+							Para aplicar una regla desde cualquier origen poner 0.0.0.0/0. Si no especifica la máscara de red se añadirá una /32.
+						</p> 
 					</div>
-                    
-                    <!-- <div class="row p-1 mt-2">
-					<div class="form-text {% if form.destination.errors %} has-error {% endif %}"></div>
-					<label for="id_destination" class="col form-label"><b>{% trans "Dirección de destinado (*):" %}</b></label>
-					<div class="col col-6">						
-						<select name="id_destination" id="id_destination" class="form-control">
-							<option selected>Selecciona una dirección de destino</option>
-						</select>
-						{% if form.destination.errors %} <span class="help-block"> {{ form.destination.errors|join:", " }} </span>
-						{% endif %}
-					</div>
-					<div class="col col-3">
-						<img src="{% static 'secure_destination.png' %}" style="height: 30px;"/>
-					</div>
-					</div> -->
-					
+
 					<!--  -->
 					<div class="row p-1 mt-2">
 						<div class="form-text {% if form.destination.errors %} has-error {% endif %}"></div>
@@ -167,13 +154,14 @@
 				</div>
 				
                 <div class="row p-1">
-						<div class="form-text {% if form.tcpflag.errors %} has-error {% endif %}"></div>
-						<label for="id_tcpflag" class="col-md-2 control-label"><b>{% trans "TCP Flags: " %}</b></label>
-						<div class="col col-6">
-							{% render_field form.tcpflag class+="form-control"  %}
-							{% if form.tcpflag.errors %} <span class="help-block"> {{ form.tcpflag.errors|join:", " }} </span>
-							{% endif %}
-						</div>
+					<div class="form-text {% if form.tcpflag.errors %} has-error {% endif %}"></div>
+					<label for="id_tcpflag" class="col-md-2 control-label"><b>{% trans "TCP Flags: " %}</b></label>
+					<div class="col col-6">
+						{% render_field form.tcpflag class+="form-control"  %}
+						{% if form.tcpflag.errors %} <span class="help-block"> {{ form.tcpflag.errors|join:", " }} </span>
+						{% endif %}
+					</div>
+
 				</div>
 					
 					<!-- ICMP -->
@@ -223,17 +211,6 @@
 		            {% endif %}
 		        </div>
                 </div>
-
-
-				<!-- div class="row p-1">
-                    <label for="id_port" class="col col-2 form-label"><b>{% trans "Puerto(s): " %}</b></label>
-		        <div class="col col-4">
-		            {% render_field form.port class+="form-control"  %}
-		            {% if form.port.errors %} <span class="help-block"> {{ form.port.errors|join:", " }} </span>
-		            {% endif %}
-		        </div>
-                </div> -->
-
 		        <!--  END OF PORTS -->
 				
                 <div class="row pt-3">
@@ -349,7 +326,6 @@ function getCookie(name) {
 		$('#id_destinationport').removeAttr('required');
 		$('#id_then').removeAttr("multiple");
 		/* $('#id_expires').attr('required'); */
-		$("#id_tcpflag").attr("multiple",true);
 		const selectElement = document.getElementById('id_destination');
 		var url = "{% url 'ajax-networks' %}"
 		var csrftoken = getCookie('csrftoken');
@@ -366,7 +342,6 @@ function getCookie(name) {
 		dataType:"json",
 		success: function(response){         
 			var data = response['networks'];
-			console.log('success: '+data.length);
 			for(var i = 0; i < data.length; i++){
 				var opt = document.createElement('option');
 				opt.value=data[i];

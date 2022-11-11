@@ -61,7 +61,8 @@ class ProcessWebHookView(CsrfExemptMixin, View):
                 task = Process(target=golem, args=(anomaly_info,id_event,last_updated))
                 task.start()
             except Exception as e:
-                logger.info('Error while trying to analyze the golem event. Error: ',e)
+                logger.info('Error while trying to analyze the golem event.')
+                pass
         elif anomaly_info['status'] == 'Recovered' :
             dic_regla = assemble_dic(anomaly_ticket['response']['result']['data'][0]['traffic_characteristics'],anomaly_info)
             peer = find_peer(dic_regla['institution_name'])
@@ -88,18 +89,22 @@ def display(request):
 @login_required
 @never_cache
 def display_routes(request,golem_name):
-    peers = Peer.objects.all()
+
+    all_routes = find_all_routes()
+    golem_routes = []
+
+    for x in all_routes:
+        for route in x:
+            if route.name.startswith(golem_name):
+                golem_routes.append(route)
+
     actions = ThenAction.objects.all()
     golem = GolemAttack.objects.get(id_name=golem_name)
-    p = ''
-    dic = {'Punch': golem.route.order_by('filed'),'CV':golem.route_cv.order_by('filed'),'CIB':golem.route_cib.order_by('filed'),'CSIC':golem.route_csic.order_by('filed'),'CEU':golem.route_ceu.order_by('filed'),'CUNEF':golem.route_cunef.order_by('filed'),'IMDEA_NET':golem.route_imdeanet.order_by('filed'),
-    'IMDEA':golem.route_imdea.order_by('filed'),'UAM':golem.route_uam.all(),'UC3M':golem.route_uc3m.order_by('filed'),'UCM':golem.route_ucm.order_by('filed'),'UAH':golem.route_uah.order_by('filed'),'UEM':golem.route_uem.order_by('filed'),'UNED':golem.route_uned.order_by('filed'),'UPM':golem.route_upm.order_by('filed'),
-    'URJC':golem.route_urjc.order_by('filed')}
-    for peer in peers:
-        if peer.peer_tag == golem.peer.peer_tag:
-            p = peer.peer_tag
-            reglas = dic.get(p,'Institución invalida')
-    return render(request,'golem/user_routes.html',{'routes':reglas,'golem_name':golem_name,'link':golem.link,'actions':actions})
+
+    if golem.link:
+        return render(request,'golem/user_routes.html',{'routes':golem_routes,'golem_name':golem_name,'link':golem.link,'actions':actions})
+    else:
+        return render(request,'golem/user_routes.html',{'routes':golem_routes,'golem_name':golem_name,'actions':actions})
 
 
 
@@ -214,7 +219,6 @@ def commit_to_router(request,route_slug):
 
     applier_peer_networks = []
     tomorrow = (datetime.date.today() + datetime.timedelta(days=1))
-    print('si')
 
     fd = route_slug.find('_')
     peer_tag = route_slug[fd+1:-2]
@@ -227,45 +231,40 @@ def commit_to_router(request,route_slug):
         route.commit_add()
         return HttpResponseRedirect(reverse("golem-routes",kwargs={'golem_name': event_name}))
     if not request.user.is_superuser: 
-        print('s1')
         user_peers = request.user.profile.peers.all()
         for peer in user_peers:
             applier_peer_networks.extend(peer.networks.all())
     if not applier_peer_networks:
-        print('s2')
         messages.add_message(request,messages.WARNING,('Insufficient rights on administrative networks. Cannot add rule. Contact your administrator'))
         return HttpResponseRedirect(reverse("group-routes"))
     
     if not request.user.is_superuser:
-        print('s3')
         source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
         destination = IPNetwork('%s/%s' % (IPNetwork(route.destination).network.compressed, IPNetwork(route.destination).prefixlen)).compressed
         route.source = clean_source(request.user, source)
         route.destination = clean_destination(request.user, destination) 
-        print('s4')
         peer = Peer.objects.get(pk__in=user_peers)
         network = peer.networks.filter(network__icontains=route.destination)
-        print('s5', network, network.exists())
         if not network.exists():
             messages.add_message(request,messages.WARNING,('Estás intentando aplicacar una regla con direcciones que no pertenecen a tu espacio administrativo. Contacte con su administrador.'))
             return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name})) 
         
         route.applier = request.user
         route.expires = clean_expires(route.expires)
-        print('ss2')
         
         """ try:
             route.requesters_address = request.META['HTTP_X_FORWARDED_FOR']
         except:
             # in case the header is not provided
             route.requesters_address = 'unknown' """
-        
-        route.save()
-        route.commit_add()
-        return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name}))
-        """ except Exception as e:
-            messages.add_message(request,messages.WARNING,('Estás intentando aplicacar una regla con direcciones que no pertenecen a tu espacio administrativo. Contacte con su administrador. Excepción: ',e))
-            return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name})) """
+        try:
+            route.save()
+            route.commit_add()
+            return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name}))
+        except Exception as e:
+            logger.info(f"Ha habido un error cuando se intentaba hacer commit de una regla. Error: {e}")
+            messages.add_message(request,messages.WARNING,('Ha ocurrido un error a la hora de intentar configurar la regla en el router. Contacte con su administrador.'))
+            return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name}))
 
 
         

@@ -88,8 +88,8 @@ ROUTE_STATES = (
     ) 
 
 TCP_CHOICES =(
-    ("ack","ack"),
-    ("rst","rst"),
+    ("ack","ACK"),
+    ("rst","RST"),
     ("fin","FIN"),
     ("push","PUSH"),
     ("urgent","URGENT"),
@@ -140,6 +140,17 @@ class ThenAction(models.Model):
         ordering = ['action', 'action_value']
         unique_together = ("action", "action_value")
 
+
+class TcpFlag(models.Model):
+    flag = models.CharField(max_length=50, choices=TCP_CHOICES, blank=True, null=True, verbose_name="TCP Flag")
+
+    def __str__(self):
+        ret = "%s"%(self.flag) 
+        return ret
+
+    class Meta:
+        db_table = u'tcp_flag'
+
 class Validation(models.Model):
     value = models.CharField(max_length=10, blank=False, null=False)
     user = models.ForeignKey(User,on_delete=models.CASCADE)
@@ -158,9 +169,9 @@ class Route(models.Model):
     name = models.SlugField(max_length=128, verbose_name=_("Name"), unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
     peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
-    source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=True, null=True)
+    source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=False, null=False)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
-    destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=True, null=True)
+    destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=False, null=False)
     destinationport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Destination Port"))
     port = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Port"))
     dscp = models.ManyToManyField(MatchDscp, blank=True, verbose_name="DSCP")
@@ -168,8 +179,8 @@ class Route(models.Model):
     icmptype = models.CharField(max_length=32, blank=True, null=True, verbose_name="ICMP-Type")
     packetlength = models.CharField(max_length=65535, blank=True, null=True, verbose_name="Packet Length")
     protocol = models.ManyToManyField(MatchProtocol, blank=True, verbose_name=_("Protocol"))
-    tcpflag = models.CharField(max_length=50, choices=TCP_CHOICES, blank=False, null=True, verbose_name="TCP flag")
-    #tcpflag = models.ManyToManyField(MatchTcpFlag, blank=True,verbose_name="TCP Flag", null=True)
+    #tcpflag = models.CharField(max_length=50, choices=TCP_CHOICES, blank=True, null=True, verbose_name="TCP flag")
+    tcpflag = models.ManyToManyField(TcpFlag, blank=True,verbose_name="TCP Flag")
     then = models.ManyToManyField(ThenAction, verbose_name=_("Then"), default='discard')
     filed = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
@@ -179,8 +190,10 @@ class Route(models.Model):
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
     is_proposed = models.BooleanField(default=False)
-    history = HistoricalRecords(use_base_model_db=True, inherit=True)
-    
+    #history = HistoricalRecords(use_base_model_db=True,null=True, inherit=True)
+
+    class Meta:
+        abstract = True
 
     @property
     def applier_username(self):
@@ -207,29 +220,14 @@ class Route(models.Model):
     @property
     def translate_tcpflag(self):
         if self.tcpflag:
-            tcpdict = {'1':'-----F', '2':'----S-', '3':'----SF', '4':'---R--', '5':'---R-F','6' : '---RS-' , '7' : '---RSF' ,
-              '8' : '--P---' , '9' : '--P--F' , '10': '--P-S-', '11' : '--P-SF', '12' : '--PR--' ,'13' : '--PR-F','14' : '--PRS-','15':'--PRSF',
-               '16':'-A----', '17':'-A---F', '18':'-A--S-', '19':'-A--SF','20':'-A-R--','21':'-A-R-F','22':'-A-RS-','23': '-A-RSF','24':'-AP---',
-                '25':'-AP--F', '26':'-AP-S-','27':'-AP-SF', '28':'-APR--','29':'-APR-F', '30':'-APRS-', '31':'-APRSF'}
-            tcpflags = tcpdict.get(self.tcpflag,"Invalid Argument")
+            tcpdict = {'-----F':'fin', '----S-':'syn', '----SF':'syn,fin', '---R--':'rst', '---R-F':'rst,fin','---RS-':'rst,syn' ,'---RSF':'rst,syn,fin' ,'push' : '--P---' , 'push,fin' : '--P--F' , 'push,syn': '--P-S-', '--P-SF':'push,syn,fin', '--PR--':'push,rst','--PR-F':'push,rst,fin' ,'--PRS-':'push,rst,syn','--PRSF':'push,rst,syn,fin','ack':'-A----', '-A---F':'ack,fin','-A--S-':'ack,syn', '-A--SF':'ack,syn,fin','-A-R--':'ack,rst','-A-R-F':'ack,rst,fin','-A-RS-':'ack,rst,syn','-A-RSF':'ack,rst,syn,fin','-AP---':'ack,push','-AP--F':'ack,push,fin','-AP-S-':'ack,push,syn','-AP-SF':'ack,push,syn,fin','-APR--':'ack,push,rst','-APR-F':'ack,push,rst,fin', '-APRS-':'ack,push,rst,syn', '-APRSF':'ack,push,rst,syn,fin'}
+            tcpflags = tcpdict.get(self.tcpflag.all(),"Invalid Argument")
         return tcpflags
-    
-    def check_history_changes(self):
-        if self.history:
-            iter = self.history.all().order_by('history_date').iterator()
-            history_records = []
-            for record_pair in iter_for_delta_changes(iter):
-                old_record, new_record = record_pair
-                delta = new_record.diff_against(old_record)
-                for change in delta.changes:
-                    history_records.append(f'{change.field} ha cambiado de: {change.old} a: {change.new}.')
-        return history_records
 
     def __str__(self):
         return "%s, %s, %s, %s, %s, %s"%(self.name,self.expires, self.applier, self.status,self.source,self.destination)
 
-    class Meta:
-        abstract = True
+
 
     def save(self, *args, **kwargs):
         peer_suff = ''
@@ -304,7 +302,7 @@ class Route(models.Model):
                 user_mail = user_mail.split(';')
                 send_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
         except Exception as e:
-                print('There was an exception when trying to notify the user via e-mail, ',e)
+                logger.info('There was an exception when trying to notify the user via e-mail, ',e)
      
                 
     def commit_edit(self, *args, **kwargs):
@@ -537,6 +535,149 @@ class Route(models.Model):
             if self.status== "ADMININACTIVE" or self.status== "INACTIVE" or self.status== "EXPIRED":
                 found = True
         return found
+    def is_synced_backup(self):
+        found = False
+        try:
+            get_device = PR.Backup_Retriever()
+            device = get_device.fetch_device()
+            routes = device.routing_options[0].routes
+        except Exception as e:
+            self.status= "EXPIRED"
+            self.save()
+            logger.error('No routing options on device. Exception: %s' % e)
+            return True
+        for route in routes:
+            if route.name == self.name:
+                found = True
+                logger.info('Found a matching rule name')
+                devicematch = route.match
+                try:
+                    assert(self.destination)
+                    assert(devicematch['destination'][0])
+                    if self.destination == devicematch['destination'][0]:
+                        found = found and True
+                        logger.info('Found a matching destination')
+                    else:
+                        found = False
+                        logger.info('Destination fields do not match')
+                except:
+                    pass
+                try:
+                    assert(self.source)
+                    assert(devicematch['source'][0])
+                    if self.source == devicematch['source'][0]:
+                        found = found and True
+                        logger.info('Found a matching source')
+                    else:
+                        found = False
+                        logger.info('Source fields do not match')
+                except:
+                    pass
+
+                try:
+                    assert(self.fragmenttype.all())
+                    assert(devicematch['fragment'])
+                    devitems = devicematch['fragment']
+                    dbitems = ["%s"%i for i in self.fragmenttype.all()]
+                    intersect = list(set(devitems).intersection(set(dbitems)))
+                    if ((len(intersect) == len(dbitems)) and (len(intersect) == len(devitems))):
+                        found = found and True
+                        logger.info('Found a matching fragment type')
+                    else:
+                        found = False
+                        logger.info('Fragment type fields do not match')
+                except:
+                    pass
+
+                try:
+                    assert(self.port.all())
+                    assert(devicematch['port'])
+                    devitems = devicematch['port']
+                    dbitems = ["%s"%i for i in self.port.all()]
+                    intersect = list(set(devitems).intersection(set(dbitems)))
+                    if ((len(intersect) == len(dbitems)) and (len(intersect) == len(devitems))):
+                        found = found and True
+                        logger.info('Found a matching port type')
+                    else:
+                        found = False
+                        logger.info('Port type fields do not match')
+                except:
+                    pass
+
+                try:
+                    assert(self.protocol.all())
+                    assert(devicematch['protocol'])
+                    devitems = devicematch['protocol']
+                    dbitems = ["%s"%i for i in self.protocol.all()]
+                    intersect = list(set(devitems).intersection(set(dbitems)))
+                    if ((len(intersect) == len(dbitems)) and (len(intersect) == len(devitems))):
+                        found = found and True
+                        logger.info('Found a matching protocol type')
+                    else:
+                        found = False
+                        logger.info('Protocol type fields do not match')
+                except:
+                    pass
+
+                try:
+                    assert(self.destinationport.all())
+                    assert(devicematch['destination-port'])
+                    devitems = devicematch['destination-port']
+                    dbitems = ["%s"%i for i in self.destinationport.all()]
+                    intersect = list(set(devitems).intersection(set(dbitems)))
+                    if ((len(intersect) == len(dbitems)) and (len(intersect) == len(devitems))):
+                        found = found and True
+                        logger.info('Found a matching destination port type')
+                    else:
+                        found = False
+                        logger.info('Destination port type fields do not match')
+                except:
+                    pass
+
+                try:
+                    assert(self.sourceport.all())
+                    assert(devicematch['source-port'])
+                    devitems = devicematch['source-port']
+                    dbitems = ["%s"%i for i in self.sourceport.all()]
+                    intersect = list(set(devitems).intersection(set(dbitems)))
+                    if ((len(intersect) == len(dbitems)) and (len(intersect) == len(devitems))):
+                        found = found and True
+                        logger.info('Found a matching source port type')
+                    else:
+                        found = False
+                        logger.info('Source port type fields do not match')
+                except:
+                    pass
+                try:
+                    assert(self.icmpcode)
+                    assert(devicematch['icmp-code'][0])
+                    if self.icmpcode == devicematch['icmp-code'][0]:
+                        found = found and True
+                        logger.info('Found a matching icmp code')
+                    else:
+                        found = False
+                        logger.info('Icmp code fields do not match')
+                except:
+                    pass
+                try:
+                    assert(self.icmptype)
+                    assert(devicematch['icmp-type'][0])
+                    if self.icmptype == devicematch['icmp-type'][0]:
+                        found = found and True
+                        logger.info('Found a matching icmp type')
+                    else:
+                        found = False
+                        logger.info('Icmp type fields do not match')
+                except:
+                    pass
+                if found and self.status!= "ACTIVE":
+                    logger.error('Rule is applied on device but appears as offline')
+                    self.status= "ACTIVE"
+                    self.save()
+                    found = True
+            if self.status== "ADMININACTIVE" or self.status== "INACTIVE" or self.status== "EXPIRED":
+                found = True
+        return found
 
     def get_then(self):
         ret = ''
@@ -565,17 +706,19 @@ class Route(models.Model):
         if self.icmptype:
             ret = "%s <dt>ICMP Type</dt><dd>%s</dd>" %(ret, self.icmptype)
         if self.packetlength:
-            ret = "%s <dt>Packet Length</dt><dd>%s</dd>" %(ret, self.packetlength)
+            if ',' in self.packetlength:
+                pl = self.packetlength.split(',')
+                for packetlength in pl:
+                    ret = ret + "%s <dt>Packet Length</dt><dd>%s</dd>" %(ret, packetlength)
+            elif '-' in self.packetlength:
+                pl = self.packetlength.split('-')
+                for packetlength in pl:
+                    ret = ret + "%s <dt>Packet Length</dt><dd>%s</dd>" %(ret, packetlength)
+
         if self.source:
             ret = "%s <dt>Src Addr</dt><dd>%s</dd>" %(ret, self.source)
-        if self.tcpflag:
-            print('this is tcpflags: ', self.tcpflag)
-            flags = self.tcpflag.split(' ')
-            if len(flags) > 1 :
-                    for flag in flags:
-                       ret = ret + "%s <dt>TCP flag</dt><dd>%s</dd>" %(ret, flag) 
-            else:
-                ret = "%s <dt>TCP flag</dt><dd>%s</dd>" %(ret, self.tcpflag)
+        if self.tcpflag.all():
+            ret = ret + "<dt>TCP flag</dt><dd>%s</dd>" %(', '.join(["%s"%i for i in self.tcpflag.all()]))
         if self.port:
             ret = ret + "<dt>Ports</dt><dd>%s</dd>" %(self.port)
 #            for port in self.port.all():
@@ -617,8 +760,8 @@ class Route(models.Model):
             ret = "%s <td><small><b>Packet Length: </b>%s</small></td>" %(ret, self.packetlength)
         if self.source:
             ret1 = "%s <td><small><b>Src Addr: </b>%s</small></td>" %(ret1, self.source)
-        if self.tcpflag:
-            ret1 = "%s <td><small><b>TCP flags: </b>%s</small></td>" %(ret1, self.tcpflag)
+        if self.tcpflag.all():
+            ret1 = ret1 + "<td><small><b>TCP flags: </b>%s</small></td>" %(', '.join(["%s"%i for i in self.tcpflag.all()]))
         if self.port:
             ret1 = ret1 + "<td><small><b>Ports: </b>%s</small></td>" %(self.port)
         if self.protocol.all():

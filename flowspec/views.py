@@ -132,7 +132,7 @@ def dashboard(request):
                 return render(request,'dashboard.html',{'routes': all_routes,'messages': message,'file' : ''},)
             else:
                 message = 'You have not added any rules yet'
-                return render(request,'dashboard.html',{'routes': all_group_routes.prefetch_related('applier', 'applier','protocol','dscp'),'messages': message,'file' : ''})
+                return render(request,'dashboard.html',{'messages': message,'file' : ''})
 
         else:
             all_group_routes = find_routes(user.username)
@@ -146,7 +146,7 @@ def dashboard(request):
                 return render(request,'dashboard.html',{'routes': routes,'messages': message,'file' : ''})
             else:
                 message = 'You have not added any rules yet'
-                return render(request,'dashboard.html',{'routes': all_group_routes.prefetch_related('applier', 'applier','protocol','dscp'),'messages': message,'file' : ''})
+                return render(request,'dashboard.html',{'messages': message,'file' : ''})
     else:
         message = 'You are not associated with a peer.'
         return render(request,'dashboard.html',{'messages': message})
@@ -411,7 +411,6 @@ def add_route(request):
             network = []
             for p in peer:
                 network.append(p.networks.all())
-                
         else:
             peer = Peer.objects.get(pk__in=user_peers)
             network = peer.networks.all()
@@ -419,6 +418,8 @@ def add_route(request):
         if not request.user.is_superuser:
             form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
             form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
+            form.fields['tcpflag'] = forms.ModelMultipleChoiceField(queryset=TcpFlag.objects.filter(flag__in=settings.UI_USER_TCPFLAG).order_by('flag'), required=False)
+            #form.fields['tcpflag'] = forms.ModelMultipleChoiceField(choices=settings.UI_USER_TCPFLAGS), required=False)
         return render(request,'apply.html',{'form': form,'applier': applier,'maxexpires': settings.MAX_RULE_EXPIRE_DAYS,'peers':network})
     else:
         request_data = request.POST.copy()
@@ -447,6 +448,7 @@ def add_route(request):
             except:
                 # in case the header is not provided
                 route.requesters_address = 'unknown'
+            print('estoy aqui: ',route)
             route.save()
             form.save_m2m()
                 # We have to make the commit after saving the form
@@ -457,6 +459,7 @@ def add_route(request):
             if not request.user.is_superuser:
                 form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
                 form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
+                form.fields['tcpflag'] = forms.ModelMultipleChoiceField(queryset=TcpFlag.objects.filter(flag__in=settings.UI_USER_TCPFLAG).order_by('flag'), required=False)
             return render(request,'apply.html',{'form': form,'applier': applier,'maxexpires': settings.MAX_RULE_EXPIRE_DAYS})
 
 @verified_email_required
@@ -559,7 +562,6 @@ def edit_route(request, route_slug):
                     except:
                         # in case the header is not provided
                         route.requesters_address = 'unknown'
-
                 route.save()
                 if bool(set(changed_data) and set(critical_changed_values)) or (not route_original.status== 'ACTIVE'):
                     form.save_m2m()
@@ -575,6 +577,7 @@ def edit_route(request, route_slug):
                 form.fields['sourceport'].required=False
                 form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
                 form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
+                form.fields['tcpflag'] = forms.ModelMultipleChoiceField(queryset=TcpFlag.objects.filter(flag__in=settings.UI_USER_TCPFLAG).order_by('flag'), required=False)
             return render(request,'apply.html',{'form': form,'edit': True,'applier': applier,'routename':routename, 'maxexpires': settings.MAX_RULE_EXPIRE_DAYS})
     else:
         routename = route_edit.name
@@ -587,7 +590,8 @@ def edit_route(request, route_slug):
         form.fields['sourceport'].required=False
         if not request.user.is_superuser:
             form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
-            form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)      
+            form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
+            form.fields['tcpflag'] = forms.ModelMultipleChoiceField(queryset=TcpFlag.objects.filter(flag__in=settings.UI_USER_TCPFLAG).order_by('flag'), required=False)   
         return render(request,'apply.html', {'form': form,'edit': True,'applier': applier,'routename':routename,'maxexpires': settings.MAX_RULE_EXPIRE_DAYS})
 
 
@@ -977,7 +981,6 @@ def storage_dashboard(request):
 @login_required
 @never_cache
 def sync_routers(request):
-    print('hola')
     try:
         first_router = get_routes_router()
         backup_router = get_routes_backuprouter()
@@ -1004,40 +1007,43 @@ def sync_routers(request):
     if (fw_routes == backup_fw_routes):
         logger.info('Routes between both routers are syncronised.')
     else:
-        print('hola 2')
         diff = set(fw_routes).difference(backup_fw_routes)
+        diff1 = set(backup_fw_routes).difference(fw_routes)
+        diff.update(diff1)
         if not diff == set():
             notsynced_routes = list(diff)
             logger.info(f"The following routes have not been syncronised: {notsynced_routes}")
-            print('hola 3')
             for route in notsynced_routes:
                 try:
                     commit_route = get_specific_route(applier=None,peer=None, route_slug=route)
                 except ObjectDoesNotExist:
-                    commit_route = get_route(applier = None,peer =get_peer_with_name(route))
-                if not commit_route.has_expired():
-                    try:
-                        commit_route.commit_add()
-                    except Exception as e:
-                        message = (f"There was an error when trying to sync both routers: {e}")
-                        logger.info(message)
-                        return render(request,'storage/dashboard.html')
+                    commit_route = get_route(applier=None, peer=get_peer_with_name(route))
+                if not commit_route == None:
+                    if not commit_route.has_expired() and commit_route.status != 'EXPIRED':
+                        try:
+                            commit_route.commit_add()
+                        except Exception as e:
+                            message = (f"There was an error when trying to sync both routers: {e}")
+                            logger.info(message)
+                            return render(request,'storage/dashboard.html')
+                    else:
+                        if commit_route.has_expired():
+                            try:
+                                commit_route.commit_delete()
+                            except Exception as e:
+                                message = (f"There was an error when trying to delete an expired route ({commit_route.name}) from the routers. Error: {e}")
+                                logger.info(message)
+                                return render(request,'storage/dashboard.html')
                 else:
-                    try:
-                        commit_route.commit_delete()
-                    except Exception as e:
-                        message = (f"There was an error when trying to delete an expired route ({commit_route.name}) from the routers. Error: {e}")
-                        logger.info(message)
-                        return render(request,'storage/dashboard.html')
+                    pass
+                    
         else:
-            print('hola 4')
             diff = set(backup_fw_routes).difference(fw_routes)
             notsynced_routes = list(diff)
             logger.info(f"The following routes have not been syncronised: {notsynced_routes}")
-            print('hola 5')
+
             for route in notsynced_routes:
                 try:
-                    print('hola 6')
                     commit_route = get_specific_route(applier=None,peer=None, route_slug=route)
                 except ObjectDoesNotExist:
                     commit_route = get_route(applier = None,peer =get_peer_with_name(route))
@@ -1057,8 +1063,6 @@ def sync_routers(request):
                         logger.info(message)
                         return render(request,'storage/dashboard.html')
                     
-
-
     return render(request,'storage/dashboard.html')
 
 
@@ -1107,20 +1111,32 @@ def sync_router(request):
                 
                     #route = get_route(username)
                 peer = get_peer_with_name(name_fw)
-                route = get_route(applier=None,peer=peer)
-                route.name = name_fw
-                route.applier = None
-                route.source = source
-                route.sourceport = src_port
-                route.destination = destination
-                route.destinationport = dest_port
-                route.icmpcode = icmpcode
-                route.icmptype = icmptype
-                route.packetlength = packetlength
-                route.tcpflag = tcpflags
-                route.status = 'ACTIVE'
-                try:
+                if peer:
+                    #route = get_route(applier=None,peer=peer)
+                    route = get_specific_route(applier=None,peer=None, route_slug=name_fw)
+                    print('this is route: ', name_fw)
+                    print('this is route: ', route)
+                    route.name = name_fw
+                    print('this is route: ', route)
+                    route.applier = None
+                    route.source = source
+                    route.sourceport = src_port
+                    route.destination = destination
+                    route.destinationport = dest_port
+                    route.icmpcode = icmpcode
+                    route.icmptype = icmptype
+                    route.packetlength = packetlength
+                    #route.tcpflag.set(tcpflags)
+                    route.status = 'ACTIVE'
                     route.save()
+
+                    if isinstance(tcpflags,(list)):
+                        for f in tcpflags:
+                            flag, created = TcpFlag.objects.get_or_create(protocol=f)
+                            route.tcpflag.add(flag.pk)
+                    else:
+                        flag, created = TcpFlag.objects.get_or_create(protocol=tcpflags)
+                        route.tcpflag.add(flag.pk) 
 
                     th_act, created = ThenAction.objects.get_or_create(action=then,action_value=then_action)
                     route.then.add(th_act.pk)
@@ -1132,13 +1148,13 @@ def sync_router(request):
                     else:
                         prot, created = MatchProtocol.objects.get_or_create(protocol=protocol)
                         route.protocol.add(prot.pk)
-
-                except Exception as e:                    
-                    logger.info(f"Ha habido un error cuando se quería guardar la regla en la base de datos. Error: {e}")
-
-                
-                logger.info('Todas las reglas ya han sido sincronizadas con la base de datos.') 
-                        # check if the route is already in our DB
+                    
+                    logger.info(f"Todas las reglas ya han sido sincronizadas con la base de datos.") 
+                            # check if the route is already in our DB
+                else:
+                    #means the route does not belong to any peer
+                    logger.info(f"La regla no pertenece a ninguna institución. Regla: {name_fw}")
+                    pass
                
             else:
                 # means that the route does not belong to the user's peer

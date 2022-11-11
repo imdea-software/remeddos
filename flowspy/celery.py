@@ -22,11 +22,6 @@ app.conf.beat_schedule = {
         "schedule": crontab(minute=0, hour=0),
         "args": (),
     },
-    "every-day-sync": {
-        "task": "flowspec.tasks.check_sync",
-        "schedule": crontab(minute=0, hour=0),
-        "args": (),
-    },
     "notify-expired": {
         "task": "flowspec.tasks.notify_expired",
         "schedule": crontab(minute=0, hour=0),
@@ -57,15 +52,5 @@ app.conf.beat_schedule = {
         "schedule": crontab(minute=0, hour=0), 
         "args": (),
     },
-    "every-day-sync-router-with-db":{
-        "task":"flowspec.tasks.sync_router_with_db",
-        "schedule":crontab(minute=0,hour=0),
-        "args":(),
-    },
-    "sync-routers":{
-        "task":"flowspec.tasks.sync_routers",
-        "schedule":crontab(minute=0,hour=0),
-        "args":(),
-    }
 }
 

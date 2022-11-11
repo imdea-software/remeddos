@@ -13,6 +13,7 @@ from pyzabbix import ZabbixAPI
 import datetime
 from datetime import timedelta
 from django.core.exceptions import ObjectDoesNotExist
+from peers.models import *
 
 
 FORMAT = '%(asctime)s %(levelname)s: %(message)s'
@@ -59,6 +60,7 @@ def send_message(message, peer=None, superuser=False):
 
 #  find peer tag based on a routename 
 def get_peer_with_name(routename):
+  peers = Peer.objects.all()
   fd = routename.find('_')
   peer_name = '' 
   if routename[fd::][-1].isnumeric():
@@ -69,7 +71,10 @@ def get_peer_with_name(routename):
     n = routename[fd+1::]
     fd1 = n.find('_')
     peer_name = n[fd1+1::]
-  return peer_name
+  if any(peer_name in i.peer_tag for i in peers):
+    return peer_name
+  else:
+    return False
 
 # get peer object
 def get_peers(username):
@@ -198,14 +203,14 @@ def get_protocol(p):
 
 def translate_tcpflags(tf):
   tcpflag_dict = {'ack':'10','rst':'04','fin':'01','push':'08','urgent':'20','syn':'02'}
-  tcpflags = tcpflag_dict.get(tf,"Invalid argument")
+  tcpflags = tcpflag_dict.get(tf,False)
   return tcpflags
 
 def golem_translate_tcpflag(tf):
-  tcpdict = {'-----F':'fin', '----S-':'syn', '----SF':'syn fin', '---R--':'rst', '---R-F':'rst fin', '---RS-':'rst syn', '---RSF':'rst syn fin', '--P---':'push', '--P--F':'push fin', '--P-S-':'push syn', '--P-SF':'push syn fin', '--PR--':'push rst', '--PR-F':'push rst fin', '--PRS-':'push rst syn', '--PRSF':'push rst syn fin',
+  tcpf = {'-----F':'fin', '----S-':'syn', '----SF':'syn fin', '---R--':'rst', '---R-F':'rst fin', '---RS-':'rst syn', '---RSF':'rst syn fin', '--P---':'push', '--P--F':'push fin', '--P-S-':'push syn', '--P-SF':'push syn fin', '--PR--':'push rst', '--PR-F':'push rst fin', '--PRS-':'push rst syn', '--PRSF':'push rst syn fin',
   '-A----':'ack', '-A---F':'ack fin', '-A--S-':'ack syn', '-A--SF':'19', 'ack syn fin':'ack rst', '-A-R-F':'ack rst fin', '-A-RS-':'ack rst syn', '-A-RSF':'ack rst syn fin', '-AP---':'ack push', '-AP--F':'ack push fin', '-AP-S-':'ack push syn', '-AP-SF':'ack push syn fin', '-APR--':'ack push rst', '-APR-F':'ack push rst fin', '-APRS-':'ack push rst syn',
   '-APRSF':'ack push rst syn fin'}
-  tcpflags = tcpdict.get(tf,"Invalid Argument")
+  tcpflags = tcpf.get(tf,False)
   return tcpflags
 
 def check_protocol(protocol):
@@ -238,6 +243,7 @@ def get_ip_address(ip):
   # first we find the route we need for the zabbix query, then we check which parameters we need in order to get the full query
   # and then we assemble it
 def get_query(routename, dest, src, username):
+
   route = get_specific_route(applier=username,peer=None,route_slug=routename)
   source = '0/0' if src == '0.0.0.0/0' else src[:-3]
   destination = '0/0' if dest == '0.0.0.0/0' else dest[:-3]
@@ -258,6 +264,7 @@ def get_query(routename, dest, src, username):
     tcp_flags = f',tcp-flag:{translate_tcpflags(route.tcpflag)}'
   p_length =  f',len={route.packetlength}' if route.packetlength else ''
   query = (f'jnxFWCounterByteCount["{destination},{source}{protocol}{destport}{sourceport}{icmpcode}{icmptype}{tcp_flags}{p_length}"]')
+
   return query
 
 def get_graph_name(routename,dest,src):
@@ -381,6 +388,7 @@ def find_routes(applier=None, peer=None):
     'UPM' : Route_UPM.objects.all(),
     'URJC' : Route_URJC.objects.all(),
   }
+
   if not peer: 
     peer_tag = get_peer_tag(applier)
     user_routes = routes[peer_tag]
@@ -391,7 +399,7 @@ def find_routes(applier=None, peer=None):
 
 def get_routes_router():
     retriever = Retriever()
-    router_config = retriever.fetch_config_str()    
+    router_config = retriever.fetch_config_str() 
     tree = ET.fromstring(router_config)
     data = [d for d in tree]
     config = [c for c in data]
@@ -405,7 +413,7 @@ def get_routes_router():
 
 def get_routes_backuprouter():
     retriever = Backup_Retriever()
-    router_config = retriever.fetch_config_str()    
+    router_config = retriever.fetch_config_str()
     tree = ET.fromstring(router_config)
     data = [d for d in tree]
     config = [c for c in data]
@@ -416,6 +424,154 @@ def get_routes_backuprouter():
     for flow_nodes in flow:
         routes = flow_nodes   
     return routes
+
+
+""" finds route missing in db and saves it  """
+
+def find_match_route_config_router(routename):
+  from flowspec.models import MatchProtocol, TcpFlag
+  import datetime
+
+  tomorrow = (datetime.date.today() + datetime.timedelta(days=1))
+  first_retriever = get_routes_router()
+  second_retriever = get_routes_backuprouter()
+  peer_tag = get_peer_with_name(routename)
+  route = get_route(applier=None,peer=peer_tag)
+  check = False
+  protocol = []
+  tcpflags = []
+  destports = []
+  sourceports = []
+  packetlength = []
+  destination = ''
+  src = ''
+  icmpcode = ''
+  icmptype = ''
+  then = []
+  then_value = []
+
+  for children in first_retriever:
+    for child in children:
+      if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
+          if child.text == routename:
+            check = True
+            route.name = routename
+          else:
+            check = False
+      if check:
+        for tag in child:
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}protocol':
+            protocol.append(tag.text)
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination-port':
+            destports.append(tag.text)
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source-port':
+            sourceports.append(tag.text)
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}tcp-flags':
+            tcpflags.append(tag.text)
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length':
+            packetlength.append(tag.text)
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination':
+            destination = tag.text
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source':
+            src = tag.text
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-code':
+            icmpcode = tag.text
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type':
+            icmptype = tag.text
+      if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}then' and check:
+        for c in child:
+          f = c.tag.find('}')
+          text = c.tag[f+1:]
+          then.append(text)
+          if c.tag != '{http://xml.juniper.net/xnm/1.1/xnm}discard' or c.tag != '{http://xml.juniper.net/xnm/1.1/xnm}accept':
+            then_value.append(c.text)
+  if route.name:
+    if packetlength: route.packetlength = packetlength
+    if icmpcode: route.icmpcode = icmpcode
+    if icmptype: route.icmptype = icmptype
+    if src: route.source = src
+    if destination: route.destination = destination
+    if then_value:
+      route.then = (f"{then}:{then_value}")
+    else:
+      route.then = then
+    route.expires = tomorrow
+    try:
+      route.save()
+    except Exception as e:
+      logger.info(f"There was an error when saving {routename} into the DB. It might be a duplicate.")
+      return None
+    for p in protocol:
+      prot, created = MatchProtocol.objects.get_or_create(protocol=prot)
+      route.protocol.add(prot)
+    for flag in tcpflags:
+      tcpflag, created = TcpFlag.objects.get_or_create(flag=flag)
+      route.tcpflag.add(tcpflag)
+      route.save()
+      return route
+  else:     
+    for children in second_retriever:
+      for child in children:
+        if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
+          if child.text == routename:
+            check = True
+            route.name = routename
+          else:
+            check = False
+      if check:
+        for tag in child:
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}protocol':
+            protocol.append(tag.text)
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination-port':
+            destports.append(tag.text)
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source-port':
+            sourceports.append(tag.text)
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}tcp-flags':
+            tcpflags.append(tag.text)
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length':
+            packetlength.append(tag.text)
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination':
+            destination = tag.text
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source':
+            src = tag.text
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-code':
+            icmpcode = tag.text
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type':
+            icmptype = tag.text
+      if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}then' and check:
+        for c in child:
+          f = c.tag.find('}')
+          text = c.tag[f+1:]
+          then.append(text)
+          if c.tag != '{http://xml.juniper.net/xnm/1.1/xnm}discard' or c.tag != '{http://xml.juniper.net/xnm/1.1/xnm}accept':
+            then_value.append(c.text)
+  if route.name:
+    if packetlength: route.packetlength = packetlength
+    if icmpcode: route.icmpcode = icmpcode
+    if icmptype: route.icmptype = icmptype
+    if src: route.source = src
+    if destination: route.destination = destination
+    if then_value:
+      route.then = (f"{then}:{then_value}")
+    else:
+      route.then = then
+    route.expires = tomorrow
+
+    try:
+      route.save()
+    except Exception as e:
+      logger.info(f"There was an error when saving {routename} into the DB. It might be a duplicate.")
+      return None
+
+    for p in protocol:
+      prot, created = MatchProtocol.objects.get_or_create(protocol=prot)
+      route.protocol.add(prot)
+
+    for flag in tcpflags:
+      tcpflag, created = TcpFlag.objects.get_or_create(flag=flag)
+      route.tcpflag.add(tcpflag)
+    route.save()
+    return route
 
 def get_route(applier,peer):
   from flowspec.models import Route_Punch,Route_REM, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
@@ -477,8 +633,11 @@ def find_all_routes():
 
   peers = Peer.objects.all()
   routes = []
-  for peer in peers:
-    routes.append(find_routes(applier=None,peer=peer.peer_tag))
+  try:
+    for peer in peers:
+      routes.append(find_routes(applier=None,peer=peer.peer_tag))
+  except Exception as e:
+    pass
   return routes
 
 def find_edit_post_route(applier, data, route_edit):
@@ -586,7 +745,6 @@ def get_specific_route(applier,peer, route_slug):
   from flowspec.models import Route_Punch,Route_REM, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
   peers = Peer.objects.all()
   peer_tag = get_peer_with_name(route_slug)
-  print('inside get_route: ', peer_tag, ' ', route_slug)
   for r in peers:
     if peer_tag == 'IMDEA': 
       try:
@@ -594,103 +752,119 @@ def get_specific_route(applier,peer, route_slug):
         return route
       except ObjectDoesNotExist:
           logger.info('There has been an error when trying to find the route')
-    elif peer_tag == 'CV':
+          return None
+    if peer_tag == 'CV':
       try:
         route = Route_CV.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
         logger.info('There has been an error when trying to find the route')
-    elif peer_tag == 'CIB':
+        return None
+    if peer_tag == 'CIB':
       try:
         route = Route_CIB.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
         logger.info('There has been an error when trying to find the route')
-    elif peer_tag == 'CSIC':
+        return None
+    if peer_tag == 'CSIC':
       try:
         route = Route_CSIC.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
         logger.info('There has been an error when trying to find the route')
-    elif peer_tag == 'CEU':
+        return None
+    if peer_tag == 'CEU':
       try:
         route = Route_CEU.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
         logger.info('There has been an error when trying to find the route')
-    elif peer_tag == 'CUNEF':
+        return None
+    if peer_tag == 'CUNEF':
       try:
         route = Route_CUNEF.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
         logger.info('There has been an error when trying to find the route')
-    elif peer_tag == 'IMDEANET':
+        return None
+    if peer_tag == 'IMDEANET':
       try:
         route = Route_IMDEANET.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
         logger.info('There has been an error when trying to find the route')
-    elif peer_tag == 'UAM':
+        return None
+    if peer_tag == 'UAM':
       try:
         route = Route_UAM.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
         logger.info('There has been an error when trying to find the route')
-    elif peer_tag == 'UC3M':
+        return None
+    if peer_tag == 'UC3M':
       try:
         route = Route_UC3M.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
         logger.info('There has been an error when trying to find the route')
-    elif peer_tag == 'UCM':
+        return None
+    if peer_tag == 'UCM':
       try:
         route = Route_UCM.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
         logger.info('There has been an error when trying to find the route')
-    elif peer_tag == 'UAH':
+        return None
+    if peer_tag == 'UAH':
       try:
         route = Route_UAH.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
         logger.info('There has been an error when trying to find the route')
-    elif peer_tag == 'UEM':
+        return None
+    if peer_tag == 'UEM':
       try:
         route = Route_UEM.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
         logger.info('There has been an error when trying to find the route')
-    elif peer_tag == 'UNED':
+        return None
+    if peer_tag == 'UNED':
       try:
         route = Route_UNED.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
         logger.info('There has been an error when trying to find the route')
-    elif peer_tag == 'UPM':
+        return None
+    if peer_tag == 'UPM':
       try:
         route = Route_UPM.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
         logger.info('There has been an error when trying to find the route')
-    elif peer_tag == 'URJC':
+        return None
+    if peer_tag == 'URJC':
       try:
         route = Route_URJC.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
         logger.info('There has been an error when trying to find the route')
-    elif peer_tag == 'REM':
+        return None
+    if peer_tag == 'REM':
       try:
         route = Route_REM.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
-        logger.info('There has been an error when trying to find the route')    
-    elif peer_tag == 'Punch':
-      print('la plan B', route_slug)
+        logger.info('There has been an error when trying to find the route')  
+        return None  
+    if peer_tag == 'Punch':
       try:
         route = Route_Punch.objects.get(name=route_slug)
         return route
       except ObjectDoesNotExist:
-        logger.info('There has been an error when trying to find the route')
+        logger.info('There has been an error when trying to find the route. Object does not exist.')
+        return None
 
   
 

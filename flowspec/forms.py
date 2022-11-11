@@ -113,7 +113,6 @@ class ThenPlainForm(forms.ModelForm):
 
 
 class PortPlainForm(forms.ModelForm):
-#    action = forms.CharField(initial='rate-limit')
     class Meta:
         model = MatchPort
         fields = '__all__'
@@ -131,7 +130,6 @@ class PortPlainForm(forms.ModelForm):
                 raise forms.ValidationError(_('Port should be an integer'))
         else:
             raise forms.ValidationError(_('Cannot be empty'))
-
 
 def value_list_to_list(valuelist):
     vl = []
@@ -159,6 +157,15 @@ def get_matchingprotocol_route_pks(protocolist, routes):
     for route in routes:
         rsp = value_list_to_list(route.protocol.all().values_list('protocol').order_by('protocol'))
         if rsp and rsp == protocols_value_list:
+            route_pk_list.append(route.pk)
+    return route_pk_list
+
+def get_tcpflag_route_pks(flaglist, routes):
+    route_pk_list = []
+    flags_value_list = value_list_to_list(flaglist.values_list('flag').order_by('flag'))
+    for route in routes:
+        rsp = value_list_to_list(route.tcpflag.all().values_list('flag').order_by('flag'))
+        if rsp and rsp == flags_value_list:
             route_pk_list.append(route.pk)
     return route_pk_list
 
@@ -239,97 +246,6 @@ class RouteForm(forms.ModelForm):
             raise forms.ValidationError(res)
         return res
 
-    
-    def clean(self):
-        if self.errors:
-            raise forms.ValidationError(_('Errors in form. Please review and fix them: %s' % ", ".join(self.errors)))
-        error = clean_route_form(self.cleaned_data)
-        if error:
-            raise forms.ValidationError(error)
-
-        # check if same rule exists with other name
-        user = self.cleaned_data['applier']
-        if user.is_superuser:
-            peers = Peer.objects.all()
-        else:
-            # have changed user.userprofile.peers.all() for:
-            peers = user.profile.peers.all()
-        existing_routes = Route_Punch.objects.all()
-        existing_routes = existing_routes.filter(applier=user.profile.peers in peers)
-        name = self.cleaned_data.get('name', None)
-        protocols = self.cleaned_data.get('protocol', None)
-        source = self.cleaned_data.get('source', None)
-        sourceports = self.cleaned_data.get('sourceport', None)
-        port = self.cleaned_data.get('port', None)
-        destination = self.cleaned_data.get('destination', None)
-        destinationports = self.cleaned_data.get('destinationport', None)
-        icmptype = self.cleaned_data.get('icmptype', None)
-        icmpcode = self.cleaned_data.get('icmpcode', None)
-        packetlength = self.cleaned_data.get('packetlength', None)    
-        tcpflag = self.cleaned_data.get('tcpflag')
-        user = self.cleaned_data.get('applier', None)
-        print('what are we receiving: ',self['tcpflag'], tcpflag)
-        if source:
-            source = IPNetwork(source).compressed
-            existing_routes = existing_routes.filter(source=source)
-        else:
-            existing_routes = existing_routes.filter(source=None)
-        if protocols:
-            route_pk_list=get_matchingprotocol_route_pks(protocols, existing_routes)
-            if route_pk_list:
-                existing_routes = existing_routes.filter(pk__in=route_pk_list)
-            else:
-                existing_routes = existing_routes.filter(protocol=None)
-            if "icmp" in [str(i) for i in protocols] and (destinationports or sourceports or port):
-                raise forms.ValidationError(_('It is not allowed to specify ICMP protocol and source/destination ports at the same time.'))
-        else:
-            existing_routes = existing_routes.filter(protocol=None)
-        if sourceports:
-            route_pk_list=get_matchingport_route_pks(sourceports, existing_routes)
-            if route_pk_list:
-                existing_routes = existing_routes.filter(pk__in=route_pk_list)
-        else:
-            existing_routes = existing_routes.filter(sourceport=None)
-        if destinationports:
-            route_pk_list=get_matchingport_route_pks(destinationports, existing_routes)
-            if route_pk_list:
-                existing_routes = existing_routes.filter(pk__in=route_pk_list)
-        else:
-            existing_routes = existing_routes.filter(destinationport=None)
-        if port:
-            route_pk_list=get_matchingport_route_pks(port, existing_routes)
-            if route_pk_list:
-                existing_routes = existing_routes.filter(pk__in=route_pk_list)
-        else:
-            existing_routes = existing_routes.filter(port=None)
-        if icmpcode:
-            if int(icmpcode) not in range(0,255):
-                raise forms.ValidationError(_('The ICMP code {} introduced does not match any registered code.').format(icmpcode))
-        
-        if icmptype:
-            if int(icmptype) not in range(0,255):
-                raise forms.ValidationError(_('The ICMP type {} introduced does not match any registered type.').format(icmptype))
-        if packetlength:
-            regxp = re.compile(r"^[0-9]+([-,][0-9]+)*$")
-            r = re.match(regxp, packetlength)
-            if r:
-                res = []
-                plength = packetlength.split(",")
-                for packet in plength:
-                    p = int(packet)
-                    if p < 0 or p > 65535:
-                        raise forms.ValidationError(_('Packet length should be < 65535 and >= 0'))
-            else:
-                raise forms.ValidationError(_('Malformed packet'))        
-
-        for route in existing_routes:
-            if name != route.name:
-                existing_url = reverse('edit-route', args=[route.name])
-                if IPNetwork(destination) in IPNetwork(route.destination) or IPNetwork(route.destination) in IPNetwork(destination):
-                    raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
-        return self.cleaned_data
-
-
 class Route_IMDEAForm(RouteForm):
     class Meta:
         model = Route_IMDEA
@@ -360,8 +276,15 @@ class Route_IMDEAForm(RouteForm):
         icmptype = self.cleaned_data.get('icmptype', None)
         icmpcode = self.cleaned_data.get('icmpcode', None)
         packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
+        tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if tcpflags:
+            route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(tcpflag=None)
 
         if source:
             source = IPNetwork(source).compressed
@@ -454,8 +377,15 @@ class Route_CVForm(RouteForm):
         icmptype = self.cleaned_data.get('icmptype', None)
         icmpcode = self.cleaned_data.get('icmpcode', None)
         packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
+        tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if tcpflags:
+            route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(tcpflag=None)
 
         if source:
             source = IPNetwork(source).compressed
@@ -548,8 +478,15 @@ class Route_REMForm(RouteForm):
         icmptype = self.cleaned_data.get('icmptype', None)
         icmpcode = self.cleaned_data.get('icmpcode', None)
         packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
+        tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if tcpflags:
+            route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(tcpflag=None)
 
         if source:
             source = IPNetwork(source).compressed
@@ -613,9 +550,106 @@ class Route_REMForm(RouteForm):
 
 
 class Route_PunchForm(RouteForm):
+
     class Meta:
         model = Route_Punch
         fields = '__all__'
+    def clean(self):
+        if self.errors:
+            raise forms.ValidationError(_('Errors in form. Please review and fix them: %s' % ", ".join(self.errors)))
+        error = clean_route_form(self.cleaned_data)
+        if error:
+            raise forms.ValidationError(error)
+        # check if same rule exists with other name
+        user = self.cleaned_data['applier']
+        if user.is_superuser:
+            peers = Peer.objects.all()
+        else:
+            # have changed user.userprofile.peers.all() for:
+            peers = user.profile.peers.all()
+        existing_routes = Route_Punch.objects.all()
+        existing_routes = existing_routes.filter(applier=user.pk)
+        name = self.cleaned_data.get('name', None)
+        protocols = self.cleaned_data.get('protocol', None)
+        source = self.cleaned_data.get('source', None)
+        sourceports = self.cleaned_data.get('sourceport', None)
+        port = self.cleaned_data.get('port', None)
+        destination = self.cleaned_data.get('destination', None)
+        destinationports = self.cleaned_data.get('destinationport', None)
+        icmptype = self.cleaned_data.get('icmptype', None)
+        icmpcode = self.cleaned_data.get('icmpcode', None)
+        packetlength = self.cleaned_data.get('packetlength', None)    
+        tcpflags = self.cleaned_data.get('tcpflag')
+        user = self.cleaned_data.get('applier', None)
+        if source:
+            source = IPNetwork(source).compressed
+            existing_routes = existing_routes.filter(source=source)
+        else:
+            existing_routes = existing_routes.filter(source=None)
+        
+        if protocols:
+            route_pk_list=get_matchingprotocol_route_pks(protocols, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(protocol=None)
+            if "icmp" in [str(i) for i in protocols] and (destinationports or sourceports or port):
+                raise forms.ValidationError(_('It is not allowed to specify ICMP protocol and source/destination ports at the same time.'))
+        else:
+            existing_routes = existing_routes.filter(protocol=None)
+        
+        if tcpflags:
+            route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(tcpflag=None)
+        
+        if sourceports:
+            route_pk_list=get_matchingport_route_pks(sourceports, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+        else:
+            existing_routes = existing_routes.filter(sourceport=None)
+        if destinationports:
+            route_pk_list=get_matchingport_route_pks(destinationports, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+        else:
+            existing_routes = existing_routes.filter(destinationport=None)
+        if port:
+            route_pk_list=get_matchingport_route_pks(port, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+        else:
+            existing_routes = existing_routes.filter(port=None)
+        if icmpcode:
+            if int(icmpcode) not in range(0,255):
+                raise forms.ValidationError(_('The ICMP code {} introduced does not match any registered code.').format(icmpcode))
+        
+        if icmptype:
+            if int(icmptype) not in range(0,255):
+                raise forms.ValidationError(_('The ICMP type {} introduced does not match any registered type.').format(icmptype))
+        if packetlength:
+            regxp = re.compile(r"^[0-9]+([-,][0-9]+)*$")
+            r = re.match(regxp, packetlength)
+            if r:
+                res = []
+                plength = packetlength.split(",")
+                for packet in plength:
+                    p = int(packet)
+                    if p < 0 or p > 65535:
+                        raise forms.ValidationError(_('Packet length should be < 65535 and >= 0'))
+            else:
+                raise forms.ValidationError(_('Malformed packet'))        
+
+        for route in existing_routes:
+            if name != route.name:
+                existing_url = reverse('edit-route', args=[route.name])
+                if IPNetwork(destination) in IPNetwork(route.destination) or IPNetwork(route.destination) in IPNetwork(destination):
+                    raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
+        print(f"this is the data were returning {self.cleaned_data}")
+        return self.cleaned_data
 
     
 
@@ -651,8 +685,15 @@ class Route_CIBForm(RouteForm):
         icmptype = self.cleaned_data.get('icmptype', None)
         icmpcode = self.cleaned_data.get('icmpcode', None)
         packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
+        tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if tcpflags:
+            route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(tcpflag=None)
 
         if source:
             source = IPNetwork(source).compressed
@@ -745,8 +786,15 @@ class Route_CEUForm(RouteForm):
         icmptype = self.cleaned_data.get('icmptype', None)
         icmpcode = self.cleaned_data.get('icmpcode', None)
         packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
+        tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if tcpflags:
+            route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(tcpflag=None)
 
         if source:
             source = IPNetwork(source).compressed
@@ -839,8 +887,15 @@ class Route_CSICForm(RouteForm):
         icmptype = self.cleaned_data.get('icmptype', None)
         icmpcode = self.cleaned_data.get('icmpcode', None)
         packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
+        tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if tcpflags:
+            route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(tcpflag=None)
 
         if source:
             source = IPNetwork(source).compressed
@@ -934,8 +989,15 @@ class Route_CUNEFForm(RouteForm):
         icmptype = self.cleaned_data.get('icmptype', None)
         icmpcode = self.cleaned_data.get('icmpcode', None)
         packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
+        tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+        
+        if tcpflags:
+            route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(tcpflag=None)
 
         if source:
             source = IPNetwork(source).compressed
@@ -1029,8 +1091,15 @@ class Route_IMDEANETForm(RouteForm):
         icmptype = self.cleaned_data.get('icmptype', None)
         icmpcode = self.cleaned_data.get('icmpcode', None)
         packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
+        tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if tcpflags:
+            route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(tcpflag=None)
 
         if source:
             source = IPNetwork(source).compressed
@@ -1123,8 +1192,15 @@ class Route_UAMForm(RouteForm):
         icmptype = self.cleaned_data.get('icmptype', None)
         icmpcode = self.cleaned_data.get('icmpcode', None)
         packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
+        tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if tcpflags:
+            route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(tcpflag=None)
 
         if source:
             source = IPNetwork(source).compressed
@@ -1219,8 +1295,15 @@ class Route_UAHForm(RouteForm):
         icmptype = self.cleaned_data.get('icmptype', None)
         icmpcode = self.cleaned_data.get('icmpcode', None)
         packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
+        tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if tcpflags:
+            route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(tcpflag=None)
 
         if source:
             source = IPNetwork(source).compressed
@@ -1313,8 +1396,15 @@ class Route_UC3MForm(RouteForm):
         icmptype = self.cleaned_data.get('icmptype', None)
         icmpcode = self.cleaned_data.get('icmpcode', None)
         packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
+        tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if tcpflags:
+            route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(tcpflag=None)
 
         if source:
             source = IPNetwork(source).compressed
@@ -1407,8 +1497,15 @@ class Route_UCMForm(RouteForm):
         icmptype = self.cleaned_data.get('icmptype', None)
         icmpcode = self.cleaned_data.get('icmpcode', None)
         packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
+        tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if tcpflags:
+            route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(tcpflag=None)
 
         if source:
             source = IPNetwork(source).compressed
@@ -1501,8 +1598,15 @@ class Route_UEMForm(RouteForm):
         icmptype = self.cleaned_data.get('icmptype', None)
         icmpcode = self.cleaned_data.get('icmpcode', None)
         packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
+        tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if tcpflags:
+            route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(tcpflag=None)
 
         if source:
             source = IPNetwork(source).compressed
@@ -1595,8 +1699,15 @@ class Route_UPMForm(RouteForm):
         icmptype = self.cleaned_data.get('icmptype', None)
         icmpcode = self.cleaned_data.get('icmpcode', None)
         packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
+        tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if tcpflags:
+            route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(tcpflag=None)
 
         if source:
             source = IPNetwork(source).compressed
@@ -1689,8 +1800,15 @@ class Route_UNEDForm(RouteForm):
         icmptype = self.cleaned_data.get('icmptype', None)
         icmpcode = self.cleaned_data.get('icmpcode', None)
         packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
+        tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if tcpflags:
+            route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(tcpflag=None)
 
         if source:
             source = IPNetwork(source).compressed
@@ -1783,8 +1901,15 @@ class Route_URJCForm(RouteForm):
         icmptype = self.cleaned_data.get('icmptype', None)
         icmpcode = self.cleaned_data.get('icmpcode', None)
         packetlength = self.cleaned_data.get('packetlength', None)
-        tcpflag = self.cleaned_data.get('tcpflag', None)
+        tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if tcpflags:
+            route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(tcpflag=None)
 
         if source:
             source = IPNetwork(source).compressed

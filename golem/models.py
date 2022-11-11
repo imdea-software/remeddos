@@ -23,7 +23,7 @@ class GolemAttack(models.Model):
     dest_port = models.CharField(max_length=65535, blank=True, null=True)
     port = models.CharField(max_length=65535, blank=True, null=True)
     protocol = models.ManyToManyField(MatchProtocol, blank=True)
-    tcpflag = models.CharField(max_length=100, blank=True, null=True)
+    tcpflag = models.ManyToManyField(TcpFlag, blank=True,verbose_name="TCP Flag")
     status = models.CharField(max_length=50)
     max_value = models.FloatField(max_length=500, blank=True, null=True)
     threshold_value  = models.FloatField(max_length=500, blank=True, null=True)

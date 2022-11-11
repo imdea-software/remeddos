@@ -115,6 +115,48 @@
         "fields": {
             "protocol": "udp"
         }
+    },
+    {
+        "pk": 1,
+        "model": "flowspec.tcpflag",
+        "fields": {
+            "flag": "ack"
+        }
+    },
+    {
+        "pk": 2,
+        "model": "flowspec.tcpflag",
+        "fields": {
+            "flag": "rst"
+        }
+    },
+    {
+        "pk": 3,
+        "model": "flowspec.tcpflag",
+        "fields": {
+            "flag": "fin"
+        }
+    },
+    {
+        "pk": 4,
+        "model": "flowspec.tcpflag",
+        "fields": {
+            "flag": "push"
+        }
+    },
+    {
+        "pk": 5,
+        "model": "flowspec.tcpflag",
+        "fields": {
+            "flag": "urgent"
+        }
+    },
+    {
+        "pk": 6,
+        "model": "flowspec.tcpflag",
+        "fields": {
+            "flag": "syn"
+        }
     }
 
 ]

@@ -26,7 +26,6 @@ def clean_ip(address):
         elif int(address.network.compressed.split('.')[-1]) == 255:
             return _('Malformed address format. Cannot be ...255/32')
     if address == '0.0.0.0' or address == '0.0.0.0/0' or address == '0/0':
-        print('we entered here')
         pass
     
 
@@ -69,6 +68,14 @@ def clean_source(user, source):
             return _('You have no authority on this subnet')
     return source
 
+def get_tcpflag_route_pks(flaglist, routes):
+    route_pk_list = []
+    flags_value_list = value_list_to_list(flaglist.values_list('flag').order_by('flag'))
+    for route in routes:
+        rsp = value_list_to_list(route.tcpflag.all().values_list('flag').order_by('flag'))
+        if rsp and rsp == flags_value_list:
+            route_pk_list.append(route.pk)
+    return route_pk_list
 
 def clean_destination(user, destination):
     success, address = get_network(destination)

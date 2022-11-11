@@ -41,16 +41,15 @@ def add(route, callback=None):
     from utils import proxy as PR
 
     peer = get_peer_with_name(route.name)
-
-    try:
-        backup_applier = PR.Backup_Applier(route_object=route)
-        b_commit, b_response = backup_applier.apply()
-    except Exception as e:
-        pass
+    
     try:
         applier = PR.Applier(route_object=route)
         commit, response = applier.apply()
-                
+
+        backup_applier = PR.Backup_Applier(route_object=route)
+        b_commit, b_response = backup_applier.apply()
+
+        print('this is commit: ', commit, ' b_commit: ', b_commit)            
         if commit and b_commit:            
             status = "ACTIVE"
             route.status = status
@@ -85,8 +84,9 @@ def add(route, callback=None):
             send_message(message,peer,superuser=False)
         except Exception as e:
             message = (f"Ha habido un error cuando se intentaba configurar la ruta en el back up router. Porfavor contacte con su administrador.")
+            logger.info(f"Error (TimeLimitExceeded): {error}")
             send_message(message,peer,superuser=False)
-    except SoftTimeLimitExceeded:
+    except SoftTimeLimitExceeded as error:
         route.status = "ERROR"
         route.response = "Task timeout"
         try: 
@@ -100,8 +100,9 @@ def add(route, callback=None):
             send_message(message,peer,superuser=False)
         except Exception as e:
             message = (f"Ha habido un error cuando se intentaba configurar la ruta en el back up router. Porfavor contacte con su administrador.")
+            logger.info(f"Error (SoftTimeLimitExceeded): {error}")
             send_message(message,peer,superuser=False)
-    except Exception as e:
+    except Exception as error:
         route.status = "ERROR"
         route.response = "Error"
         try: 
@@ -115,8 +116,9 @@ def add(route, callback=None):
             send_message(message,peer,superuser=False)
         except Exception as e:
             message = (f"Ha habido un error cuando se intentaba configurar la ruta en el back up router. Porfavor contacte con su administrador.")
+            logger.info(f"Error (Error): {error}")
             send_message(message,peer,superuser=False)
-    except TransactionManagementError: 
+    except TransactionManagementError as error: 
         route.status = "ERROR"
         route.response = "Transaction Management Error"
         try: 
@@ -130,6 +132,7 @@ def add(route, callback=None):
             send_message(message,peer,superuser=False)
         except Exception as e:
             message = (f"Ha habido un error cuando se intentaba configurar la ruta en el back up router. Porfavor contacte con su administrador.")
+            logger.info(f"Error (TransactionManagementError): {error}")
             send_message(message,peer,superuser=False)
 
 @shared_task(ignore_result=True)
@@ -138,19 +141,15 @@ def edit(route, callback=None):
     from utils import proxy as PR
 
     peer = get_peer_with_name(route.name)
-    
+    try:        
 
-    try:
         applier = PR.Applier(route_object=route)
         commit, response = applier.apply(operation="replace")   
         
-        try:
-            backup_applier = PR.Backup_Applier(route_object=route)
-            b_commit, b_response = backup_applier.apply(operation="replace")
-        except Exception as e:
-            message = (f"Ha habido un error cuando se intentaba editar la regla en el segundo back up router. Porfavor contacte con su administrador.")
-            send_message(message,peer,superuser=False)
+        backup_applier = PR.Backup_Applier(route_object=route)
+        b_commit, b_response = backup_applier.apply(operation="replace")
         
+        print('(edit) this is commit: ', commit, ' b_commit: ', b_commit)            
         if commit and b_commit:
             status = "ACTIVE"
             route.status = status
@@ -353,7 +352,7 @@ def batch_delete(routes, **kwargs):
     else:
         return False
 
-@shared_task
+""" @shared_task
 def check_sync(route_name=None, selected_routes=[]):
     peers = Peer.objects.all()
     for peer in peers:
@@ -383,7 +382,7 @@ def check_sync(route_name=None, selected_routes=[]):
                     route.check_sync()
             else:
                 if route.status != 'EXPIRED':
-                    route.check_sync()
+                    route.check_sync() """
 
                 
 @shared_task(ignore_result=True)
@@ -437,71 +436,87 @@ def expired_val_codes():
 
 @shared_task
 def routes_sync():
-    from flowspec.models import Route
-    from flowspec.helpers import find_all_routes
-    from utils.proxy import Retriever
-    from xml.etree import ElementTree as ET
-    
-    
-    options =  []
-    flow = []
-    route = []
-    retriever = Retriever()
-    router_config = retriever.fetch_config_str()
-    routes = find_all_routes()
-    tree = ET.fromstring(router_config)
-    data = [d for d in tree]
-    config = [c for c in data]   
+    try:
+        first_router = get_routes_router()
+        backup_router = get_routes_backuprouter()
+    except Exception as e:
+        logger.info(f"There was an error when trying to retrieve the routes from the routers. Error: {e}")
 
+    routes_db = find_all_routes()
 
-    for config_nodes in config:
-        options = config_nodes
-    for option_nodes in options:
-        flow = option_nodes 
-    for flow_nodes in flow:
-        route = flow_nodes      
-   
-    names = []
-    for children in route:
+    routenames_db = []
+    fw_routes = []
+    backup_fw_routes = []
+
+    for x in routes_db:
+        for route in x:
+            if route.status == 'ACTIVE' or route.status == 'OUTOFSYNC':
+                routenames_db.append(route.name)
+
+    for children in first_router:
         for child in children:
             if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
-                names.append(child.text)
-            else:
-                pass  
-    routenames = []
-    for x in routes:
-        for route in x:
-            if route.status == 'ACTIVE' or route.applier != None:
-                routenames.append(route.name)
-    diff = set(routenames).difference(names)
-    notsynced_routes = list(diff)
+                fw_routes.append(child.text)
+    
+    for children in backup_router:
+        for child in children:
+            if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
+                backup_fw_routes.append(child.text)
+    """ routes from both routers """
+    fw_routes.sort()
+    backup_fw_routes.sort()     
+    """ routes from db """            
+    routenames_db.sort()
+    """ find every active route in db , first router and backup router """
+    diff_routers = set(fw_routes).difference(backup_fw_routes)
+    diff_routers1 = set(backup_fw_routes).difference(fw_routes)
+    diff_routers.update(diff_routers1)
+    
+    notsync_diff = diff_routers.difference(routenames_db)
+    notsync_diff1 = set(routenames_db).difference(diff_routers)
+    notsync_diff.update(notsync_diff1)
+    
+    notsynced_routes = list(notsync_diff)
     if notsynced_routes:
-        for route in notsynced_routes:
+        print(notsynced_routes)
+        for routename in notsynced_routes:
             try:
-                peer_tag = get_peer_with_name(route)
-                route = get_specific_route(applier=None,peer=peer_tag,route_slug=route)
-                if route is not None:
-                    if (route is not None) and (route.status == 'PENDING' or route.status == 'DEACTIVATED' or route.status == 'OUTOFSYNC' or route.status == 'ERROR' or route.status == None) and route.applier == None:
-                        route.status = 'PENDING'
-                        route.save()
-                    if (route is not None) and (route.has_expired()==False) and (route.status == 'ACTIVE' or route.status == 'OUTOFSYNC'):
-                        route.commit_add()
-                        message = ('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
-                        send_message(message,peer_tag,superuser=False)
+                peer_tag = get_peer_with_name(routename)
+                if peer_tag:
+                    route = get_specific_route(applier=None,peer=peer_tag,route_slug=routename)
+                    if route is not None:
+                        if route.status == 'ACTIVE' and (not route.has_expired) and route.is_synced() and route.is_synced_backup():
+                            pass
+                        if route.status == 'ACTIVE' and ((not route.is_synced()) or (not route.is_synced_backup)):
+                            route.commit_add()
+                            logger.info("The following route has been commited to the router due to an out of sync problem. ", route.name)
+                        if route.is_synced() and route.is_synced_backup():
+                            route.status = 'ACTIVE'
+                            route.save()
+                        if route.has_expired() and ((route.is_synced()) or (route.is_synced_backup)):
+                            route.commit_delete()
+                            logger.info("The following route has been deleted from the router due to an out of sync problem. ", route.name)                   
+                        """ if (route.status == 'PENDING' or route.status == 'DEACTIVATED' or route.status == 'OUTOFSYNC' or route.status == 'ERROR' or route.status == None) and route.applier == None:
+                            route.status = 'PROPOSED'
+                            route.save() """
+                        if (not route.has_expired()) and (route.status == 'OUTOFSYNC'):
+                            route.commit_add()
+                            logger.info('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
                     else:
-                        if (route.has_expired()==True) or (route.status == 'EXPIRED' or route.status != 'ADMININACTIVE' or route.status != 'INACTIVE'):
-                            #message = ('Route: %s route status: %s'%(route.status, route.name))
-                            #send_message(message,peer_tag,superuser=False)
-                            route.check_sync()                  
+                        # there's a route in a router that is not synced with the db
+                        route = find_match_route_config_router(routename)
+                        # now the route has already been save into the db, now we commit again the route
+                        route.commit_add()
+                        logger.info("The following route has been commited to the router due to an out of sync problem. ", route.name)
+                        
             except Exception as e:
-                logger.info('There was an exception when trying to sync the routes route: ', e)           
+                logger.info(f"There following route does not belong to any peer: {routename}")
     else:
         pass
-        #message = ('There are no routes out of sync')
-        #send_message(message, peer_tag,superuser=False)
+        logger.info('There are no routes out of sync.') 
 
  
-@shared_task
+""" @shared_task
 def sync_router_with_db():
       ## check that the routes that are configured on the router are found on the db
     from peers.models import Peer
@@ -586,7 +601,7 @@ def sync_router_with_db():
                     pass 
     message = ('Routes from the router have already been syncronised with the database')
     send_message(message,peer=None,superuser=True)
-       # print(f'Database syncronised {peer.peer_name}')
+       # print(f'Database syncronised {peer.peer_name}') """
     
 
 @shared_task
@@ -730,56 +745,6 @@ def delete_expired_proposed_routes():
                     logger.info(f"Route: {route.name} is about to expired")
                     route.delete()
 
-
-@shared_task
-def sync_routers():
-    first_router = get_routes_router()
-    backup_router = get_routes_backuprouter()
-
-    fw_routes = []
-    backup_fw_routes = []
-
-    for children in first_router:
-        for child in children:
-            if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
-                fw_routes.append(child.text)
-    
-    for children in backup_router:
-        for child in children:
-            if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
-                backup_fw_routes.append(child.text)
-
-    fw_routes.sort()
-    backup_fw_routes.sort()
-
-    if (fw_routes == backup_fw_routes):
-        logger.info('Routes between both routers are syncronised.')
-    else:
-        diff = set(fw_routes).difference(backup_fw_routes)
-        if not diff == set():
-            notsynced_routes = list(diff)
-            logger.info(f"The following routes have not been syncronised: {notsynced_routes}")
-            for route in notsynced_routes:
-                try:
-                    commit_route = get_specific_route(applier=None,peer=None, route_slug=route)
-                    commit_route.commit_add()
-                except Exception as e:
-                    message = (f"There was an error when trying to sync both routers: {e}")
-                    logger.info(message)
-        else:
-            diff = set(backup_fw_routes).difference(fw_routes)
-            notsynced_routes = list(diff)
-            logger.info(f"The following routes have not been syncronised: {notsynced_routes}")
-            for route in notsynced_routes:
-                try:
-                    commit_route = get_specific_route(applier=None,peer=None, route_slug=route)
-                    commit_route.commit_add()
-                except Exception as e:
-                    message = (f"There was an error when trying to sync both routers: {e}")
-                    logger.info(message)
-
-
-            pass
 
 
 @shared_task

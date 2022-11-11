@@ -5,8 +5,8 @@ services:
         restart: always
         environment:
             - POSTGRES_HOST_AUTH_METHOD=trust
-            - POSTGRES_DB=flowspy 
-            - POSTGRES_USER=fod
+            - POSTGRES_DB=remeddos 
+            - POSTGRES_USER=remedios
             - POSTGRES_PASSWORD=heix6ieG
         volumes:
             - ./data/db:/var/lib/postgresql/data
@@ -24,8 +24,8 @@ services:
             - ./:/srv/redifod/
         environment:
             - DB_HOST=db
-            - DB_NAME=flowspy
-            - DB_USER=fod
+            - DB_NAME=remeddos
+            - DB_USER=remedios
             - DB_PASS=heix6ieG 
         depends_on: 
             - db
@@ -53,8 +53,8 @@ services:
             - db
         environment:
             - DB_HOST=db
-            - DB_NAME=flowspy
-            - DB_USER=fod
+            - DB_NAME=remeddos
+            - DB_USER=remedios
             - DB_PASS=heix6ieG 
         volumes: 
             - ./:/srv/redifod/

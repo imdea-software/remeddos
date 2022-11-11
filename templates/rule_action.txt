@@ -21,7 +21,7 @@ Acciones:
 
 Otros comentarios: {% if route.comments %}{{route.comments}}{% else %}-{% endif %}
 
-Expira: {% ifequal action 'removal' %}Now, removal requested{%else%}{{route.expires}}{% endifequal %}
+Expira: {% ifequal action 'removal' %}Petición para eliminar una regla{%else%}{{route.expires}}{% endifequal %}
 
 
 

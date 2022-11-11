@@ -74,7 +74,7 @@ class RouteAdmin(admin.ModelAdmin):
 
     ]
 
-""" class RouteIMDEAAdmin(admin.ModelAdmin):
+class RouteIMDEAAdmin(admin.ModelAdmin):
     form = Route_IMDEAForm
     actions = ['deactivate','delete']
     search_fields = ['destination', 'name', 'applier__username']
@@ -703,10 +703,13 @@ class RouteURJCAdmin(admin.ModelAdmin):
         (None, {'fields': ['comments', ]}),
 
     ]
- """
+
 class UserProfileInline(admin.StackedInline):
     model = UserProfile
 
+
+class TcpFlagAdmin(admin.ModelAdmin):
+    model = TcpFlag
 
 class UserProfileAdmin(UserAdmin):
     search_fields = ['username']
@@ -749,6 +752,7 @@ class WebhookMessageAdmin(admin.ModelAdmin):
     search_fields = ['message', 'recieved_at']
     
 
+admin.site.register(TcpFlag,TcpFlagAdmin)
 admin.site.unregister(User)
 admin.site.register(MatchPort)
 admin.site.register(MatchProtocol)
@@ -760,9 +764,9 @@ admin.site.register(User, UserProfileAdmin)
 admin.site.disable_action('delete_selected')
 
 
-admin.site.register(Route_IMDEA)
+admin.site.register(Route_IMDEA,RouteIMDEAAdmin)
 admin.site.register(Route_Punch)
-""" admin.site.register(Route_CV,RouteCVAdmin)
+admin.site.register(Route_CV,RouteCVAdmin)
 admin.site.register(Route_CIB, RouteCIBAdmin)
 admin.site.register(Route_CSIC,RouteCSICAdmin)
 admin.site.register(Route_CEU,RouteCEUAdmin)
@@ -775,4 +779,4 @@ admin.site.register(Route_UCM,RouteUCMAdmin)
 admin.site.register(Route_UEM,RouteUEMAdmin)
 admin.site.register(Route_UNED,RouteUNEDAdmin)
 admin.site.register(Route_UPM,RouteUPMAdmin)
-admin.site.register(Route_URJC,RouteURJCAdmin) """
+admin.site.register(Route_URJC,RouteURJCAdmin)

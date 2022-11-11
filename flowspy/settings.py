@@ -343,6 +343,7 @@ NOTIFY_ADMIN_MAILS = [STAFF_MAIL]
 # Then actions in the ui (dropdown)
 UI_USER_THEN_ACTIONS = ['discard', 'rate-limit','accept']
 UI_USER_PROTOCOLS = ['icmp', 'tcp', 'udp']
+UI_USER_TCPFLAG = ["ack","rst","fin","push","urgent","syn"]
 ACCOUNT_ACTIVATION_DAYS = 7
 
 # Define subnets that should not have any rules applied whatsoever
