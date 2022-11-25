@@ -1,8 +1,27 @@
+# Ignore the environment variables we were using
 .env
-init.sql
+
+# Ignore our RSA SSH key
 id_rsa
+
+# Ignore trashy and otherwise unuseful files
 _backup
 media
 flowspec/static
 flowspec/fixtures
 peers/fixtures
+init.sql
+
+# Ignore hidden files except the .gitignore
+.*
+!.gitignore
+
+# Ignore trashy directories
+_*/
+
+# Ignore Python virtual environments
+*env/
+
+# Ignore Python bytecode
+__pycache__/
+*.pyc
