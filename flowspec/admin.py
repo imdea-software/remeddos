@@ -390,6 +390,46 @@ class RouteIMDEANETAdmin(admin.ModelAdmin):
 
     ]
 
+class RoutePunchAdmin(admin.ModelAdmin):
+    form = Route_PunchForm
+    actions = ['deactivate','delete']
+    search_fields = ['destination', 'name', 'applier__username']
+
+    def deactivate(self, request, queryset):
+        #the following line is commented because so far no succesful rule has been created
+        #therefore there are no rules with status = ACTIVE 
+        queryset = queryset.filter(status='ACTIVE')
+        response = batch_delete(queryset, reason="ADMININACTIVE")
+        self.message_user(request, "Added request %s to job que. Check in a while for result" % response)
+    deactivate.short_description = "Remove selected routes from network"
+
+    def delete(self, request, queryset):
+        queryset.delete()
+    delete.short_description = "Exterminate selected routes from network"
+    
+    def save_model(self, request, obj, form, change):
+        obj.status = "PENDING"
+        obj.save()
+        if change:
+            obj.commit_edit()
+        else:
+            obj.commit_add()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    list_display = ('name', 'status', 'applier_username', 'applier_peers', 'get_match', 'get_then', 'response', "expires", "comments",'filed')
+
+    fieldsets = [
+        (None, {'fields': ['name', 'applier']}),
+        ("Match", {'fields': ['source', 'sourceport', 'destination', 'destinationport', 'port']}),
+        ('Advanced Match Statements', {'fields': ['dscp','icmpcode', 'icmptype', 'packetlength', 'protocol', 'tcpflag'], 'classes': ['collapse']}),
+        ("Then", {'fields': ['then']}),
+        ("Expires", {'fields': ['expires']}),
+        (None, {'fields': ['comments', ]}),
+
+    ]
+
 class RouteUAMAdmin(admin.ModelAdmin):
     form = Route_UAMForm
     actions = ['deactivate','delete']
@@ -765,7 +805,7 @@ admin.site.disable_action('delete_selected')
 
 
 admin.site.register(Route_IMDEA,RouteIMDEAAdmin)
-admin.site.register(Route_Punch)
+admin.site.register(Route_Punch,RoutePunchAdmin)
 admin.site.register(Route_CV,RouteCVAdmin)
 admin.site.register(Route_CIB, RouteCIBAdmin)
 admin.site.register(Route_CSIC,RouteCSICAdmin)

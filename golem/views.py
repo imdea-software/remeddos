@@ -8,6 +8,7 @@ from allauth.account.decorators import verified_email_required
 from django.views.decorators.cache import never_cache
 from django.contrib import messages
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
+from flowspec.decorators import *
 
 from flowspec.validators import (
     clean_source,
@@ -70,8 +71,10 @@ class ProcessWebHookView(CsrfExemptMixin, View):
 
         return HttpResponse()
 
-@verified_email_required
+
 @login_required
+@verify_profile
+@verified_email_required
 @never_cache
 def display(request):
     username = request.user.username
@@ -85,8 +88,10 @@ def display(request):
         golem_attacks = GolemAttack.objects.filter(peer=peer.pk).all()[::-1]
         return render(request,'golem/display.html',{'attacks':golem_attacks})
 
-@verified_email_required
+
 @login_required
+@verify_profile
+@verified_email_required
 @never_cache
 def display_routes(request,golem_name):
 
@@ -107,9 +112,9 @@ def display_routes(request,golem_name):
         return render(request,'golem/user_routes.html',{'routes':golem_routes,'golem_name':golem_name,'actions':actions})
 
 
-
-@verified_email_required
 @login_required
+@verify_profile
+@verified_email_required
 @never_cache
 def display_proposed_routes(request):
     try:
@@ -123,9 +128,11 @@ def display_proposed_routes(request):
         if r.is_proposed :
             all_routes.append(r)    
     return render(request,'pending_routes.html',{'routes':all_routes})
-    
-@verified_email_required
+
+
 @login_required
+@verify_profile   
+@verified_email_required
 @never_cache
 def display_golem_updates(request,golem_id):
     golem_attack = GolemAttack.objects.get(id_name=golem_id)
@@ -133,8 +140,10 @@ def display_golem_updates(request,golem_id):
     return render(request,'golem/updates.html',{'golem':golem_attack,'updates':updates})
 
 
-@verified_email_required
+
 @login_required
+@verify_profile
+@verified_email_required
 @never_cache
 def delete_golem(request):
     username = request.user.username
@@ -155,8 +164,10 @@ def delete_golem(request):
 
 
 ##================= commit pending routes to router
-@verified_email_required
+
 @login_required
+@verify_profile
+@verified_email_required
 def verify_commit_route(request, route_slug):
     if 'token' in request.COOKIES:
         url = reverse('commit', kwargs={'route_slug': route_slug})
@@ -211,8 +222,8 @@ def verify_commit_route(request, route_slug):
 
 
 
-
 @login_required
+@verify_profile
 @never_cache
 def commit_to_router(request,route_slug):
     import datetime

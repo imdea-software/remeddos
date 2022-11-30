@@ -31,7 +31,7 @@
 <div class="container p-5">
             <div class="row">
                 <div class="col">
-                    <h3 class="font-monospace text-left"> {% if edit %}{% trans "Editar regla" %}: {{route.name}} {% else %}{% trans "Configurar una nueva regla firewall" %}{% endif %}</h3>
+                    <h3 class="font-monospace text-left"> {% if edit %}{% trans "Editar regla" %}: {{routename}} {% else %}{% trans "Configurar una nueva regla firewall" %}{% endif %}</h3>
                 </div>
             </div>
 
@@ -44,18 +44,31 @@
     </div>
     
     <div class="row">
-        <form method="POST" id="myForm" onsubmit="avoidMultipleSubmitting();">
+        <form method="POST" id="myForm" onsubmit="avoidMultipleSubmitting();" class="form-horizontal">
             {% csrf_token %}
             {% load unescape %}
             {% if form.non_field_errors %}
-            <div class="form-control {% if form.non_field_errors %} has-error {% endif %}" style="color: #A94442;">
-            	{{ form.non_field_errors|unescape}}
+            <div class="form-control mb-5 {% if form.non_field_errors %} has-error {% endif %} form-text text-danger" style="border:None;">
+            	<p>{{ form.non_field_errors|unescape}}</p>
             	</div>
             {% endif %}
             <fieldset {%  if edit %}  style="display:none;" {%  endif %}>
 				
 			{% if edit %}		
-			<input type="hidden" name="name" value="routename" id="id_name">
+			<!-- <input type="hidden" name="name" value="{{routename}}" id="id_name"> -->
+			<div class="row p-1 mt-3">
+				<div class="form-text {% if form.name.errors %} has-error {% endif %}"></div>
+				<label for="id_name" class="col col-2 form-label"><b>{% trans "Nombre (*): " %}</b></label>
+				<div class="col col-8">
+				{% render_field form.name value+="{{routename}}" class+="form-control" placeholder="Ej. ntpattack. Un identificador indicando la organización a la que pertenece el usuario será añadido." %}
+				{% if form.name.errors %} <span class="help-block"> {{ form.name.errors|join:", " }} </span>
+				{% endif %}
+				</div>
+				<div class="form-text">
+					<p class="font-italic">Utilizar palabras claves que definan la regla. Pueden ir separadas por guiones o punto. No introducir palabras con caracteres especiales, espacios en blanco o guión bajo (_) en el nombre. 
+					 Ejemplo de nombre: Deny-FTP-smcsoftwareimdea </p>
+				</div>
+			</div>
 			{% else %}
                     <div class="row p-1 mt-3">
 					    <div class="form-text {% if form.name.errors %} has-error {% endif %}"></div>
@@ -65,13 +78,16 @@
                         {% if form.name.errors %} <span class="help-block"> {{ form.name.errors|join:", " }} </span>
                         {% endif %}
                         </div>
-						
+						<div class="form-text">
+							<p class="font-italic">Utilizar palabras claves que definan la regla. Pueden ir separadas por guiones o punto. No introducir palabras con caracteres especiales, espacios en blanco o guión bajo (_) en el nombre. 
+							Ejemplo de nombre: Deny-FTP-smcsoftwareimdea </p>
+						</div>
 					</div>
-					<div class="form-text">
-						<p class="font-italic">No introducir un guión bajo (_) en el nombre.</p>
-					</div>
+					
 			{% endif %}
             </fieldset>
+			<hr>
+			<fieldset>
             {% if user.is_superuser %}
                 <div class="row p-1 mt-2">
                         <div class="form-text {% if form.applier.errors %} has-error {% endif %}"></div>
@@ -96,27 +112,30 @@
                         </div>
                 </div>
                 {% endif %}
+			</fieldset>
 
+
+<fieldset>
                     <div class="row p-1 mt-3">
 						
 					<div class="form-text {% if form.source.errors %} has-error {% endif %}"></div>
-					<label for="id_source" class="col form-label"><b>{% trans "Dirección de origen: " %}</b></label>
+					<label for="id_source" class="col form-label"><b>{% trans "Dirección de origen (*): " %}</b></label>
 					<div class="col col-6">
 						{% render_field form.source class+="form-control form-control-md" placeholder=form.source.help_text %}
 						{% if form.source.errors %} <span class="help-block"> {{ form.source.errors|join:", " }} </span>
 						{% endif %}</div>
 					<div class="col col-3"><img src="{% static 'threat_source.png' %}" style="height: 30px;"/></div>					
-					</div>
 					<div class="form-text">
 						<p class="font-italic">
 							Para aplicar una regla desde cualquier origen poner 0.0.0.0/0. Si no especifica la máscara de red se añadirá una /32.
 						</p> 
 					</div>
+				</div>
 
 					<!--  -->
 					<div class="row p-1 mt-2">
 						<div class="form-text {% if form.destination.errors %} has-error {% endif %}"></div>
-						<label for="id_destination" class="col form-label"><b>{% trans "Dirección de destinado (*):" %}</b></label>
+						<label for="id_destination" class="col form-label"><b>{% trans "Dirección de destino (*):" %}</b></label>
 						<div class="col col-6">
 							{% render_field form.destination class+="form-control" placeholder=form.destination.help_text %}
 							{% if form.destination.errors %} <span class="help-block"> {{ form.destination.errors|join:", " }} </span>
@@ -126,22 +145,23 @@
 							<img src="{% static 'secure_destination.png' %}" style="height: 30px;"/>
 						</div>
 						</div>
-
+					</fieldset>
 			
+<hr>
 
-                    <div class="row p-1 mt-2">
+                <div class="row p-1 mt-2">
 					<div class="form-text {% if form.protocol.errors %} has-error {% endif %}">
-					<label for="id_protocol" class="col col-2 form-label"><b>{% trans "Protocolo(s)" %}</b></label>
+					<label for="id_protocol" class="col col-2 form-label"><b>Protocolo (*)</b></label>
 					<div class="col">
                             {% render_field form.protocol class+="form-select multiple" %}
                           		{% if form.protocol.errors %} <span class="help-block"> {{ form.protocol.errors|join:", " }} </span>
                           	{% endif %}
 					</div>
 					</div>	
-                </div>
 				<div class="form-text">
-					<p class="font-italic">Para seleccionar más de un protocolo utilizar Ctrl.</p>
+					<p class="font-italic">Para seleccionar más de un protocolo utilizar Ctrl o Command</p>
 				</div>
+			</div>	
 				
                 <div class="row p-1 mt-2">        
 						<div class="form-text {% if form.packetlength.errors %} has-error {% endif %}"></div>
@@ -161,72 +181,91 @@
 						{% if form.tcpflag.errors %} <span class="help-block"> {{ form.tcpflag.errors|join:", " }} </span>
 						{% endif %}
 					</div>
+					<div class="form-text">
+						<p class="font-italic">Para seleccionar más de un protocolo utilizar Ctrl o Command</p>
+					</div>
 
 				</div>
-					
+				
 					<!-- ICMP -->
-						
-                        <div class="row p-1">
+					<hr>	
+<fieldset>				<div class="row p-4 g-3 form-group align-items-center">		
+
 						   <div class="form-text {% if form.icmpcode.errors %} has-error {% endif %}"></div>
 						<label for="id_icmpcode" class="col col-2 form-label"><b>{% trans "ICMP Code: " %}</b></label>
-						<div class="col col-4">
+						<div class="col-auto">
 							{% render_field form.icmpcode class+="form-control" %}
 							{% if form.icmpcode.errors %} <span class="help-block"> {{ form.icmpcode.errors|join:", " }} </span>
 							{% endif %}
 						</div>
-                        </div>
 
-                        <div class="row p-1">
+
 						<div class="form-group {% if form.icmptype.errors %} has-error {% endif %}"></div>
 						<label for="id_icmptype" class="col col-2 form-label"><b>{% trans "ICMP Type: " %}</b></label>
-						<div class="col col-4">
+						<div class="col-auto">
 							{% render_field form.icmptype class+="form-control" %}
 							{% if form.icmptype.errors %} <span class="help-block"> {{ form.icmptype.errors|join:", " }} </span>
 							{% endif %}
+
 						</div>
-						</div>
+					</div>
 
 					<!-- End of ICMP -->
-
+		</fieldset>
 					
 		        <!--  PORTS -->
                 
-		        <div class="form-text ">
-		        	<label class="col col-10 font-italic">{% trans "Selecciona los puertos de origen/destino para las direcciones de origen/destino. Ejemplo: 80,100-120,443. No debes indicar los puertos si el protocolo es ICMP." %}</label>
-		        </div>
-                <div class="row p-1">
-		        <div class="form-text {% if form.sourceport.errors %} has-error {% endif %} {% if form.destinationport.errors %} has-error {% endif %} {% if form.port.errors %} has-error {% endif %}"></div>
-        		<label for="id_sourceport" class="col col-2 form-label"><b>{% trans "Puerto(s) de origen: " %}</b></label>
-		        <div class="col col-4">
-		            {% render_field form.sourceport class+="form-control" %}
-		            {% if form.sourceport.errors %} <span class="help-block"> {{ form.sourceport.errors|join:", " }} </span>
-		            {% endif %}
-		        </div>
-                </div>
-                <div class="row p-1">
-                    <label for="id_destinationport" class="col col-2 form-label"><b>{% trans "Puerto(s) de destino: " %}</b></label>
-		        <div class="col col-4">
-		            {% render_field form.destinationport class+="form-control"  %}
-		            {% if form.destinationport.errors %} <span class="help-block"> {{ form.destinationport.errors|join:", " }} </span>
-		            {% endif %}
-		        </div>
-                </div>
+				<hr>
+			<div class="row p-1  form-row align-items-center">
+				<fieldset>
+					<label class="col-md-10" style="font-weight: normal;"><small>{% trans "Selecciona los puertos de origen/destino o selecciona un puerto en común para ambos. (Ejemplo: 80,100-120,443)" %}</small></label>
+					<div class="form-group {% if form.sourceport.errors %} has-error {% endif %} {% if form.destinationport.errors %} has-error {% endif %} {% if form.port.errors %} has-error {% endif %}"></div>
+					<div class="form-group form-row align-items-center ">					
+					<div class="col-sm-3 my-1">
+						<label for="id_sourceport" class="col  control-label" style="font-weight: normal;">{% trans "Src. Port(s)" %}</label>
+						{% render_field form.sourceport class+="form-control"  %}
+						{% if form.sourceport.errors %} <span class="help-block" id="sourceport_error_id"> {{ form.sourceport.errors|join:", " }} </span>
+						{% endif %}
+					</div>
+					
+					<div class="col-sm-3 ml-3">
+						<label for="id_destinationport" class="col control-label" style="font-weight: normal;">{% trans "Dest. Port(s)" %}</label>
+						{% render_field form.destinationport class+="form-control"  %}
+						{% if form.destinationport.errors %} <span class="help-block" id="destinationport_error_id"> {{ form.destinationport.errors|join:", " }} </span>
+						{% endif %}
+					</div>
+					
+					<div class="col-sm-3 ml-3">
+						<label for="id_port" class="col control-label" style="font-weight: normal;">{% trans "Port(s)" %}</label>
+						{% render_field form.port class+="form-control"  %}
+						{% if form.port.errors %} <span class="help-block" id="port_error_id"> {{ form.port.errors|join:", " }} </span>
+						{% endif %}
+					</div>
+					</div>
+				</div>	
+				</fieldset>
+			</div>
+			
+
+				<hr>
 		        <!--  END OF PORTS -->
-				
+				<fieldset>
                 <div class="row pt-3">
                	<div class="form-text {% if form.then.errors %} has-error {% endif %}"></div>
-        		<label for="id_then" class="col col-2 form-label"><b>{% trans "Acción: " %}</b></label>
+				<div class="form-group">
+        		<label for="id_then" class="col col-2 form-label"><b>{% trans "Acción (*): " %}</b></label>
 		        <div class="col col-8">
 		            {% render_field form.then class+="form-select form-select-md" %}
 		            {% if form.then.errors %} <span class="help-block"> {{ form.then.errors|join:", " }} </span>
 		            {% endif %}
 		        </div>
+				</div>
 		        </div>
 				
-                
-			<div class="row">		
+			
+			<div class="row pt-3">		
                 <div class="form-text {% if form.expires.errors %} has-error {% endif %}"></div>
-					<div class="form-group">
+				<div class="form-group">
 					<label for="id_expires" class="col col-2 form-label"><b>{% trans "Caduca (*): " %}</b></label>
 					<div class="col col-8 date" id="id_expire">
 						{% render_field form.expires class+="form-control js-timepicker"  placeholder="Fecha" %}
@@ -242,8 +281,8 @@
 					<input class="form-check-input ml-4" type="checkbox" value="" id="noexpires" onclick="disableDate();">
 					</div>
 		        </div>
-				
-
+			</div>
+		</fieldset>
 
 			
             <div class="row p-1">
@@ -325,7 +364,6 @@ function getCookie(name) {
 		$('#id_sourceport').removeAttr('required');
 		$('#id_destinationport').removeAttr('required');
 		$('#id_then').removeAttr("multiple");
-		/* $('#id_expires').attr('required'); */
 		const selectElement = document.getElementById('id_destination');
 		var url = "{% url 'ajax-networks' %}"
 		var csrftoken = getCookie('csrftoken');
@@ -357,17 +395,26 @@ function getCookie(name) {
 
 		
 	});  
+function checkRouteName(){
+	routename = document.forms["myForm"]["id_name"].value;
+	regex = new RegExp('/^/\s/');
+}
+
 function avoidMultipleSubmitting(){
 	document.getElementById('applybutton').disabled=true; 
 	document.getElementById('applybutton').innerHTML='Porfavor espere...';
 }
 function disableDate(){
-	console.log('t')
-	input = document.getElementById('id_expires')
+	input = document.getElementById('id_expires');
+	input1 = document.getElementById('initial-expires');
 	if (input.disabled==false){
 		$('#id_expires').attr('disabled', true);
+		$('#id_expires').removeAttr('value');
+		input.value =null;
+		input1.value = null;
+		$('#initial-expires').removeAttr('value');
 	}else{
-		$('#id_expires').removeAttr('disabled')
+		$('#id_expires').removeAttr('disabled');
 	}
 	/* document.getElementById('id_expires').value=null; */
 }

@@ -251,22 +251,22 @@ $('document').ready(function(){
     <div class="col">
       <div class="card">
         <h5 class="card-header text-success">{{route.name}}</h5>
-        <div class="card-body">
+        <div class="card-body font-monospace">
             <p class="card-text"> Status: <span class="badge bg-success">{{route.status}}</span>
             {% if route.expires != None %}
             <span class="text-muted"> Expires: {{route.expires}}</span></p>
           {% endif %}
-            <p class="card-text"><small class="text-muted">Última actualización: {{route.last_updated}} by {{route.applier_username_nice}}. 
-            {% if route.expires != None %}  
-            Days to expire: {{route.days_to_expire}} 
-             {% endif %}
+            <p class="card-text"><small class="text-muted font-monospace">Última actualización: {{route.last_updated}} por {{route.applier_username_nice}}. 
+
             </small></p>
             <div class="font-monospace">
-              {% if route.destination %} <small>Destino: {{route.destination}}</small> {% endif %} <br> 
-									{% if route.source %} <small>Origen: {{route.source}}</small> {% endif %} <br>
-									{% if route.protocol %} <small>Protocolo: {% for p in route.protocol.all %} {{p}} {% endfor %}</small><br> {% endif %} 
-									{% if route.port %} <small>Puerto(s): {{route.port}}</small><br> {% endif %}
-									{% if route.tcpflag %} <small>Tcpflag: {{route.tcpflag}}</small><br> {% endif %}
+                  {% if route.source %} <small>Origen: {{route.source}}</small> {% endif %} <br>
+                  {% if route.destination %} <small>Destino: {{route.destination}}</small> {% endif %} <br> 									
+									{% if route.protocol.all %} <small>Protocolo: {% for p in route.protocol.all %} {{p}} {% endfor %}</small><br> {% endif %} 
+									{% if route.sourceport %} <small>Puerto origen:<small> {{route.sourceport}}<br> {% endif %}
+                  {% if route.port %} <small>Puerto(s):</small> {{route.port}}<br> {% endif %}
+                  {% if route.destinationport %}<small>Puerto Destino: {{route.destinationport}} </small><br> {% endif %}
+									{% if route.tcpflag.all %} <small>Tcpflag: {% for tf in route.tcpflag.all %} {{tf}} {% endfor %}</small><br> {% endif %}
 									{% if route.icmptype %} <small>Icmptype: {{route.icmptype}</small><br> {% endif %}
 									{% if route.icmpcode %} <small>Icmpcode: {{route.icmpcode}}</small><br> {% endif %}
                   {% if route.thenaction %} <small>Acción: {{route.thenaction}}</small><br> {% endif %}

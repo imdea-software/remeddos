@@ -33,6 +33,7 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
+
 #add helper for finding a peer based on a route name
 
 @shared_task(ignore_result=True, serializer='json')
@@ -351,39 +352,6 @@ def batch_delete(routes, **kwargs):
             send_message(message,peer,superuser=False)
     else:
         return False
-
-""" @shared_task
-def check_sync(route_name=None, selected_routes=[]):
-    peers = Peer.objects.all()
-    for peer in peers:
-        if not selected_routes:
-            routes = find_routes(applier=None,peer=peer.peer_tag)
-        else:
-            routes = selected_routes
-        if route_name:
-            routes = routes.filter(name=route_name)
-        for route in routes:
-            if route.has_expired() and route.status == 'INACTIVE':
-                route.status == 'EXPIRED'
-                route.save()
-            if route.has_expired() and (route.status != 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE'):
-                if route.status != 'ERROR':
-                    message = ('Expiring %s route %s' %(route.status, route.name)) 
-                    send_message(message,peer.peer_tag,superuser=False)
-                    route.status='EXPIRED'
-                    route.save()
-                    delete(route)
-                if route.status == 'ERROR' and route.has_expired():
-                    message = ('Deleting %s route with error %s' %(route.status, route.name)) 
-                    send_message(message,peer.peer_tag,superuser=False)
-                    route.status='EXPIRED'
-                    route.save()
-                elif route.status == 'OUTOFSYN':
-                    route.check_sync()
-            else:
-                if route.status != 'EXPIRED':
-                    route.check_sync() """
-
                 
 @shared_task(ignore_result=True)
 def notify_expired():
@@ -392,15 +360,17 @@ def notify_expired():
     from django.core.mail import send_mail
     from django.template.loader import render_to_string
 
+    today = datetime.date.today()
     peers = Peer.objects.all()
+    
     for peer in peers:
-        routes = find_routes(applier=None, peer=peer.peer_tag)
-        today = datetime.date.today()
+        routes = find_routes(applier=None, peer=peer.peer_tag)    
         for route in routes:
             if route.expires != None:
                 expiration_days = (route.expires - today).days
                 if route.status == 'ACTIVE' :
                     if expiration_days < settings.EXPIRATION_NOTIFY_DAYS or expiration_days > 0:
+                        
                         try:
                             fqdn = Site.objects.get_current().domain
                             admin_url = "https://%s%s" % \
@@ -413,12 +383,15 @@ def notify_expired():
                                 expiration_days_text = ''
                             if expiration_days == 1:
                                 days_num = ' day'
-                            message = ('Route %s expires %s%s. Notifying %s (%s)' %(route.name, expiration_days_text, days_num, route.applier, route.applier.email))
-                            send_message(message=message,peer=peer.peer_tag,superuser=False)
-                            send_mail(settings.EMAIL_SUBJECT_PREFIX + "Rule %s expires %s%s" %
-                                    (route.name,expiration_days_text, days_num),
-                                    mail_body, settings.SERVER_EMAIL,
-                                    [route.applier.email])
+                                message = ('Route %s expires %s%s. Notifying %s (%s)' %(route.name, expiration_days_text, days_num, route.applier, route.applier.email))
+                                send_message(message=message,peer=peer.peer_tag,superuser=False)
+                                send_mail(settings.EMAIL_SUBJECT_PREFIX + "Rule %s expires %s%s" %(route.name,expiration_days_text, days_num),mail_body, settings.SERVER_EMAIL,[route.applier.email])
+                            if route.has_expired and expiration_days < 0:
+                                route.status == 'DEACTIVATED'
+                                route.save()
+                                logger.info(f"Deactivating route: {route.name}..")
+                                route.commit_delete()
+
                         except Exception as e:
                             logger.info("Exception: %s"%e)
             else:
@@ -436,6 +409,8 @@ def expired_val_codes():
 
 @shared_task
 def routes_sync():
+    today = datetime.date.today()
+    
     try:
         first_router = get_routes_router()
         backup_router = get_routes_backuprouter()
@@ -468,140 +443,80 @@ def routes_sync():
     """ routes from db """            
     routenames_db.sort()
     """ find every active route in db , first router and backup router """
-    diff_routers = set(fw_routes).difference(backup_fw_routes)
-    diff_routers1 = set(backup_fw_routes).difference(fw_routes)
-    diff_routers.update(diff_routers1)
+    found_routers = set(fw_routes + list(set(backup_fw_routes) - set(fw_routes)))
     
-    notsync_diff = diff_routers.difference(routenames_db)
-    notsync_diff1 = set(routenames_db).difference(diff_routers)
-    notsync_diff.update(notsync_diff1)
+    found_diff = found_routers.difference(routenames_db)
+    found_diff1 = set(routenames_db).difference(found_routers)
+    found_diff.update(found_diff1)
     
-    notsynced_routes = list(notsync_diff)
-    if notsynced_routes:
-        print(notsynced_routes)
-        for routename in notsynced_routes:
+    found_routes = list(found_diff)
+    if found_routes:
+        print(found_routes)
+        for routename in found_routes:
+            peer_tag = get_peer_with_name(routename)
             try:
-                peer_tag = get_peer_with_name(routename)
                 if peer_tag:
                     route = get_specific_route(applier=None,peer=peer_tag,route_slug=routename)
                     if route is not None:
+                        if route.status != 'ACTIVE' and not (route.is_synced() and route.is_synced_backup):
+                            try:
+                                route.commit_add()
+                            except Exception as e:    
+                                logger.info('We tried to commit a route outofsync but it didnt work, please review if there is any conexion problem. Route: ', route.name)
                         if route.status == 'ACTIVE' and (not route.has_expired) and route.is_synced() and route.is_synced_backup():
                             pass
-                        if route.status == 'ACTIVE' and ((not route.is_synced()) or (not route.is_synced_backup)):
-                            route.commit_add()
-                            logger.info("The following route has been commited to the router due to an out of sync problem. ", route.name)
-                        if route.is_synced() and route.is_synced_backup():
+                        if route.status == 'ACTIVE' and ((not route.is_synced()) or (not route.is_synced_backup)) and (not route.has_expired()):
+                            route.commit_add() 
+                            logger.info("The following route has been commited to the router due to an out of sync problem. ", routename)
+                        if route.is_synced() and route.is_synced_backup() and (not route.has_expired()):
                             route.status = 'ACTIVE'
                             route.save()
                         if route.has_expired() and ((route.is_synced()) or (route.is_synced_backup)):
+                            route.status = 'EXPIRED'
+                            route.save()
                             route.commit_delete()
-                            logger.info("The following route has been deleted from the router due to an out of sync problem. ", route.name)                   
-                        """ if (route.status == 'PENDING' or route.status == 'DEACTIVATED' or route.status == 'OUTOFSYNC' or route.status == 'ERROR' or route.status == None) and route.applier == None:
-                            route.status = 'PROPOSED'
-                            route.save() """
+                            logger.info("The following route has been deleted from the router due to an out of sync problem. ", routename)
                         if (not route.has_expired()) and (route.status == 'OUTOFSYNC'):
                             route.commit_add()
                             logger.info('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
+                        if route.has_expired() and route.status == 'ACTIVE':
+                            route.status == 'EXPIRED'
+                            route.save()
+                            route.commit_delete()
+                        if route.expires:
+                            expiration_days = (route.expires - today).days
+                            if route.has_expired() and expiration_days < 0:
+                                route.status == 'EXPIRED'
+                                route.save()
+                                logger.info(f"Deactivating route: {route.name}..")
+                                route.commit_delete()
+                        if not route.applier:
+                            route.comments = 'Esta regla ha sido guardada por REMeDDoS de manera automática, porfavor revise esta regla.'
+                            route.save()
+                            
                     else:
-                        # there's a route in a router that is not synced with the db
+                     # there's a route in a router that is not synced with the db
                         route = find_match_route_config_router(routename)
-                        # now the route has already been save into the db, now we commit again the route
-                        route.commit_add()
-                        logger.info("The following route has been commited to the router due to an out of sync problem. ", route.name)
-                        
+                        # now the route has already been save into the db, now we commit again the route if it's not commited already
+                        if (not route.is_synced()) or (not route.is_synced_backup):
+                            try:
+                                route.commit_add()
+                            except Exception as e:
+                                route.status = 'OUTOFSYNC'
+                                route.save()
+                                logger.info('Ha habido un error al intentar configurar las reglas:',e)
+                        elif (route.is_synced() and route.is_synced_backup):
+                            route.status ='ACTIVE'
+                            route.comments = 'Esta regla ha sido guardada por REMeDDoS de manera automática, porfavor revise esta regla.'
+                            route.save()
+                            print('routes have been synced: ', route.name)
             except Exception as e:
                 logger.info(f"There following route does not belong to any peer: {routename}")
     else:
         pass
         logger.info('There are no routes out of sync.') 
 
- 
-""" @shared_task
-def sync_router_with_db():
-      ## check that the routes that are configured on the router are found on the db
-    from peers.models import Peer
-    from flowspec.models import MatchProtocol,ThenAction
-    from flowspec.helpers import get_routes_router, get_route
-    from accounts.models import UserProfile
 
-    peers = Peer.objects.all()
-    for peer in peers:
-            # find what peer organisation does the user belong to
-            # first initialize all the needed vars    
-        routes = get_routes_router() 
-        fw_rules = []
-        message = ''
-            # for getting the route parameters is needed to run through the xml 
-        for children in routes:
-            then = '' ; then_action = '' ; protocol = [] ; destination = [] ; source = '' ; src_port =  '' ; dest_port = '' ; tcpflags = '' ; icmpcode = ''; icmptype = ''; packetlength = ''; prot = '';  name_fw = ''
-            for child in children:
-                if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
-                    name_fw = child.text
-                    if (peer.peer_name in name_fw):
-                            fw_rules.append(child.text)                              
-                    # if the user peer organisation is found on the router the program will collect all the info
-                if (peer.peer_name in name_fw):  
-                    for child in children:
-                        if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}then':
-                            for thenaction in child:                    
-                                th = thenaction.tag ; start = th.find('}') ; then = th[start+1::]
-                                then_action = thenaction.text
-                        if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}match':
-                            for c in child:
-                                if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}protocol': protocol = c.text
-                                if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination-port':dest_port = c.text
-                                if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source-port':src_port = c.text
-                                if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination':destination = c.text
-                                if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}tcp-flags': tcpflags = c.text 
-                                if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-code': icmpcode = c.text 
-                                if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type': icmptype = c.text 
-                                if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length' and c.text != '': packetlength = c.text
-                                if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source': source = c.text
-                # loop through list checking f t name 
-                try: 
-                    route = get_route(applier=None,peer=peer.peer_tag)
-                    if peer.peer_tag == get_peer_with_name(name_fw):
-                        check_route = get_object_or_404(get_edit_route(route, rname=name_fw), name=name_fw)
-                        if not check_route.status == 'ACTIVE' :
-                            check_route.name = name_fw
-                                #route.applier = applier
-                            check_route.source = source
-                            check_route.sourceport = src_port
-                            check_route.destination = destination
-                            check_route.destinationport = dest_port
-                            check_route.icmpcode = icmpcode
-                            check_route.icmptype = icmptype
-                            check_route.packetlength = packetlength
-                            check_route.tcpflag = tcpflags
-                            check_route.status = 'ACTIVE'
-                            check_route.peer = peer
-                            check_route.save()
-                            if isinstance(protocol,(list)):
-                                for p in protocol:
-                                    prot, created = MatchProtocol.objects.get_or_create(protocol=protocol)
-                                    check_route.protocol.add(prot.pk)
-                            else:
-                                try:
-                                    prot, created = MatchProtocol.objects.get_or_create(protocol=protocol)
-                                    check_route.protocol.add(prot)
-                                except Exception as e:
-                                    logger.info('An error has occured when trying to add the protocol to a non sync route: ', e)
-                            th_act, created = ThenAction.objects.get_or_create(action=then,action_value=then_action)
-                            check_route.then.add(th_act.pk)
-                            check_route.save()
-                        else:
-                            logger.info('Checked route has already been syncronised')
-                            pass
-                    else:
-                        logger.info('Checked route has already been syncronised')
-                        pass
-                        
-                except Exception as e:                    
-                    #message = 'Routes have already been syncronised.'
-                    pass 
-    message = ('Routes from the router have already been syncronised with the database')
-    send_message(message,peer=None,superuser=True)
-       # print(f'Database syncronised {peer.peer_name}') """
     
 
 @shared_task

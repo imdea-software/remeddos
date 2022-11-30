@@ -51,14 +51,7 @@ def activate(request, activation_key):
             rp = RegistrationProfile.objects.get(activation_key=activation_key)
 
         except RegistrationProfile.DoesNotExist:
-            return render(
-                request,
-                'registration/activate.html',
-                {
-                    'account': account,
-                    'expiration_days': settings.ACCOUNT_ACTIVATION_DAYS
-                }
-            )
+            return render(request,'registration/activate.html',{'account': account,'expiration_days': settings.ACCOUNT_ACTIVATION_DAYS})
         try:
             userProfile = rp.user.profile()
         except UserProfile.DoesNotExist:
@@ -85,11 +78,7 @@ def activate(request, activation_key):
                 up.peers.add(Peer.objects.get(pk=peer))
                 up.save()
         except:
-            return render(request,'registration/activate_edit.html',{
-                        'account': account,
-                        'expiration_days': settings.ACCOUNT_ACTIVATION_DAYS
-                    },
-                )
+            return render(request,'registration/activate_edit.html',{'account': account,'expiration_days': settings.ACCOUNT_ACTIVATION_DAYS})
         activation_key = activation_key.lower()  # Normalize before trying anything with it.
         try:
             rp = RegistrationProfile.objects.get(activation_key=activation_key)

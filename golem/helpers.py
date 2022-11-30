@@ -5,7 +5,6 @@ from flowspy import settings
 import requests
 
 def translate_tcpflag(flags):
-    print('this are the flags: ', flags)
     tcpf = {'-----F':'fin', '----S-':'syn', '----SF':'syn,fin', '---R--':'rst', '---R-F':'rst,fin','---RS-':'rst,syn' ,'---RSF':'rst,syn,fin' ,'push' : '--P---' , 'push,fin' : '--P--F' , 'push,syn': '--P-S-', '--P-SF':'push,syn,fin', '--PR--':'push,rst','--PR-F':'push,rst,fin' ,'--PRS-':'push,rst,syn','--PRSF':'push,rst,syn,fin','ack':'-A----', '-A---F':'ack,fin','-A--S-':'ack,syn', '-A--SF':'ack,syn,fin','-A-R--':'ack,rst','-A-R-F':'ack,rst,fin','-A-RS-':'ack,rst,syn','-A-RSF':'ack,rst,syn,fin','-AP---':'ack,push','-AP--F':'ack,push,fin','-AP-S-':'ack,push,syn','-AP-SF':'ack,push,syn,fin','-APR--':'ack,push,rst','-APR-F':'ack,push,rst,fin', '-APRS-':'ack,push,rst,syn', '-APRSF':'ack,push,rst,syn,fin'}
     tcpflags = tcpf.get(flags,False)
     return tcpflags
@@ -85,21 +84,30 @@ def open_event(id_event):
         prt = traffic_event[4]['data'][0][0]
         protocol = get_protocol(prt)
         ip = get_ip_address(event_info['ip_attacked'])
-        link = get_link(dic_regla['id_attack'])
-        print('flags de dic regla: ', dic_regla['tcp_flag'])
-        flags = translate_tcpflags(dic_regla['tcp_flag'])
-        print('the flags: ', flags)
+        try:
+            link = get_link(dic_regla['id_attack'])
+        except Exception as e:
+            logger.info('There was an exception when trying to get the REM-Golem link.')  
+        flags = translate_tcpflag(dic_regla['tcp_flag'])
         if peer:
             geni_attack,created = GolemAttack.objects.get_or_create(id_name=dic_regla['id_attack'],peer=peer, ip_src = dic_regla['ip_src'],ip_dest=dic_regla['ip_dest'],port=dic_regla['port'], status = dic_regla['status'], max_value = dic_regla['max_value'], threshold_value = dic_regla['th_value'], nameof_attack = dic_regla['attack_name'] ,typeof_attack = dic_regla['typeofattack'], typeof_value=dic_regla['typeofvalue'], link=link)
             send_message(message = (f"Nuevo ataque DDoS contra el recurso '{ip}' con id {id_event} de tipo {event_info['attack_name']}. Consulte nuestra <https://remedios.redimadrid.es/|*web*> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link}."), peer=peer.peer_tag,superuser=False)          
             if not created:
                 geni_attack.save()        
             route_dic = {'name':dic_regla['id_attack']+'_'+peer.peer_tag,'source_port':dic_regla['source_port'],'dest_port':dic_regla['dest_port'],'ipdest':dic_regla['ip_dest'],'ipsrc':dic_regla['ip_src'],'protocol':dic_regla['protocol'],'protocol_pk':protocol.pk,'tcpflag':dic_regla['tcp_flag'],'typeofport':dic_regla['typeofport'],'port':dic_regla['port']}
+            print(f"this is create route info : {dic_regla['id_attack']}, // route-dic : {route_dic}, // peer.peer_tag: {peer.peer_tag},  // protocol: {protocol}, // flags: {flags} ")
             create_route(dic_regla['id_attack'],route_dic, peer.peer_tag, protocol, flags)
-            for tcpflag in flags:
-                flag, created = TcpFlag.objects.get_or_create(flag=tcpflag)
-                geni_attack.tcpflag.add(flag.pk)
-                geni_attack.save()
+            if flags:
+                if isinstance(flags,(list)):
+                    for tcpflag in flags:
+                        flag, created = TcpFlag.objects.get_or_create(flag=tcpflag)
+                        geni_attack.tcpflag.add(flag.pk)
+                        geni_attack.save()
+                else:
+                    flag, created = TcpFlag.objects.get_or_create(flag=flags)
+                    geni_attack.tcpflag.add(flag.pk)
+                    geni_attack.save()
+
             if isinstance(protocol,(list)):
                 for p in protocol:
                     fs = p.find('(')
@@ -121,7 +129,7 @@ def open_event(id_event):
 def ongoing(id_event,peer):
     import time
     from flowspec.models import MatchProtocol
-    from golem.models import GolemAttack
+    from golem.models import GolemAttack, MatchProtocol, TcpFlag
     from flowspec.tasks import create_route
 
 
@@ -131,13 +139,37 @@ def ongoing(id_event,peer):
         traffic_characteristics = event_data['response']['result']['data'][0]['traffic_characteristics']
         dic_regla2 = assemble_dic(traffic_characteristics,info)
         link1 = get_link(id_event)
-        flags = translate_tcpflags(dic_regla2['tcp_flag'])
+        flags = translate_tcpflag(dic_regla2['tcp_flag'])
         attack = GolemAttack.objects.get(id_name=id_event)
         attack.status, attack.max_value, attack.threshold_value,attack.link = dic_regla2['status'], dic_regla2['max_value'], dic_regla2['th_value'], link1
         attack.save()
         protocol = traffic_characteristics[4]['data'][0][0]
         match_protocol = check_protocol(protocol)
         route_info = {'name':dic_regla2['id_attack']+'_'+peer.peer_tag,'typeofport':dic_regla2['typeofport'],'ipdest':dic_regla2['ip_dest'],'ipsrc':dic_regla2['ip_src'],'protocol_pk':match_protocol.pk,'port':dic_regla2['port'],'source_port':dic_regla2['source_port'],'dest_port':dic_regla2['dest_port']}
+        
+        if flags:
+            if isinstance(flags,(list)):
+                for tcpflag in flags:
+                    flag, created = TcpFlag.objects.get_or_create(flag=tcpflag)
+                    attack.tcpflag.add(flag.pk)
+                    attack.save()
+            else:
+                flag, created = TcpFlag.objects.get_or_create(flag=flags)
+                attack.tcpflag.add(flag.pk)
+                attack.save()
+
+        if isinstance(protocol,(list)):
+            for p in protocol:
+                fs = p.find('(')
+                prot, created = MatchProtocol.objects.get_or_create(protocol=p[:fs].lower())
+                attack.protocol.add(prot.pk)
+                attack.save()
+        else:
+            p=get_protocol(protocol)
+            attack.protocol.add(p.pk)
+            attack.save()
+
+        
         try:
             create_route(id_event,route_info,peer.peer_tag, match_protocol.protocol,flags)
         except Exception as e:
@@ -157,13 +189,35 @@ def ongoing(id_event,peer):
             match_protocol = check_protocol(protocol)
             dic_regla3 = assemble_dic(traffic_data,attack_info)
             link2 = get_link(id_event)
-            tcpflags = translate_tcpflags(dic_regla3['tcp_flag'])
+            tcpflags = translate_tcpflag(dic_regla3['tcp_flag'])
             attack = GolemAttack.objects.get(id_name=id_event)
             attack.status = dic_regla3['status']
             attack.max_value = dic_regla3['max_value']
             attack.threshold_value = dic_regla3['th_value']
             attack.link = link2
             attack.save()
+            if tcpflags:
+                if isinstance(tcpflags,(list)):
+                    for tcpflag in tcpflags:
+                        flag, created = TcpFlag.objects.get_or_create(flag=tcpflag)
+                        attack.tcpflag.add(flag.pk)
+                    attack.save()
+                else:
+                    flag, created = TcpFlag.objects.get_or_create(flag=tcpflags)
+                    attack.tcpflag.add(flag.pk)
+                    attack.save()
+
+            if isinstance(protocol,(list)):
+                for p in protocol:
+                    fs = p.find('(')
+                    prot, created = MatchProtocol.objects.get_or_create(protocol=p[:fs].lower())
+                    attack.protocol.add(prot.pk)
+                attack.save()
+            else:
+                p=get_protocol(protocol)
+                attack.protocol.add(p.pk)
+            attack.save()
+
             route_info1 = {'name':dic_regla3['id_attack']+'_'+peer.peer_tag,'typeofport':dic_regla3['typeofport'],'ipdest':dic_regla3['ip_dest'],'ipsrc':dic_regla3['ip_src'],'port':dic_regla3['port'],'protocol_pk':match_protocol.pk,'source_port':dic_regla3['source_port'],'dest_port':dic_regla3['dest_port']}
             try:
                 create_route(id_event,route_info1,peer.peer_tag, match_protocol.protocol,tcpflags)
@@ -216,7 +270,6 @@ def create_route(golem_id,route_dic,peer,protocolo,flags):
     peers = Peer.objects.get(peer_tag=peer)
     golem_routes = []
     
-    print('protocolo dentro de crear regla: ', protocolo)
     # protocolo = route_dic['protocol'].protocol
     try:
         routes = find_routes(applier=None, peer=peer)
@@ -241,21 +294,32 @@ def create_route(golem_id,route_dic,peer,protocolo,flags):
             route.sourceport = route_dic['port']
         elif route_dic['typeofport'] == 'dest':
             route.destinationport = route_dic['port']
-        
+        route.save()
+        if isinstance(protocolo,(list)):
+            for p in protocolo:
+                prot, created = MatchProtocol.objects.get_or_create(protocol=prot)
+                route.protocol.add(prot.pk)
+                route.save()
+        else:
+            route.protocol.add(route_dic['protocol_pk'])
+            route.save()
+
         if protocolo == 'tcp':
             try:
-                route.save()
-                for tcpflag in flags:
-                    flag, created = TcpFlag.objects.get_or_create(flag=tcpflag)
-                    route.tcpflag.add(flag.pk)     
+                if flags:
+                    if ',' in flags:
+                        flags = flags.split(',')
+                        for tcpflag in flags:
+                            flag = TcpFlag.objects.get(flag=tcpflag)
+                            route.tcpflag.add(flag.pk)
+                            route.save()
+                    else:
+                        print('deberia venir x aqui')
+                        flag = TcpFlag.objects.get(flag=flags)
+                        route.tcpflag.add(flag.pk)
+                        route.save()   
             except Exception as e:
                 logger.info(f"There was an exception when creating a new proposed route. Error: {e}")
-        else:             
-            try: 
-                route.save()
-            except Exception as e:
-                logger.info(f"There was an exception when creating a new proposed route. Error: {e}")
-        route.protocol.add(route_dic['protocol_pk'])
         g = GolemAttack.objects.get(id_name=golem_id)
         g.set_route(route)
         try: 
@@ -280,12 +344,23 @@ def create_route(golem_id,route_dic,peer,protocolo,flags):
             route.sourceport = route_dic['port']
         elif route_dic['typeofport'] == 'dest':
             route.destinationport = route_dic['port']
+        
+        route.save()
+        
         if protocolo == 'tcp':            
             try: 
-                route.save()
-                for tcpflag in flags:
-                    flag, created = TcpFlag.objects.get_or_create(flag=tcpflag)
-                    route.tcpflag.add(flag.pk) 
+                if isinstance(flags,(list)):
+                    if ',' in flags:
+                        flags = flags.split(',')
+                    for tcpflag in flags:
+                        flag= TcpFlag.objects.get(flag=tcpflag)
+                        route.tcpflag.add(flag.pk)
+                        route.save()
+                else:
+                    flag = TcpFlag.objects.get(flag=flags)
+                    route.tcpflag.add(flag.pk)
+                    route.save() 
+
             except Exception as e:
                 logger.info(f"There was an exception when creating a new proposed route. Error: {e}")
         else:

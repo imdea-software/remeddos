@@ -39,7 +39,7 @@
                      <td> <small>
                          {% if route.protocol %} Protocolo: {% for p in route.protocol.all %} {{p}} {% endfor %}<br> {% endif %} 
                          {% if route.port %} Port: {{route.port}} <br> {% endif %}
-                         {% if route.tcpflag %} Tcpflag: {{route.tcpflag}}<br> {% endif %}
+                         {% if route.tcpflag.all %} Tcpflag: {% for f in route.tcpflag.all %} {{ f }} {% endfor %}<br> {% endif %}
                          {% if route.icmptype %} Icmptype: {{route.icmptype} <br> {% endif %}
                          {% if route.icmpcode %} Icmpcode: {{route.icmpcode}} <br></small> {% endif %}
                      </td>
@@ -52,6 +52,12 @@
                      <td><span class="badge bg-info">{{route.status}}</span></td>
                      {% elif route.status == 'OUTOFSYNC' %}
                      <td><span class="badge bg-dark">{{route.status}}</span></td>
+                     {% elif route.status == 'DEACTIVATED' %}
+                     <td><span class="badge bg-dark">{{route.status}}</span></td>
+                     {% elif route.status == 'INACTIVE' %}
+                     <td><span class="badge bg-dark">{{route.status}}</span></td>
+                     {% elif route.status == 'ERROR' %}
+                     <td><span class="badge bg-warning">{{route.status}}</span></td>
                      {% endif %}
                      <td>
                          {% if not route.status == 'ACTIVE' %}

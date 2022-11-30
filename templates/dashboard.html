@@ -80,20 +80,23 @@ td:first-child, th:first-child {
         			<table id="routes_table" class="table table-hover table-responsive">
 						<thead class="">
 						<tr>
-							<th><small>Nombre</small></th><th><small>Creada</small></th><th><small>Mas información</small></th><th><small>Estado</small></th>
+							<th><small>Nombre</small></th><th><small>Caduca</small></th><th><small>Mas información</small></th><th><small>Estado</small></th>
 						</tr>
 						</thead>
 						<tbody>
 							{% for route in routes %}
 							<tr>
-								<td><small><a href="{% url 'route-details' route.name %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Gráficos y más información" class="text-decoration-none">{{route.name}}</a></small></td>
-								<td><small>{{route.filed|time:"H:i"}}, {{route.filed|date:"d M Y"}}</small></td>
+								<td><small><a href="{% url 'route-details' route.name %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Gráficos y más información" class="text-decoration-none text-info">{{route.name}}</a></small></td>
+								<td> {% if route.expires %} <small>  {{route.expires|date:"d M Y"}} {% else %} No caduca </small> {% endif %} </td>
 								<td> 
-									{% if route.destination %} <small id="routeDestination" value="{{route.destination}}">{{route.destination}}</small> {% endif %} <br> 
-									{% if route.source %} <small id="routeSource" value="{{route.source}}">{{route.source}}</small> {% endif %} <br>
-									{% if route.protocol %} <small>Protocolo: {% for p in route.protocol.all %} {{ p|upper }} {% endfor %}</small><br> {% endif %} 
-									{% if route.port %} <small>Port: {{route.port}}</small><br> {% endif %}
-									{% if route.tcpflag %} <small>Tcpflag: {% for f in route.tcpflag.all %} {{ f|upper }} {% endfor %}</small><br> {% endif %}
+									{% if route.source %} <small id="routeSource" value="{{route.source}}">Origen: {{route.source}}</small> {% endif %} <br>
+									{% if route.destination %} <small id="routeDestination" value="{{route.destination}}">Destino: {{route.destination}}</small> {% endif %} <br> 
+									
+									{% if route.protocol.all %} <small>Protocolo: {% for p in route.protocol.all %} {{ p|upper }} {% endfor %}</small><br> {% endif %} 
+									{% if route.sourceport %} <small>Puerto origen: </small> {{route.sourceport}}<br> {% endif %}
+									{% if route.port %} <small>Puerto(s): </small> {{route.port}}<br> {% endif %}
+									{% if route.destinationport %}<small>Puerto Destino: {{route.destinationport}} </small><br> {% endif %}
+									{% if route.tcpflag.all %} <small>Tcpflag: {% for f in route.tcpflag.all %} {{ f | upper }} {% endfor %}</small><br> {% endif %}
 									{% if route.icmptype %} <small>Icmptype: {{route.icmptype}</small><br> {% endif %}
 									{% if route.icmpcode %} <small>Icmpcode: {{route.icmpcode}}</small><br> {% endif %}
 								</td>

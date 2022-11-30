@@ -37,7 +37,7 @@ select.form-select > option {
                 <table id="routestable" class="table table-hover table-responsive compact w-100">
                     <thead>
                     <tr>
-                        <th>Creada</th><th>Nombre</th><th>Información</th><th>Pertenece a</th><th>Estado</th><th>Caduca</th><th>Respuesta</th><th>Otros</th>
+                        <th>Creada</th><th>Nombre</th><th>Información</th><th>Pertenece a</th><th>Estado</th><th>Caduca</th><th>Otros</th><th>Otros</th>
                     </tr>
                 </thead>
 
@@ -49,25 +49,31 @@ select.form-select > option {
                              {{route.last_updated|time:"H:i"}}</small>  </td>
                             <td><small>
                                 {% if route.status == 'ACTIVE' %}
-                                <a href="{% url 'display-graphs' route.name %}" class="text-danger">{{route.name}}</a>
+                                <a href="{% url 'display-graphs' route.name %}" class="text-info">{{route.name}}</a>
                                 {% else %}
-                                <span class="text-danger">{{route.name}}</span>
+                                <span class="text-info">{{route.name}}</span>
                                 {% endif %}
                             </small></td>
                             
 
                             <td><small>
-                                {% if route.source %} <b>Dir Origen:</b> {{route.source}}<br> {% endif %}
+                                {% if route.source %} <b>Dir Origen:</b> {{route.source}}<br> {% endif %} 
                                 {% if route.destination %} <b>Dir Destino:</b> {{route.destination}}<br> {% endif %}
+                                                               
                                 {% if route.source_port %} <b>Puerto origent:</b> {{route.source_port}}<br> {% endif %}
                                 {% if route.port %} <b>Puerto(s):</b> {{route.port}}<br> {% endif %}
                                 {% if route.destination_port %}<b>Puerto Destino:</b>{{route.destination_port}}<br> {% endif %}
                                 {% if route.protocol.all %}<b>Protocolo:</b> {% for p in route.protocol.all %} {{ p|upper }} {% endfor %}<br> {% endif %}
-                                {% if route.tcpflag %} <b>Tcpflag(s): </b>  {% for f in route.tcpflag.all %} {{ f|upper }} {% endfor %} <br>{% endif %}
-                                {% if route.get_then %} <b> Acción: {{route.get_then}} </b> {% endif %}
+                                {% if route.tcpflag.all %} <b>Tcpflag(s): </b>  {% for f in route.tcpflag.all %} {{ f|upper }} {% endfor %} <br>{% endif %}
+                                {% if route.icmptype %} <b>Icmptype: </b>{{route.icmptype} <br> {% endif %}
+								{% if route.icmpcode %} <b>Icmpcode: </b>{{route.icmpcode}} <br> {% endif %}
+                                {% if route.get_then %} <b> Acción: </b>{{route.get_then}}  {% endif %}
                             </small></td>
                              
-                            <td><small>{{route.applier_username_nice}}</small></td>
+                            <td><small>
+                            {% if route.applier_username_nice != None %}    {{route.applier_username_nice}} {% else %} Configurada por REMeDDoS
+                            {% endif %}
+                            </small></td>
 
                             <td>
                                 {% if route.status == 'ACTIVE'  %}
@@ -88,10 +94,11 @@ select.form-select > option {
                             </td>
                             
 
-                            <td><small>{% if route.expires %}{{route.expires}}{% else %}'Esta regla no tiene fecha de caducidad establecida.'{% endif %}</small></td>
+                            <td><small>{% if route.expires %}{{route.expires}}{% else %}Esta regla no tiene fecha de caducidad establecida.{% endif %}</small></td>
 
-                            <td><small>{{route.response}}
-                                {% if route.comments %} <br> Otros comentarios: <br> {{route.comments}} {% endif %}
+                            <td><small>
+                                {% if route.comments %} <b> Otros comentarios: </b><br> {{route.comments}} <br> {% endif %}
+                                {% if route.response %} <b>Respuesta router:</b><br> {{route.response}} <br> {% endif %}
                             </small></td>
 
                             <td>

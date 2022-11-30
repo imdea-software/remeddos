@@ -121,7 +121,7 @@ def get_link(id_golem):
     except Exception as e:
         logger.info('There was an error when trying to read the configuration file: ',e)
   except Exception as e:
-      logger.info('There was an error when trying to connect via ssh: ',e)
+      logger.info('There was an error when trying to connect via ssh.')
     
 
 
@@ -243,10 +243,37 @@ def get_ip_address(ip):
   # first we find the route we need for the zabbix query, then we check which parameters we need in order to get the full query
   # and then we assemble it
 def get_query(routename, dest, src, username):
-
   route = get_specific_route(applier=username,peer=None,route_slug=routename)
-  source = '0/0' if src == '0.0.0.0/0' else src[:-3]
-  destination = '0/0' if dest == '0.0.0.0/0' else dest[:-3]
+  hd = dest.find('/') ; barra_dest = dest[1+hd:] ; destination = '' 
+  hs = src.find('/') ; barra_src = src[1+hs:] ; source = ''
+  
+  if src == '0.0.0.0/0':
+    source = '0/0'
+  else:
+    
+    if src.endswith('/32'):
+      source = src[:-3]
+    elif int(barra_src) >= 25 and int(barra_src) < 32:
+      source = src
+    elif int(barra_src) >= 17 and int(barra_src) < 24:
+      if src[:-3].endswith('.0'):
+        source = src.replace('.0','')
+    elif int(barra_src) == 16:
+      if src[:-3].endswith('.0.0'):
+        source = src.replace('.0','')
+
+  if dest.endswith('/32'):
+    destination = dest[:-3]
+  if int(barra_dest) >= 25 and int(barra_dest) < 32:
+    destination = dest
+  if int(barra_dest) >= 17 and int(barra_dest) < 24:
+    if dest[:-3].endswith('.0'):
+      destination = dest.replace('.0','')
+  if int(barra_dest) == 16:
+    if dest[:-3].endswith('.0.0'):
+      destination = dest.replace('.0','')
+
+  # incluir solo /32, sino quitar las reglas
   query = (f'jnxFWCounterByteCount["{source},{destination}"]')
   if route.protocol.values('protocol'):
       prot = route.protocol.values('protocol')        
@@ -259,12 +286,18 @@ def get_query(routename, dest, src, username):
   sourceport = f',srcport={route.sourceport}' if route.sourceport else ''
   icmpcode = f',icmp-code={route.icmpcode}' if route.icmpcode else ''
   icmptype = f',icmp-type={route.icmptype}' if route.icmptype else ''
-  tcp_flags = route.tcpflag if route.tcpflag else ''
-  if route.tcpflag:
-    tcp_flags = f',tcp-flag:{translate_tcpflags(route.tcpflag)}'
+  tcp_flags = ',tcp-flag'
+  
+  # Query's example for zabbix: 1.1.1.1,2.2.2.2,proto=6,=1,=17,dstport=67,=93,=45,srcport=45,=56,=92,tcp-flag:10,:01,:08,len=1234,=1345,=1567
+  if route.tcpflag.all():
+    for count, flag in enumerate(route.tcpflag.all()):
+      if not (count+1 == len(route.tcpflag.all())):
+        tcp_flags = tcp_flags + ":%s,"%(translate_tcpflags(flag.flag))
+      else:
+        tcp_flags = tcp_flags + ":%s"%(translate_tcpflags(flag.flag))
   p_length =  f',len={route.packetlength}' if route.packetlength else ''
   query = (f'jnxFWCounterByteCount["{destination},{source}{protocol}{destport}{sourceport}{icmpcode}{icmptype}{tcp_flags}{p_length}"]')
-
+  print(query)
   return query
 
 def get_graph_name(routename,dest,src):
@@ -290,9 +323,11 @@ def graphs(timefrom,timetill, routename, username):
     ts_till = int(till_date_obj.timestamp())
     #query for getting the itemid and the hostid
     item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
+    print('ESTO ES LA QUERY: ',item)
     item_id = [i['itemid'] for i in item['result']]
     hostid = [i['hostid'] for i in item['result']]
     #if query fails it might be because parameters are not int parsed
+
     item_history = zapi.history.get(hostids=hostid,itemids=item_id,time_from=ts_from,time_till=ts_till)
     
       
@@ -426,152 +461,7 @@ def get_routes_backuprouter():
     return routes
 
 
-""" finds route missing in db and saves it  """
 
-def find_match_route_config_router(routename):
-  from flowspec.models import MatchProtocol, TcpFlag
-  import datetime
-
-  tomorrow = (datetime.date.today() + datetime.timedelta(days=1))
-  first_retriever = get_routes_router()
-  second_retriever = get_routes_backuprouter()
-  peer_tag = get_peer_with_name(routename)
-  route = get_route(applier=None,peer=peer_tag)
-  check = False
-  protocol = []
-  tcpflags = []
-  destports = []
-  sourceports = []
-  packetlength = []
-  destination = ''
-  src = ''
-  icmpcode = ''
-  icmptype = ''
-  then = []
-  then_value = []
-
-  for children in first_retriever:
-    for child in children:
-      if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
-          if child.text == routename:
-            check = True
-            route.name = routename
-          else:
-            check = False
-      if check:
-        for tag in child:
-          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}protocol':
-            protocol.append(tag.text)
-          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination-port':
-            destports.append(tag.text)
-          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source-port':
-            sourceports.append(tag.text)
-          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}tcp-flags':
-            tcpflags.append(tag.text)
-          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length':
-            packetlength.append(tag.text)
-          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination':
-            destination = tag.text
-          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source':
-            src = tag.text
-          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-code':
-            icmpcode = tag.text
-          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type':
-            icmptype = tag.text
-      if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}then' and check:
-        for c in child:
-          f = c.tag.find('}')
-          text = c.tag[f+1:]
-          then.append(text)
-          if c.tag != '{http://xml.juniper.net/xnm/1.1/xnm}discard' or c.tag != '{http://xml.juniper.net/xnm/1.1/xnm}accept':
-            then_value.append(c.text)
-  if route.name:
-    if packetlength: route.packetlength = packetlength
-    if icmpcode: route.icmpcode = icmpcode
-    if icmptype: route.icmptype = icmptype
-    if src: route.source = src
-    if destination: route.destination = destination
-    if then_value:
-      route.then = (f"{then}:{then_value}")
-    else:
-      route.then = then
-    route.expires = tomorrow
-    try:
-      route.save()
-    except Exception as e:
-      logger.info(f"There was an error when saving {routename} into the DB. It might be a duplicate.")
-      return None
-    for p in protocol:
-      prot, created = MatchProtocol.objects.get_or_create(protocol=prot)
-      route.protocol.add(prot)
-    for flag in tcpflags:
-      tcpflag, created = TcpFlag.objects.get_or_create(flag=flag)
-      route.tcpflag.add(tcpflag)
-      route.save()
-      return route
-  else:     
-    for children in second_retriever:
-      for child in children:
-        if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
-          if child.text == routename:
-            check = True
-            route.name = routename
-          else:
-            check = False
-      if check:
-        for tag in child:
-          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}protocol':
-            protocol.append(tag.text)
-          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination-port':
-            destports.append(tag.text)
-          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source-port':
-            sourceports.append(tag.text)
-          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}tcp-flags':
-            tcpflags.append(tag.text)
-          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length':
-            packetlength.append(tag.text)
-          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination':
-            destination = tag.text
-          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source':
-            src = tag.text
-          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-code':
-            icmpcode = tag.text
-          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type':
-            icmptype = tag.text
-      if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}then' and check:
-        for c in child:
-          f = c.tag.find('}')
-          text = c.tag[f+1:]
-          then.append(text)
-          if c.tag != '{http://xml.juniper.net/xnm/1.1/xnm}discard' or c.tag != '{http://xml.juniper.net/xnm/1.1/xnm}accept':
-            then_value.append(c.text)
-  if route.name:
-    if packetlength: route.packetlength = packetlength
-    if icmpcode: route.icmpcode = icmpcode
-    if icmptype: route.icmptype = icmptype
-    if src: route.source = src
-    if destination: route.destination = destination
-    if then_value:
-      route.then = (f"{then}:{then_value}")
-    else:
-      route.then = then
-    route.expires = tomorrow
-
-    try:
-      route.save()
-    except Exception as e:
-      logger.info(f"There was an error when saving {routename} into the DB. It might be a duplicate.")
-      return None
-
-    for p in protocol:
-      prot, created = MatchProtocol.objects.get_or_create(protocol=prot)
-      route.protocol.add(prot)
-
-    for flag in tcpflags:
-      tcpflag, created = TcpFlag.objects.get_or_create(flag=flag)
-      route.tcpflag.add(tcpflag)
-    route.save()
-    return route
 
 def get_route(applier,peer):
   from flowspec.models import Route_Punch,Route_REM, Route_CV, Route_IMDEA, Route_CIB, Route_CSIC, Route_CEU, Route_CUNEF, Route_IMDEANET,Route_UAM, Route_UC3M, Route_UCM, Route_UAH ,Route_UEM, Route_UNED, Route_UPM, Route_URJC
@@ -624,6 +514,7 @@ def get_edit_route(applier,rname):
     'URJC' : Route_URJC,
   } 
   peer_tag = get_peer_with_name(rname)
+  print('this is peer tag: ', peer_tag)
   user_routes = routes[peer_tag]
   return user_routes
 
@@ -1027,7 +918,7 @@ def find_peer(peer_name):
       return Peer.objects.get(peer_tag='CIB')
     elif peer_name == 'CUNEF' or peer_name == 'CUNEF(2)':
       return Peer.objects.get(peer_tag='CUNEF')
-    elif peer_name == 'UC3M' or peer_name == 'UC3M(2)':
+    elif peer_name == 'UC3M' or peer_name == 'UC3M(2)' or peer_name=='NAT_UC3M' or peer_name=='NAT_UC3M(2)':
       return Peer.objects.get(peer_tag='UC3M')
     elif peer_name == 'CSIC' or peer_name == 'CSIC(2)':
       return Peer.objects.get(peer_tag='CSIC')
@@ -1043,6 +934,171 @@ def find_peer(peer_name):
       logger.info(f'The following institution is not connected to REM-E-DDOS {peer_name}')
       return False 
 
-       
+""" finds route missing in db and saves it  """
+
+def find_match_route_config_router(routename):
+  from flowspec.models import MatchProtocol, TcpFlag, ThenAction
+  import datetime
 
 
+  tomorrow = (datetime.date.today() + datetime.timedelta(days=1))
+
+  first_retriever = get_routes_router()
+  second_retriever = get_routes_backuprouter()
+  
+  peer_tag = get_peer_with_name(routename)
+  route = get_route(applier=None,peer=peer_tag)
+  
+  check = False
+  
+  protocol = []
+  tcpflags = []
+  destports = []
+  sourceports = []
+  packetlength = []
+  destination = ''
+  src = ''
+  icmpcode = ''
+  icmptype = ''
+  then = []
+  then_value = []
+
+  for children in first_retriever:
+    for child in children:
+      if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
+        if child.text == routename:
+          check = True
+          route.name = routename
+        else:
+          check = False
+      if check:
+        for tag in child:
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}protocol':
+            protocol.append(tag.text)
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination-port':
+            destports.append(tag.text)
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source-port':
+            sourceports.append(tag.text)
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}tcp-flags':
+            tcpflags.append(tag.text)
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length':
+            packetlength.append(tag.text)
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination':
+            destination = tag.text
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source':
+            src = tag.text
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-code':
+            icmpcode = tag.text
+          if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type':
+            icmptype = tag.text
+      if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}then' and check:
+        for c in child:
+          f = c.tag.find('}')
+          text = c.tag[f+1:]
+          then.append(text)
+          if c.tag != '{http://xml.juniper.net/xnm/1.1/xnm}discard' or c.tag != '{http://xml.juniper.net/xnm/1.1/xnm}accept':
+            then_value.append(c.text)
+  
+  if route.name:
+    if packetlength: route.packetlength = packetlength
+    if icmpcode: route.icmpcode = icmpcode
+    if icmptype: route.icmptype = icmptype
+    if src: route.source = src
+    if destination: route.destination = destination
+    route.expires = tomorrow
+    if sourceports: route.sourceport = sourceports[0]
+    if destports: route.destinationport = destports[0]
+    
+    try:
+      route.save()
+    except Exception as e:
+      logger.info(f"There was an error when saving {routename} into the DB. It might be a duplicate. Error: ", e)
+      return None 
+    
+    if then:
+      if then_value[0] is not None:
+        then_action, created = ThenAction.objects.get_or_create(action=then[0],action_value=then_value[0])
+        route.then.add(then_action)
+      else:
+        then_action, created = ThenAction.objects.get_or_create(action=then[0])
+        route.then.add(then_action)
+    for p in protocol:
+      prot = MatchProtocol.objects.get(protocol=p)
+      route.protocol.add(prot)
+    for flag in tcpflags:
+      tcpflag = TcpFlag.objects.get(flag=flag)
+      route.tcpflag.add(tcpflag)
+      route.save()
+    return route
+  else:     
+    for children in second_retriever:
+      for child in children:
+        if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
+          if child.text == routename:
+            check = True
+            route.name = routename
+          else:
+            check = False
+        if check:
+          for tag in child:
+            if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}protocol':
+              protocol.append(tag.text)
+            if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination-port':
+              destports.append(tag.text)
+            if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source-port':
+              sourceports.append(tag.text)
+            if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}tcp-flags':
+              tcpflags.append(tag.text)
+            if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length':
+              packetlength.append(tag.text)
+            if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}destination':
+              destination = tag.text
+            if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source':
+              src = tag.text
+            if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-code':
+              icmpcode = tag.text
+            if tag.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type':
+              icmptype = tag.text
+        if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}then' and check:
+          for c in child:
+            f = c.tag.find('}')
+            text = c.tag[f+1:]
+            then.append(text)
+            if c.tag != '{http://xml.juniper.net/xnm/1.1/xnm}discard' or c.tag != '{http://xml.juniper.net/xnm/1.1/xnm}accept':
+              then_value.append(c.text)
+            
+  if route.name:
+    if packetlength: route.packetlength = packetlength[0]
+    if icmpcode: route.icmpcode = icmpcode
+    if icmptype: route.icmptype = icmptype
+    if src: route.source = src
+    if destination: route.destination = destination
+    route.expires = tomorrow
+    if sourceports: route.sourceport = sourceports[0]
+    if destports: route.destinationport = destports[0]
+    logger.info(f"The following route is about to be saved and commited : {route}")
+    try:
+      route.save()
+    except Exception as e:
+      logger.info(f"There was an error when saving {routename} into the DB. It might be a duplicate.")
+      return None
+
+  if then:
+    if then_value[0] is not None :
+      then_action, created = ThenAction.objects.get_or_create(action=then[0],action_value=then_value[0])
+      route.then.add(then_action)
+    else:
+      then_action, created = ThenAction.objects.get_or_create(action=then[0])
+      route.then.add(then_action)
+
+  for p in protocol:
+    prot = MatchProtocol.objects.get(protocol=p)
+    route.protocol.add(prot)
+
+  for flag in tcpflags:
+    tcpflag = TcpFlag.objects.get(flag=flag)
+    route.tcpflag.add(tcpflag)
+  send_message(f"Acabamos de encontrar una regla que no estaba sincronizada, la hemos activado durante un día más. Porfavor revise todas sus reglas activas. Regla: {route.name}",peer=peer_tag,superuser=False)
+  route.save()
+  
+  return route

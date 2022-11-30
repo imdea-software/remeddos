@@ -53,7 +53,7 @@ here = lambda x: os.path.join(os.path.abspath(os.path.dirname(__file__)), x)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
-ALLOWED_HOSTS = ['remedios.redimadrid.es','localhost','193.145.15.172','10.10.4.90','db','logs.redimadrid.es']
+ALLOWED_HOSTS = ['remedios.redimadrid.es','localhost','193.145.15.172','10.10.4.90','db','logs.redimadrid.es','2001:720:424:1::20:72']
 SITE_ID = 1
 
 # Place a sequence of random chars here
@@ -326,7 +326,7 @@ DISABLE_EMAIL_NOTIFICATION = False
 SERVER_EMAIL = os.environ.get('EMAIL_HOST_USER')
 EMAIL_SUBJECT_PREFIX = "[REMeDDoS] "
 EXPIRATION_NOTIFY_DAYS = 4
-PREFIX_LENGTH = 29
+PREFIX_LENGTH = 16
 POLL_SESSION_UPDATE = 60.0
 
 #==Slack Notifications

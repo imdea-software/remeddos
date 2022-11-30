@@ -34,7 +34,7 @@ from flowspec.models import *
 from peers.models import *
 from flowspec.tasks import *
 from flowspec.helpers import *
-
+from flowspec.decorators import verify_profile
 #from registration.models import RegistrationProfile 
 
 from copy import deepcopy
@@ -70,7 +70,10 @@ handler = logging.FileHandler(LOG_FILENAME)
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
+
+
 @login_required
+@verify_profile
 def user_routes(request):
     routes = find_routes(request.user.username)
     user_routes = []
@@ -79,7 +82,8 @@ def user_routes(request):
             user_routes.append(route)
     return render(request,'user_routes.html',{'routes': user_routes})
 
-
+@login_required
+@verify_profile
 def welcome(request):
     if request.user.is_authenticated:
         return HttpResponseRedirect(reverse('dashboard'))
@@ -91,8 +95,10 @@ def service_desc(request):
     return render(request,'service_description.html')
 
 
-@verified_email_required
+
 @login_required
+@verified_email_required
+@verify_profile
 @never_cache
 def check_sync(request,route_slug):
     try:
@@ -105,8 +111,10 @@ def check_sync(request,route_slug):
         return HttpResponseRedirect(reverse('group-routes'))
 
 
-@verified_email_required
+
 @login_required
+@verified_email_required
+@verify_profile
 @never_cache
 def dashboard(request):
     user = request.user
@@ -126,7 +134,7 @@ def dashboard(request):
                 all_routes = []
                 for groute in all_group_routes:
                     for group_route in groute:
-                        if (group_route.status=='ACTIVE' or group_route.status=='OUTOFSYNC') and group_route.applier != None: 
+                        if (group_route.status=='ACTIVE' or group_route.status=='OUTOFSYNC'): 
                             group_route.has_expired()
                             all_routes.append(group_route)
                 return render(request,'dashboard.html',{'routes': all_routes,'messages': message,'file' : ''},)
@@ -154,6 +162,7 @@ def dashboard(request):
 
 
 @login_required
+@verify_profile
 @never_cache
 def group_routes(request):
     user = request.user
@@ -187,8 +196,8 @@ def group_routes(request):
         return render(request,'user_routes.html',context)
 
 
-@verified_email_required
 @login_required
+@verified_email_required
 @never_cache
 def group_routes_ajax(request):
     all_group_routes = []
@@ -209,6 +218,8 @@ def group_routes_ajax(request):
 
 
 @login_required
+@verify_profile
+@verified_email_required
 @never_cache
 def overview_routes_ajax(request):
     all_group_routes = []
@@ -331,8 +342,10 @@ def build_routes_json(groutes, is_superuser):
     return group_routes
 
 
-@verified_email_required
+
 @login_required
+@verify_profile
+@verified_email_required
 def verify_add_user(request):
     if 'token' in request.COOKIES:
         url = reverse('add')
@@ -383,8 +396,10 @@ def verify_add_user(request):
                 return render(request,'values/add_value.html', {'form': form, 'message':message})
 
 
-@verified_email_required
+
 @login_required
+@verify_profile
+@verified_email_required
 @never_cache
 def add_route(request):
     applier_peer_networks = []
@@ -448,7 +463,6 @@ def add_route(request):
             except:
                 # in case the header is not provided
                 route.requesters_address = 'unknown'
-            print('estoy aqui: ',route)
             route.save()
             form.save_m2m()
                 # We have to make the commit after saving the form
@@ -462,8 +476,10 @@ def add_route(request):
                 form.fields['tcpflag'] = forms.ModelMultipleChoiceField(queryset=TcpFlag.objects.filter(flag__in=settings.UI_USER_TCPFLAG).order_by('flag'), required=False)
             return render(request,'apply.html',{'form': form,'applier': applier,'maxexpires': settings.MAX_RULE_EXPIRE_DAYS})
 
-@verified_email_required
-@login_required             
+
+@login_required
+@verify_profile
+@verified_email_required             
 def verify_edit_user(request,route_slug):
     if 'token' in request.COOKIES:
         url = reverse('edit', kwargs={'route_slug':route_slug})
@@ -512,8 +528,9 @@ def verify_edit_user(request,route_slug):
                     message = "Ha sucedido un error, porfavor introduzca el último código enviado.", e
                     return render(request,'values/add_value.html', {'form': form, 'message':message})
 
-@verified_email_required
 @login_required
+@verify_profile
+@verified_email_required
 @never_cache
 def edit_route(request, route_slug):
     applier = request.user.pk
@@ -534,6 +551,7 @@ def edit_route(request, route_slug):
         request_data = request.POST.copy()
         if request.user.is_superuser:
             request_data['issuperuser'] = request.user.username
+            
         else:
             request_data['applier'] = applier
             try:
@@ -541,7 +559,8 @@ def edit_route(request, route_slug):
             except:
                 pass
         form = find_edit_post_route(username, request_data, route_edit)
-        critical_changed_values = ['source', 'destination', 'sourceport', 'destinationport', 'port', 'protocol', 'then', 'packetlenght','tcpflags']
+        print(request_data)
+        critical_changed_values = ['name','source', 'destination', 'sourceport', 'destinationport', 'port', 'protocol', 'then', 'packetlenght','tcpflags','expires']
         try:
             if form.is_valid():   
                 changed_data = form.changed_data
@@ -581,8 +600,6 @@ def edit_route(request, route_slug):
             return render(request,'apply.html',{'form': form,'edit': True,'applier': applier,'routename':routename, 'maxexpires': settings.MAX_RULE_EXPIRE_DAYS})
     else:
         routename = route_edit.name
-        if (not route_original.status== 'ACTIVE'):
-            route_edit.expires = datetime.date.today() + datetime.timedelta(days=settings.EXPIRATION_DAYS_OFFSET-1)
         #dictionary = model_to_dict(route_edit, fields=[], exclude=[])
         form  = get_instance_form(username, route_edit)
         form.fields['name'].required=False
@@ -595,8 +612,9 @@ def edit_route(request, route_slug):
         return render(request,'apply.html', {'form': form,'edit': True,'applier': applier,'routename':routename,'maxexpires': settings.MAX_RULE_EXPIRE_DAYS})
 
 
-@verified_email_required
 @login_required
+@verify_profile
+@verified_email_required
 @never_cache
 def verify_delete_user(request, route_slug):
     if not 'token' in request.COOKIES != None:
@@ -647,8 +665,9 @@ def verify_delete_user(request, route_slug):
         return response 
 
 
-@verified_email_required
 @login_required
+@verify_profile
+@verified_email_required
 @never_cache
 def delete_route(request, route_slug):
     uname = request.user.username
@@ -688,6 +707,7 @@ def delete_route(request, route_slug):
 
 
 @login_required
+@verify_profile
 @never_cache
 def exterminate_route(request,route_slug):
     from flowspec.helpers import get_peer_with_name
@@ -701,9 +721,8 @@ def exterminate_route(request,route_slug):
         logger.info(f"There was an exception when trying to exterminate a route from the DB. Exception: {e}")
         return HttpResponseRedirect(reverse("group-routes"))
 
-
-
 @login_required
+@verify_profile
 @never_cache
 def user_profile(request):
     user = request.user
@@ -717,6 +736,7 @@ def user_profile(request):
     return render(request,'profile.html',{'user': user,'peers': peers})
 
 @login_required
+@verify_profile
 @never_cache
 def add_rate_limit(request):
     if request.method == "GET":
@@ -737,6 +757,8 @@ def add_rate_limit(request):
             return render(request,'add_rate_limit.html',{'form': form})
 
 
+
+@verify_profile
 @login_required
 @never_cache
 def add_port(request):
@@ -795,6 +817,7 @@ def load_jscript(request,file):
     return render(request,'%s.js' % file, {'timeout': long_polling_timeout})
 
 
+@verify_profile
 @verified_email_required
 @login_required
 @never_cache
@@ -804,8 +827,9 @@ def routes_update(request, route_slug):
     return render(request,'route_updates.html',{'route':route,'updates':updates})
 
 
-# show the details of specific route
+# show the deta ils of specific route
 @login_required
+@verify_profile
 @never_cache
 def routedetails(request, route_slug):
     uname = request.user.username
@@ -818,6 +842,7 @@ def routedetails(request, route_slug):
         return HttpResponseRedirect(reverse('dashboard'))
 
 @login_required
+@verify_profile
 def routestats(request, route_slug):
     uname = request.user.username
     route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
@@ -878,10 +903,22 @@ def setup(request):
             return render(request, 'flowspy/setup.html', {'form': form})
     else:
         raise PermissionDenied
+    
 
-
-@verified_email_required
 @login_required
+@verify_profile
+@verified_email_required
+@never_cache
+def active_user_profile(request):
+    if request.user.is_superuser:
+        pass
+    else:
+        pass
+
+
+@login_required
+@verify_profile
+@verified_email_required
 @never_cache
 def ajax_graphs(request):
     username = request.user.username
@@ -919,15 +956,16 @@ def ajax_graphs(request):
             return JsonResponse(data,status=200)
 
 
-
-@verified_email_required
 @login_required
+@verify_profile
+@verified_email_required
 @never_cache
 def display_graphs(request,route_slug):
     uname = request.user.username
     route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
     return render(request,'graphs.html',{'route':route})
-    
+
+@verify_profile   
 @verified_email_required
 @login_required
 @never_cache
@@ -949,8 +987,9 @@ def ajax_networks(request):
         return JsonResponse(data,status=200)
 
 """ PENDING ROUTES """
-@verified_email_required
 @login_required
+@verify_profile
+@verified_email_required
 @never_cache
 def pending_routes(request):
     try:
@@ -968,8 +1007,9 @@ def pending_routes(request):
 
 
 """  STORAGE OPTIONS """
-@verified_email_required
 @login_required
+@verify_profile
+@verified_email_required
 @never_cache
 def storage_dashboard(request):
     if request.user.is_superuser:
@@ -977,10 +1017,13 @@ def storage_dashboard(request):
     else: 
         return HttpResponseRedirect(reverse("dashboard"))
 
-@verified_email_required
 @login_required
+@verify_profile
+@verified_email_required
 @never_cache
 def sync_routers(request):
+    today = datetime.date.today()
+    
     try:
         first_router = get_routes_router()
         backup_router = get_routes_backuprouter()
@@ -988,8 +1031,16 @@ def sync_routers(request):
         messages.add_message(request,messages.WARNING,'Ha habido un problema cuando al intentar obtener información de los routers. Error: ',e)
         return render(request,'storage/dashboard.html')
 
+    routes_db = find_all_routes()
+
+    routenames_db = []
     fw_routes = []
     backup_fw_routes = []
+
+    for x in routes_db:
+        for route in x:
+            if route.status == 'ACTIVE' or route.status == 'OUTOFSYNC':
+                routenames_db.append(route.name)
 
     for children in first_router:
         for child in children:
@@ -1000,76 +1051,98 @@ def sync_routers(request):
         for child in children:
             if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
                 backup_fw_routes.append(child.text)
-
+    """ routes from both routers """
     fw_routes.sort()
-    backup_fw_routes.sort()
+    backup_fw_routes.sort()  
 
-    if (fw_routes == backup_fw_routes):
+    if fw_routes == backup_fw_routes:
         logger.info('Routes between both routers are syncronised.')
-    else:
-        diff = set(fw_routes).difference(backup_fw_routes)
-        diff1 = set(backup_fw_routes).difference(fw_routes)
-        diff.update(diff1)
-        if not diff == set():
-            notsynced_routes = list(diff)
-            logger.info(f"The following routes have not been syncronised: {notsynced_routes}")
-            for route in notsynced_routes:
-                try:
-                    commit_route = get_specific_route(applier=None,peer=None, route_slug=route)
-                except ObjectDoesNotExist:
-                    commit_route = get_route(applier=None, peer=get_peer_with_name(route))
-                if not commit_route == None:
-                    if not commit_route.has_expired() and commit_route.status != 'EXPIRED':
-                        try:
-                            commit_route.commit_add()
-                        except Exception as e:
-                            message = (f"There was an error when trying to sync both routers: {e}")
-                            logger.info(message)
-                            return render(request,'storage/dashboard.html')
-                    else:
-                        if commit_route.has_expired():
+
+    """ routes from db """            
+    routenames_db.sort()
+    found_routers = set(fw_routes + list(set(backup_fw_routes) - set(fw_routes)))
+
+    found_diff = found_routers.difference(routenames_db)
+    found_diff1 = set(routenames_db).difference(found_routers)
+    found_diff.update(found_diff1)
+    
+    found_routes = list(found_diff)
+    if found_routes:
+        print(found_routes)
+        for routename in found_routes:
+            peer_tag = get_peer_with_name(routename)
+            try:
+                if peer_tag:
+                    route = get_specific_route(applier=None,peer=peer_tag,route_slug=routename)
+                    if route is not None:
+                        if route.status != 'ACTIVE' and not (route.is_synced() and route.is_synced_backup):
                             try:
-                                commit_route.commit_delete()
+                                route.commit_add()
+                            except Exception as e:    
+                                logger.info('We tried to commit a route outofsync but it didnt work, please review if there is any conexion problem. Route: ', route.name)
+                        if route.status == 'ACTIVE' and (not route.has_expired) and route.is_synced() and route.is_synced_backup():
+                            pass
+                        if route.status == 'ACTIVE' and ((not route.is_synced()) or (not route.is_synced_backup)) and (not route.has_expired()):
+                            route.commit_add() 
+                            logger.info("The following route has been commited to the router due to an out of sync problem. ", routename)
+                        if route.is_synced() and route.is_synced_backup() and (not route.has_expired()):
+                            route.status = 'ACTIVE'
+                            route.save()
+                        if route.has_expired() and ((route.is_synced()) or (route.is_synced_backup)):
+                            route.status = 'EXPIRED'
+                            route.save()
+                            route.commit_delete()
+                            logger.info("The following route has been deleted from the router due to an out of sync problem. ", routename)
+                        if (not route.has_expired()) and (route.status == 'OUTOFSYNC'):
+                            route.commit_add()
+                            logger.info('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
+                        if route.has_expired() and route.status == 'ACTIVE':
+                            route.status == 'EXPIRED'
+                            route.save()
+                            route.commit_delete()
+                        if route.expires:
+                            expiration_days = (route.expires - today).days
+                            if route.has_expired() and expiration_days < 0:
+                                route.status == 'EXPIRED'
+                                route.save()
+                                logger.info(f"Deactivating route: {route.name}..")
+                                route.commit_delete()
+                        if not route.applier:
+                            route.comments = 'Esta regla ha sido guardada por REMeDDoS de manera automática, porfavor revise esta regla.'
+                            route.save()
+                            
+                    else:
+                        # there's a route in a router that is not synced with the db
+                        route = find_match_route_config_router(routename)
+                        # now the route has already been save into the db, now we commit again the route if it's not commited already
+                        if (not route.is_synced()) or (not route.is_synced_backup):
+                            try:
+                                route.commit_add()
                             except Exception as e:
-                                message = (f"There was an error when trying to delete an expired route ({commit_route.name}) from the routers. Error: {e}")
-                                logger.info(message)
-                                return render(request,'storage/dashboard.html')
+                                route.status = 'OUTOFSYNC'
+                                route.save()
+                                logger.info('Ha habido un error al intentar configurar las reglas:',e)
+                        elif (route.is_synced() and route.is_synced_backup):
+                            route.status ='ACTIVE'
+                            route.comments = 'Esta regla ha sido guardada por REMeDDoS de manera automática, porfavor revise esta regla.'
+                            route.save()
+                            print('routes have been synced: ', route.name)
                 else:
-                    pass
-                    
-        else:
-            diff = set(backup_fw_routes).difference(fw_routes)
-            notsynced_routes = list(diff)
-            logger.info(f"The following routes have not been syncronised: {notsynced_routes}")
+                    logger.info(f"The following route does not belong to any peer: {routename}")
+                        
+            except Exception as e:
+                logger.info(f"Error: {e}")
+                #send_message(f"There was an error with the following route: {routename}.", peer=None, superuser=True)
+    else:
+        pass
+        logger.info('There are no routes out of sync.')
+        #send_message(f"There are no routes out of sync.", peer=None, superuser=True)
+    
+    return HttpResponseRedirect(reverse("group-routes"))
 
-            for route in notsynced_routes:
-                try:
-                    commit_route = get_specific_route(applier=None,peer=None, route_slug=route)
-                except ObjectDoesNotExist:
-                    commit_route = get_route(applier = None,peer =get_peer_with_name(route))
-                if not commit_route.has_expired():
-                    try:
-                        commit_route.commit_add()
-                    except Exception as e :
-                        message = (f"There was an error when trying to sync both routers: {e}")
-                        logger.info(message)
-                        return render(request,'storage/dashboard.html')
-                else:
-                    ## in case route is expired
-                    try:
-                        commit_route.commit_delete()
-                    except Exception as e:
-                        message = (f"There was an error when trying to delete an expired route ({commit_route.name}) from the routers. Error: {e}")
-                        logger.info(message)
-                        return render(request,'storage/dashboard.html')
-                    
-    return render(request,'storage/dashboard.html')
-
-
-
-
-@verified_email_required
 @login_required
+@verify_profile
+@verified_email_required
 @never_cache
 #synchronize routes from the router to the database 
 def sync_router(request):
@@ -1114,10 +1187,7 @@ def sync_router(request):
                 if peer:
                     #route = get_route(applier=None,peer=peer)
                     route = get_specific_route(applier=None,peer=None, route_slug=name_fw)
-                    print('this is route: ', name_fw)
-                    print('this is route: ', route)
                     route.name = name_fw
-                    print('this is route: ', route)
                     route.applier = None
                     route.source = source
                     route.sourceport = src_port
@@ -1163,9 +1233,9 @@ def sync_router(request):
     return render(request,'storage/routes_synced.html',{'message':message})
 
 
-
-@verified_email_required
 @login_required
+@verify_profile
+@verified_email_required
 @never_cache 
 #synchronize routes from the database to the router
 def routes_sync(request):
@@ -1212,10 +1282,12 @@ def routes_sync(request):
                 add(route)
                 message = ('Estado: %s, regla de firewall no sincronizada: %s, guardando regla de firewall.' %(route.status, route.name))
                 send_message(message,peer=None,superuser=True)
-    return render(request,'storage/routes_synced.html',{'message':message})
+    return render(request,'storage/routes_synced.html',{'message':message}) 
 
-@verified_email_required
+
 @login_required
+@verify_profile
+@verified_email_required
 @never_cache 
 def backup(request):
     daily_backup()
@@ -1223,8 +1295,10 @@ def backup(request):
     send_message(message,peer=None,superuser=True)
     return render(request,'storage/routes_synced.html',{'message':message})
 
-@verified_email_required
+
 @login_required
+@verify_profile
+@verified_email_required
 def restore_backup(request):
     user = request.user
     peers = Peer.objects.all()
@@ -1271,9 +1345,9 @@ def restore_backup(request):
                 return render(request,'storage/routes_synced.html')
 
 
-
-@verified_email_required
 @login_required
+@verify_profile
+@verified_email_required
 @never_cache 
 def create_db_backup(request):
     now = datetime.datetime.now()
@@ -1295,8 +1369,9 @@ def create_db_backup(request):
         return render(request,'storage/routes_synced.html',{'message':'Esta opción solo puede ser usada por un superusuario, disculpe las molestias.'})
 
 
-@verified_email_required
 @login_required
+@verify_profile
+@verified_email_required
 @never_cache 
 def restore_complete_db(request):
     user = request.user

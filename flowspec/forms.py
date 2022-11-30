@@ -24,7 +24,8 @@ from django.core.mail import send_mail
 from utils.portrange import parse_portrange
 from flowspy.settings import *
 import os 
-
+import ipaddress
+import re
 
 TCP_CHOICES =(
     ("ack","ACK"),
@@ -241,9 +242,18 @@ class RouteForm(forms.ModelForm):
 
     def clean_expires(self):
         date = self.cleaned_data['expires']
+        print('THIS IS DATEEEE', date)
+        print ('this is date type bb: ',type(date))
         res = clean_expires(date)
-        if date != res:
-            raise forms.ValidationError(res)
+        if not isinstance(date,datetime.date):
+            print('are we even here?')
+            if date == None:
+                print('why not here tho')
+                return None
+        else:
+            if date != res:
+                raise forms.ValidationError(res)
+        
         return res
 
 class Route_IMDEAForm(RouteForm):
@@ -278,6 +288,20 @@ class Route_IMDEAForm(RouteForm):
         packetlength = self.cleaned_data.get('packetlength', None)
         tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if name:
+            peer = get_peer_with_name(name)
+            if not peer:
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name)
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+            else:
+                f = name.find('_')
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name[:f])
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
         if tcpflags:
             route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
@@ -380,6 +404,20 @@ class Route_CVForm(RouteForm):
         tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
 
+        if name:
+            peer = get_peer_with_name(name)
+            if not peer:
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name)
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+            else:
+                f = name.find('_')
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name[:f])
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+
         if tcpflags:
             route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
             if route_pk_list:
@@ -481,6 +519,21 @@ class Route_REMForm(RouteForm):
         tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
 
+        if name:
+            peer = get_peer_with_name(name)
+            if not peer:
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name)
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+            else:
+                f = name.find('_')
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name[:f])
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+
+
         if tcpflags:
             route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
             if route_pk_list:
@@ -581,6 +634,21 @@ class Route_PunchForm(RouteForm):
         packetlength = self.cleaned_data.get('packetlength', None)    
         tcpflags = self.cleaned_data.get('tcpflag')
         user = self.cleaned_data.get('applier', None)
+
+        if name:
+            peer = get_peer_with_name(name)
+            if not peer:
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name)
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+            else:
+                f = name.find('_')
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name[:f])
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+
         if source:
             source = IPNetwork(source).compressed
             existing_routes = existing_routes.filter(source=source)
@@ -648,7 +716,7 @@ class Route_PunchForm(RouteForm):
                 existing_url = reverse('edit-route', args=[route.name])
                 if IPNetwork(destination) in IPNetwork(route.destination) or IPNetwork(route.destination) in IPNetwork(destination):
                     raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
-        print(f"this is the data were returning {self.cleaned_data}")
+        print('mandamos ', self.cleaned_data)
         return self.cleaned_data
 
     
@@ -687,6 +755,20 @@ class Route_CIBForm(RouteForm):
         packetlength = self.cleaned_data.get('packetlength', None)
         tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if name:
+            peer = get_peer_with_name(name)
+            if not peer:
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name)
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+            else:
+                f = name.find('_')
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name[:f])
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
         if tcpflags:
             route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
@@ -789,6 +871,20 @@ class Route_CEUForm(RouteForm):
         tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
 
+        if name:
+            peer = get_peer_with_name(name)
+            if not peer:
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name)
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+            else:
+                f = name.find('_')
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name[:f])
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+
         if tcpflags:
             route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
             if route_pk_list:
@@ -889,6 +985,20 @@ class Route_CSICForm(RouteForm):
         packetlength = self.cleaned_data.get('packetlength', None)
         tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if name:
+            peer = get_peer_with_name(name)
+            if not peer:
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name)
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+            else:
+                f = name.find('_')
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name[:f])
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
         if tcpflags:
             route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
@@ -991,6 +1101,20 @@ class Route_CUNEFForm(RouteForm):
         packetlength = self.cleaned_data.get('packetlength', None)
         tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if name:
+            peer = get_peer_with_name(name)
+            if not peer:
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name)
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+            else:
+                f = name.find('_')
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name[:f])
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
         
         if tcpflags:
             route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
@@ -1094,6 +1218,20 @@ class Route_IMDEANETForm(RouteForm):
         tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
 
+        if name:
+            peer = get_peer_with_name(name)
+            if not peer:
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name)
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+            else:
+                f = name.find('_')
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name[:f])
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+
         if tcpflags:
             route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
             if route_pk_list:
@@ -1194,6 +1332,20 @@ class Route_UAMForm(RouteForm):
         packetlength = self.cleaned_data.get('packetlength', None)
         tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if name:
+            peer = get_peer_with_name(name)
+            if not peer:
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name)
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+            else:
+                f = name.find('_')
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name[:f])
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
         if tcpflags:
             route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
@@ -1298,6 +1450,20 @@ class Route_UAHForm(RouteForm):
         tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
 
+        if name:
+            peer = get_peer_with_name(name)
+            if not peer:
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name)
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+            else:
+                f = name.find('_')
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name[:f])
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+
         if tcpflags:
             route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
             if route_pk_list:
@@ -1398,6 +1564,20 @@ class Route_UC3MForm(RouteForm):
         packetlength = self.cleaned_data.get('packetlength', None)
         tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if name:
+            peer = get_peer_with_name(name)
+            if not peer:
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name)
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+            else:
+                f = name.find('_')
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name[:f])
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
         if tcpflags:
             route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
@@ -1500,6 +1680,20 @@ class Route_UCMForm(RouteForm):
         tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
 
+        if name:
+            peer = get_peer_with_name(name)
+            if not peer:
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name)
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+            else:
+                f = name.find('_')
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name[:f])
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+
         if tcpflags:
             route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
             if route_pk_list:
@@ -1600,6 +1794,20 @@ class Route_UEMForm(RouteForm):
         packetlength = self.cleaned_data.get('packetlength', None)
         tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if name:
+            peer = get_peer_with_name(name)
+            if not peer:
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name)
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+            else:
+                f = name.find('_')
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name[:f])
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
         if tcpflags:
             route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
@@ -1702,6 +1910,20 @@ class Route_UPMForm(RouteForm):
         tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
 
+        if name:
+            peer = get_peer_with_name(name)
+            if not peer:
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name)
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+            else:
+                f = name.find('_')
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name[:f])
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+
         if tcpflags:
             route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
             if route_pk_list:
@@ -1803,6 +2025,20 @@ class Route_UNEDForm(RouteForm):
         tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
 
+        if name:
+            peer = get_peer_with_name(name)
+            if not peer:
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name)
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+            else:
+                f = name.find('_')
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name[:f])
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+
         if tcpflags:
             route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)
             if route_pk_list:
@@ -1903,6 +2139,20 @@ class Route_URJCForm(RouteForm):
         packetlength = self.cleaned_data.get('packetlength', None)
         tcpflags = self.cleaned_data.get('tcpflag', None)
         user = self.cleaned_data.get('applier', None)
+
+        if name:
+            peer = get_peer_with_name(name)
+            if not peer:
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name)
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
+            else:
+                f = name.find('_')
+                pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
+                result = pattern.match(name[:f])
+                if not result:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
         if tcpflags:
             route_pk_list = get_tcpflag_route_pks(tcpflags, existing_routes)

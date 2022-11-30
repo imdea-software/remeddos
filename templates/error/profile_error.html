@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% load i18n %}
+   {% block sidenav %}{% endblock %}
+   {% block extraheadbottom %}
+<style>
+	@media (min-width: 768px) {
+		#page-wrapper {
+		    border-left: none;
+		    margin: 0;
+		}
+}
+</style>
+{% endblock %}
+
+{% block title %}Perfil no verificado{% endblock %}
+
+
+
+{% block contentplaceholder %}
+       <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                	<div class="panel panel-danger">
+                        <div class="panel-heading mb-3">
+                            <i class="fa fa-info-circle"></i> Perfil no activado
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                        	<div class="alert alert-danger">
+					            Su perfil de usuario no ha sido activado todavía, el personal de REDIMadrid ha sido avisado, su perfil se activará en breves. Disculpe las molestias.
+					        </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+	{% endblock %}

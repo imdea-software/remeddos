@@ -11,6 +11,7 @@ from django.urls import reverse
 import json
 from django.core import serializers
 
+import ipaddress
 from flowspec.helpers import *
 from utils import proxy as PR
 from ipaddr import *
@@ -166,7 +167,7 @@ class Validation(models.Model):
             self.delete()
          
 class Route(models.Model):    
-    name = models.SlugField(max_length=128, verbose_name=_("Name"), unique=True)
+    name = models.CharField(max_length=128, verbose_name=_("Name"), unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
     peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=False, null=False)
@@ -231,23 +232,24 @@ class Route(models.Model):
 
     def save(self, *args, **kwargs):
         peer_suff = ''
-        if self.applier == None:
-            fd = self.name.find('_')
-            peer_suff = self.name[fd+1:]
-            pass
+        
+        if self.applier == None or self.applier.is_superuser:
+            peer_suff = get_peer_with_name(self.name)
         else:
             peer_suff = get_peer_tag(self.applier.username)
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
             super(Route, self).save(*args, **kwargs)
-        elif not self.pk:
+        elif not self.pk and (peer_suff not in self.name):
             name = self.name
-            self.name = "%s_%s" % (self.name, peer_suff) 
+            self.name = "%s_%s" % (name, peer_suff) 
         super(Route, self).save(*args, **kwargs) 
 
                   
 
     def clean(self, *args, **kwargs):
         from django.core.exceptions import ValidationError
+        
+
         if self.destination:
             try:
                 address = IPNetwork(self.destination)
@@ -274,9 +276,10 @@ class Route(models.Model):
                         username = peer
                         break
         else:
-            peers = self.peer
+            peers = get_peer_with_name(self.name)
+            peer = Peer.objects.get(peer_tag=peers)
             username = None
-            for network in peers.networks.all():
+            for network in peer.networks.all():
                 net = IPNetwork(network)
                 if IPNetwork(self.destination) in net:
                     username = peers
@@ -290,7 +293,7 @@ class Route(models.Model):
         response = add(routename)
         logger.info('Got add job id: %s' % response)
         try:
-            if not settings.DISABLE_EMAIL_NOTIFICATION:
+            if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
                 fqdn = Site.objects.get_current().domain
                 admin_url = 'https://%s%s' % (
                     fqdn,
@@ -306,7 +309,11 @@ class Route(models.Model):
      
                 
     def commit_edit(self, *args, **kwargs):
-        peers = self.applier.profile.peers.all()
+        if self.applier:
+            peers = self.applier.profile.peers.all()
+        else:
+            peer = get_peer_with_name(self.name)
+            peers = list(Peer.objects.get(peer_tag=peer)) 
         username = None
         for peer in peers:
             if username:
@@ -322,7 +329,7 @@ class Route(models.Model):
             peer = None
         response = edit(self)
         try:
-            if not settings.DISABLE_EMAIL_NOTIFICATION:
+            if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
                 fqdn=Site.objects.get_current().domain
                 admin_url='https://%s%s' % (fqdn, reverse('edit-route',kwargs={'route_slug':self.name}))
                 mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
@@ -345,7 +352,11 @@ class Route(models.Model):
         if "reason" in kwargs:
             reason = kwargs['reason']
             reason_text = 'Reason: %s.' % reason
-        peers = self.applier.profile.peers.all()
+        if self.applier:
+            peers = self.applier.profile.peers.all()
+        else:
+            peer = get_peer_with_name(self.name)
+            peers = list(Peer.objects.get(peer_tag=peer)) 
         for peer in peers:
             if username:
                 break
@@ -361,7 +372,7 @@ class Route(models.Model):
         response = delete(self, reason=reason)
         logger.info('Got delete job id: %s' % response)
         try:
-            if not settings.DISABLE_EMAIL_NOTIFICATION:
+            if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
                 fqdn = Site.objects.get_current().domain
                 admin_url = 'https://%s%s' % (fqdn,reverse('edit-route',kwargs={'route_slug': self.name})
                 )
@@ -411,6 +422,7 @@ class Route(models.Model):
                 try:
                     assert(self.destination)
                     assert(devicematch['destination'][0])
+                    
                     if self.destination == devicematch['destination'][0]:
                         found = found and True
                         logger.info('Found a matching destination')
@@ -535,6 +547,7 @@ class Route(models.Model):
             if self.status== "ADMININACTIVE" or self.status== "INACTIVE" or self.status== "EXPIRED":
                 found = True
         return found
+
     def is_synced_backup(self):
         found = False
         try:
@@ -830,7 +843,8 @@ class Route_Punch(Route):
                         username = peer
                         break
         else:
-            peers = self.peer
+            peer = get_peer_with_name(self.name)
+            peers = Peer.objects.get(peer_tag=peer)
             username = None
             for network in peers.networks.all():
                 net = IPNetwork(network)
@@ -845,7 +859,7 @@ class Route_Punch(Route):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
+        if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
             fqdn = Site.objects.get_current().domain
             admin_url = 'https://%s%s' % (fqdn,reverse('edit-route', kwargs={'route_slug': self.name}))
             mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
@@ -877,7 +891,8 @@ class Route_REM(Route):
                         username = peer
                         break
         else:
-            peers = self.peer
+            peer = get_peer_with_name(self.name)
+            peers = Peer.objects.get(peer_tag=peer)
             username = None
             for network in peers.networks.all():
                 net = IPNetwork(network)
@@ -892,7 +907,7 @@ class Route_REM(Route):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
+        if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
             fqdn = Site.objects.get_current().domain
             admin_url = 'https://%s%s' % (
                 fqdn,
@@ -928,7 +943,8 @@ class Route_CV(Route):
                         username = peer
                         break
         else:
-            peers = self.peer
+            peer = get_peer_with_name(self.name)
+            peers = Peer.objects.get(peer_tag=peer)
             username = None
             for network in peers.networks.all():
                 net = IPNetwork(network)
@@ -943,7 +959,7 @@ class Route_CV(Route):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
+        if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
             fqdn = Site.objects.get_current().domain
             admin_url = 'https://%s%s' % (
                 fqdn,
@@ -977,7 +993,8 @@ class Route_IMDEA(Route):
                         username = peer
                         break
         else:
-            peers = self.peer
+            peer = get_peer_with_name(self.name)
+            peers = Peer.objects.get(peer_tag=peer)
             username = None
             for network in peers.networks.all():
                 net = IPNetwork(network)
@@ -992,7 +1009,7 @@ class Route_IMDEA(Route):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
+        if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
             fqdn = Site.objects.get_current().domain
             admin_url = 'https://%s%s' % (
                 fqdn,
@@ -1028,7 +1045,8 @@ class Route_CIB(Route):
                         username = peer
                         break
         else:
-            peers = self.peer
+            peer = get_peer_with_name(self.name)
+            peers = Peer.objects.get(peer_tag=peer)
             username = None
             for network in peers.networks.all():
                 net = IPNetwork(network)
@@ -1043,7 +1061,7 @@ class Route_CIB(Route):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
+        if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
             fqdn = Site.objects.get_current().domain
             admin_url = 'https://%s%s' % (
                 fqdn,
@@ -1079,7 +1097,8 @@ class Route_CEU(Route):
                         username = peer
                         break
         else:
-            peers = self.peer
+            peer = get_peer_with_name(self.name)
+            peers = Peer.objects.get(peer_tag=peer)
             username = None
             for network in peers.networks.all():
                 net = IPNetwork(network)
@@ -1094,7 +1113,7 @@ class Route_CEU(Route):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
+        if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
             fqdn = Site.objects.get_current().domain
             admin_url = 'https://%s%s' % (
                 fqdn,
@@ -1130,7 +1149,8 @@ class Route_CSIC(Route):
                         username = peer
                         break
         else:
-            peers = self.peer
+            peer = get_peer_with_name(self.name)
+            peers = Peer.objects.get(peer_tag=peer)
             username = None
             for network in peers.networks.all():
                 net = IPNetwork(network)
@@ -1145,7 +1165,7 @@ class Route_CSIC(Route):
         routename = route
         response = add(routename)
         logger.info('Got add job id: %s' % response)
-        if not settings.DISABLE_EMAIL_NOTIFICATION:
+        if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
             fqdn = Site.objects.get_current().domain
             admin_url = 'https://%s%s' % (
                 fqdn,
@@ -1181,7 +1201,8 @@ class Route_CUNEF(Route):
                         username = peer
                         break
         else:
-            peers = self.peer
+            peer = get_peer_with_name(self.name)
+            peers = Peer.objects.get(peer_tag=peer)
             username = None
             for network in peers.networks.all():
                 net = IPNetwork(network)
@@ -1197,7 +1218,7 @@ class Route_CUNEF(Route):
         response = add(routename)
         logger.info('Got add job id: %s' % response)
         try:
-            if not settings.DISABLE_EMAIL_NOTIFICATION:
+            if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
                 fqdn = Site.objects.get_current().domain
                 admin_url = 'https://%s%s' % (
                     fqdn,
@@ -1232,7 +1253,8 @@ class Route_IMDEANET(Route):
                         username = peer
                         break
         else:
-            peers = self.peer
+            peer = get_peer_with_name(self.name)
+            peers = Peer.objects.get(peer_tag=peer)
             username = None
             for network in peers.networks.all():
                 net = IPNetwork(network)
@@ -1248,7 +1270,7 @@ class Route_IMDEANET(Route):
         response = add(routename)
         logger.info('Got add job id: %s' % response)
         try:
-            if not settings.DISABLE_EMAIL_NOTIFICATION:
+            if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
                 fqdn = Site.objects.get_current().domain
                 admin_url = 'https://%s%s' % (
                     fqdn,
@@ -1283,7 +1305,8 @@ class Route_UAM(Route):
                         username = peer
                         break
         else:
-            peers = self.peer
+            peer = get_peer_with_name(self.name)
+            peers = Peer.objects.get(peer_tag=peer)
             username = None
             for network in peers.networks.all():
                 net = IPNetwork(network)
@@ -1299,7 +1322,7 @@ class Route_UAM(Route):
         response = add(routename)
         logger.info('Got add job id: %s' % response)
         try:
-            if not settings.DISABLE_EMAIL_NOTIFICATION:
+            if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
                 fqdn = Site.objects.get_current().domain
                 admin_url = 'https://%s%s' % (
                     fqdn,
@@ -1334,7 +1357,8 @@ class Route_UAH(Route):
                         username = peer
                         break
         else:
-            peers = self.peer
+            peer = get_peer_with_name(self.name)
+            peers = Peer.objects.get(peer_tag=peer)
             username = None
             for network in peers.networks.all():
                 net = IPNetwork(network)
@@ -1350,7 +1374,7 @@ class Route_UAH(Route):
         response = add(routename)
         logger.info('Got add job id: %s' % response)
         try:
-            if not settings.DISABLE_EMAIL_NOTIFICATION:
+            if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
                 fqdn = Site.objects.get_current().domain
                 admin_url = 'https://%s%s' % (
                     fqdn,
@@ -1384,7 +1408,8 @@ class Route_UC3M(Route):
                         username = peer
                         break
         else:
-            peers = self.peer
+            peer = get_peer_with_name(self.name)
+            peers = Peer.objects.get(peer_tag=peer)
             username = None
             for network in peers.networks.all():
                 net = IPNetwork(network)
@@ -1400,7 +1425,7 @@ class Route_UC3M(Route):
         response = add(routename)
         logger.info('Got add job id: %s' % response)
         try:
-            if not settings.DISABLE_EMAIL_NOTIFICATION:
+            if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
                 fqdn = Site.objects.get_current().domain
                 admin_url = 'https://%s%s' % (
                     fqdn,
@@ -1434,7 +1459,8 @@ class Route_UCM(Route):
                         username = peer
                         break
         else:
-            peers = self.peer
+            peer = get_peer_with_name(self.name)
+            peers = Peer.objects.get(peer_tag=peer)
             username = None
             for network in peers.networks.all():
                 net = IPNetwork(network)
@@ -1450,7 +1476,7 @@ class Route_UCM(Route):
         response = add(routename)
         logger.info('Got add job id: %s' % response)
         try:
-            if not settings.DISABLE_EMAIL_NOTIFICATION:
+            if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
                 fqdn = Site.objects.get_current().domain
                 admin_url = 'https://%s%s' % (
                     fqdn,
@@ -1483,7 +1509,8 @@ class Route_UEM(Route):
                         username = peer
                         break
         else:
-            peers = self.peer
+            peer = get_peer_with_name(self.name)
+            peers = Peer.objects.get(peer_tag=peer)
             username = None
             for network in peers.networks.all():
                 net = IPNetwork(network)
@@ -1499,7 +1526,7 @@ class Route_UEM(Route):
         response = add(routename)
         logger.info('Got add job id: %s' % response)
         try:
-            if not settings.DISABLE_EMAIL_NOTIFICATION:
+            if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
                 fqdn = Site.objects.get_current().domain
                 admin_url = 'https://%s%s' % (
                     fqdn,
@@ -1534,7 +1561,8 @@ class Route_UNED(Route):
                         username = peer
                         break
         else:
-            peers = self.peer
+            peer = get_peer_with_name(self.name)
+            peers = Peer.objects.get(peer_tag=peer)
             username = None
             for network in peers.networks.all():
                 net = IPNetwork(network)
@@ -1550,7 +1578,7 @@ class Route_UNED(Route):
         response = add(routename)
         logger.info('Got add job id: %s' % response)
         try:
-            if not settings.DISABLE_EMAIL_NOTIFICATION:
+            if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
                 fqdn = Site.objects.get_current().domain
                 admin_url = 'https://%s%s' % (
                     fqdn,
@@ -1584,7 +1612,8 @@ class Route_UPM(Route):
                         username = peer
                         break
         else:
-            peers = self.peer
+            peer = get_peer_with_name(self.name)
+            peers = Peer.objects.get(peer_tag=peer)
             username = None
             for network in peers.networks.all():
                 net = IPNetwork(network)
@@ -1600,7 +1629,7 @@ class Route_UPM(Route):
         response = add(routename)
         logger.info('Got add job id: %s' % response)
         try:
-            if not settings.DISABLE_EMAIL_NOTIFICATION:
+            if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
                 fqdn = Site.objects.get_current().domain
                 admin_url = 'https://%s%s' % (
                     fqdn,
@@ -1634,7 +1663,8 @@ class Route_URJC(Route):
                         username = peer
                         break
         else:
-            peers = self.peer
+            peer = get_peer_with_name(self.name)
+            peers = Peer.objects.get(peer_tag=peer)
             username = None
             for network in peers.networks.all():
                 net = IPNetwork(network)
@@ -1650,7 +1680,7 @@ class Route_URJC(Route):
         response = add(routename)
         logger.info('Got add job id: %s' % response)
         try:
-            if not settings.DISABLE_EMAIL_NOTIFICATION:
+            if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
                 fqdn = Site.objects.get_current().domain
                 admin_url = 'https://%s%s' % (
                     fqdn,
