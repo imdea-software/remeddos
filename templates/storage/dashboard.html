@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "../base.html" %}
 {% load static %}
 {% load i18n %}
 
@@ -36,7 +36,7 @@
               </div>
               <div class="card-body">
               <div class="btn-toolbar justify-content-between" role="toolbar">
-                        <a href="#" class="nav_link text-decoration-none font-weight-light text-info" data-bs-toggle="modal" data-bs-target="#" ><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Crear un back-up"></i><span class="nav_name text-wrap ml-2"> Activar Perfil de Usuario</span></a>
+                        <a href="{% url 'activate-account' %}" class="nav_link text-decoration-none font-weight-light text-info"><i class="bi-files" data-bs-toggle="tooltip" data-bs-placement="top" title="Activar Perfil de usuario"></i><span class="nav_name text-wrap ml-2"> Activar Perfil de Usuario</span></a>
                   </div>
                 </div>
               </div>

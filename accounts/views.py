@@ -25,12 +25,17 @@ from django.shortcuts import render, HttpResponse
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.cache import never_cache
+from django.contrib import messages
+
+from django.contrib.auth.decorators import login_required
+from allauth.account.decorators import verified_email_required
+from flowspec.decorators import verify_profile
 
 from rest_framework.authtoken.models import Token
 from accounts.models import UserProfile
 from peers.models import Peer
 from flowspec.forms import UserProfileForm
-from registration.models import RegistrationProfile
+#from registration.models import RegistrationProfile
 
 
 def generate_token(request):
@@ -88,17 +93,45 @@ def activate(request, activation_key):
 
         if account:
             # A user has been activated
-            email = render_to_string(
-                'registration/activation_complete.txt',
-                {
-                    'site': Site.objects.get_current(),
-                    'user': account
-                }
-            )
-            send_mail(
-                _("%sUser account activated") % settings.EMAIL_SUBJECT_PREFIX,
-                email,
-                settings.SERVER_EMAIL,
-                [account.email]
-            )
+            email = render_to_string('registration/activation_complete.txt',{'site': Site.objects.get_current(),'user': account})
+            send_mail(_("%sUser account activated") % settings.EMAIL_SUBJECT_PREFIX,email,settings.SERVER_EMAIL,[account.email])
+        return render(request,'registration/activate.html',{'account': account,'expiration_days': settings.ACCOUNT_ACTIVATION_DAYS},)
+
+@login_required
+@verify_profile
+@verified_email_required
+@never_cache
+def activate_user_profile(request):
+    if request.method == "GET":
+        if request.user.is_superuser:
+            users = User.objects.all()
+            peers = Peer.objects.all()
+            return render(request,'registration/activate_edit.html',{'expiration_days': settings.ACCOUNT_ACTIVATION_DAYS},{'users':users, 'peers':peers})
+        else:
+            return render(request,'storage/dashboard.html',{'messages':'No tienes permisos para activar un perfil de usuario.'})
+
+    if request.method == "POST":
+        request_data = request.POST.copy()
+        try:
+            user = User.objects.get(pk=request_data['user'])
+            up = user.profile
+
+            # use getlist to get the list of peers (might be multiple)
+            profile_peers = request.POST.getlist('peers')
+
+            # remove already assigned peers, as these are selected by
+            # the user, no admin has yet verified those. They will be
+            # replaced by the admin's selection.
+            up.peers.clear()
+            for peer in profile_peers:
+                up.peers.add(Peer.objects.get(pk=peer))
+                up.save()
+        except:
+            return render(request,'registration/activate_edit.html',{'account': account,'expiration_days': settings.ACCOUNT_ACTIVATION_DAYS})
+        activation_key = activation_key.lower()  # Normalize before trying anything with it.
+        try:
+            rp = RegistrationProfile.objects.get(activation_key=activation_key)
+            account = RegistrationProfile.objects.activate_user(activation_key)
+        except Exception:
+            pass
         return render(request,'registration/activate.html',{'account': account,'expiration_days': settings.ACCOUNT_ACTIVATION_DAYS},)
