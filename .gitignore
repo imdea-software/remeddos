@@ -7,3 +7,4 @@ flowspec/static
 flowspec/fixtures
 peers/fixtures
 *.pyc
+data/

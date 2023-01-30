@@ -5,13 +5,13 @@ services:
         restart: always
         environment:
             - POSTGRES_HOST_AUTH_METHOD=trust
-            - POSTGRES_DB=remeddos 
+            - POSTGRES_DB=remeddos
             - POSTGRES_USER=remedios
             - POSTGRES_PASSWORD=heix6ieG
         volumes:
             - ./data/db:/var/lib/postgresql/data
         ports:
-             - 5432:5432
+            - 127.0.0.1:5432:5432
     web:
         build: .
         command: >
@@ -20,58 +20,51 @@ services:
             python3.8 manage.py makemigrations &&
             python3.8 manage.py migrate &&
             python3.8 manage.py runserver 0.0.0.0:8000"
-        volumes: 
+        volumes:
             - ./:/srv/redifod/
         environment:
             - DB_HOST=db
             - DB_NAME=remeddos
             - DB_USER=remedios
-            - DB_PASS=heix6ieG 
-        depends_on: 
+            - DB_PASS=heix6ieG
+        depends_on:
             - db
         ports:
-            - 22:22
             - 8000:8000
-            - 6379:6379  
         restart: always
-        
-    
     redis:
         image: redis:alpine
         restart: always
         depends_on:
             - db
             - web
-        
     worker:
         build: .
         command: "celery -A flowspy worker --pool=gevent --concurrency=4 --autoscale=10,4 -E -l INFO --logfile=/var/log/fod/celery_jobs.log"
-
         restart: always
-        depends_on: 
+        depends_on:
             - redis
             - db
         environment:
             - DB_HOST=db
             - DB_NAME=remeddos
             - DB_USER=remedios
-            - DB_PASS=heix6ieG 
-        volumes: 
+            - DB_PASS=heix6ieG
+        volumes:
             - ./:/srv/redifod/
         links:
-            - redis  
+            - redis
     beat:
         build: .
         restart: always
         command: "celery -A flowspy beat -l INFO"
-        depends_on: 
+        depends_on:
             - redis
-        volumes: 
+        volumes:
             - ./:/srv/redifod/
         links:
-            - redis        
+            - redis
 networks:
     default:
         name: redifod_network
         driver: bridge
-    

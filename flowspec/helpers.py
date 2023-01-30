@@ -14,6 +14,7 @@ import datetime
 from datetime import timedelta
 from django.core.exceptions import ObjectDoesNotExist
 from peers.models import *
+import bisect
 
 
 FORMAT = '%(asctime)s %(levelname)s: %(message)s'
@@ -96,7 +97,7 @@ def get_peer_tag(username):
   return peer_tag
 
 
-  # method for finding golem pop up link 
+  # method for finding golem pop up  
 def get_link(id_golem):
   import paramiko
   from flowspy import settings
@@ -119,9 +120,13 @@ def get_link(id_golem):
         link = decode_result[fc+1:fe]
         return link
     except Exception as e:
-        logger.info('There was an error when trying to read the configuration file: ',e)
+      link = False
+      logger.info('There was an error when trying to read the configuration file: ',e)
+      return link
   except Exception as e:
-      logger.info('There was an error when trying to connect via ssh.')
+    link = False
+    logger.info('There was an error when trying to connect via ssh.')
+    return link
     
 
 
@@ -242,31 +247,111 @@ def get_ip_address(ip):
 """ Graph's, Zabbix helpers """
   # first we find the route we need for the zabbix query, then we check which parameters we need in order to get the full query
   # and then we assemble it
+
+def parse_destport_zbx(destinationport):
+  if not ',' in destinationport:
+    destport = f',dstport={destinationport}'
+    return destport 
+  else:
+    destportlist = destinationport.split(',')
+    top = len(destportlist)
+    i = 0
+    destport = ',dstport'
+    for port in destportlist:
+      i+=1
+      if i == top:
+        destport = destport + "=%s"%(port)
+      else:
+        destport = destport + "=%s,"%(port)
+    return destport
+
+def parse_srcport_zbx(sourceport):
+  if not ',' in sourceport:
+    sourceport = f',srcport={sourceport}'
+    return sourceport
+  else:
+    sourceportlist = sourceport.split(',')
+    top = len(sourceportlist)
+    i = 0
+    sourceport = ',srcport'
+    for port in sourceportlist:
+      i+=1
+      if i == top:
+        sourceport = sourceport + "=%s"%(port)
+      else:
+        sourceport = sourceport + "=%s,"%(port)
+    return sourceport
+
+def parse_ports_zbx(ports):
+  if '-' in ports:
+    ports = ports.split('-')
+    port = ''
+  if ports[0] < ports[1]:
+    port = f',port>={ports[0]}&<={ports[1]}'
+    return port
+  else:
+    port = f',port>={ports[1]}&<={ports[0]}' 
+    return port
+  
+
+def parse_packetlen(packetlength):
+  if not ',' in packetlength and not '-' in packetlength:
+    plength = f',len={packetlength}'
+    return plength
+  else:
+    if ',' in packetlength:
+      plengthlist = packetlength.split(',')
+      top = len(plengthlist)
+      i = 0
+      plength = ',len'
+      for pl in plengthlist:
+        i+=1
+        if i == top:
+          plength = plength + "=%s"%(pl)
+        else:
+          plength = plength + "=%s,"%(pl)
+      return plength
+    if '-' in packetlength:
+      plengthlist = packetlength.split('-')
+      top = len(plengthlist)
+      i = 0
+      plength = ',len'
+      for pl in plengthlist:
+        i+=1
+        if i == top:
+          plength = plength + "=%s"%(pl)
+        else:
+          plength = plength + "=%s,"%(pl)
+      return plength
+
 def get_query(routename, dest, src, username):
   route = get_specific_route(applier=username,peer=None,route_slug=routename)
-  hd = dest.find('/') ; barra_dest = dest[1+hd:] ; destination = '' 
-  hs = src.find('/') ; barra_src = src[1+hs:] ; source = ''
-  
+  hd = dest.find('/') ; barra_dest = int(dest[1+hd:]) ; destination = '' 
+  hs = src.find('/') ; barra_src = int(src[1+hs:]) ; source = ''
+
   if src == '0.0.0.0/0':
     source = '0/0'
-  else:
-    
-    if src.endswith('/32'):
-      source = src[:-3]
-    elif int(barra_src) >= 25 and int(barra_src) < 32:
-      source = src
-    elif int(barra_src) >= 17 and int(barra_src) < 24:
-      if src[:-3].endswith('.0'):
-        source = src.replace('.0','')
-    elif int(barra_src) == 16:
-      if src[:-3].endswith('.0.0'):
-        source = src.replace('.0','')
+
+  if hs == -1 and hd == -1:
+    source = src
+    destination = dest
+  
+  if src.endswith('/32'):
+    source = src[:-3]
+  elif isinstance(barra_src,int) and barra_src >= 25 and barra_src < 32:
+    source = src
+  elif isinstance(barra_src,int) and barra_src >= 17 and barra_src < 24:
+    if src[:-3].endswith('.0'):
+      source = src.replace('.0','')
+  elif isinstance(barra_src,int) and barra_src == 16:
+    if src[:-3].endswith('.0.0'):
+      source = src.replace('.0','')
 
   if dest.endswith('/32'):
     destination = dest[:-3]
-  if int(barra_dest) >= 25 and int(barra_dest) < 32:
+  if isinstance(barra_dest,int) and barra_dest >= 25 and barra_dest < 32:
     destination = dest
-  if int(barra_dest) >= 17 and int(barra_dest) < 24:
+  if isinstance(barra_dest,int) and barra_dest >= 17 and barra_dest < 24:
     if dest[:-3].endswith('.0'):
       destination = dest.replace('.0','')
   if int(barra_dest) == 16:
@@ -282,8 +367,17 @@ def get_query(routename, dest, src, username):
       protocol = f',proto={p}'
   else:
       protocol = ''
-  destport = f',dstport={route.destinationport}' if route.destinationport else ''
-  sourceport = f',srcport={route.sourceport}' if route.sourceport else ''
+
+  if route.port:
+    port = parse_ports_zbx(route.port)
+    destport = ''
+    sourceport = ''
+  else:
+    port = ''
+    destport = parse_destport_zbx(route.destinationport) if route.destinationport else ''
+    sourceport = parse_srcport_zbx(route.sourceport) if route.sourceport else ''
+    
+
   icmpcode = f',icmp-code={route.icmpcode}' if route.icmpcode else ''
   icmptype = f',icmp-type={route.icmptype}' if route.icmptype else ''
   tcp_flags = ',tcp-flag'
@@ -295,9 +389,13 @@ def get_query(routename, dest, src, username):
         tcp_flags = tcp_flags + ":%s,"%(translate_tcpflags(flag.flag))
       else:
         tcp_flags = tcp_flags + ":%s"%(translate_tcpflags(flag.flag))
-  p_length =  f',len={route.packetlength}' if route.packetlength else ''
-  query = (f'jnxFWCounterByteCount["{destination},{source}{protocol}{destport}{sourceport}{icmpcode}{icmptype}{tcp_flags}{p_length}"]')
-  print(query)
+
+  p_length = parse_packetlen(route.packetlength) if route.packetlength else ''
+  
+  if route.tcpflag.all():
+    query = (f'jnxFWCounterByteCount["{destination},{source}{protocol}{destport}{sourceport}{port}{icmpcode}{icmptype}{tcp_flags}{p_length}"]')
+  else:
+    query = (f'jnxFWCounterByteCount["{destination},{source}{protocol}{destport}{sourceport}{port}{icmpcode}{icmptype}{p_length}"]')
   return query
 
 def get_graph_name(routename,dest,src):
@@ -309,28 +407,27 @@ def get_graph_name(routename,dest,src):
   return graph_name
 
 def graphs(timefrom,timetill, routename, username):
-  from flowspec.models import Route
   zapi = ZabbixAPI(ZABBIX_SOURCE)
   zapi.login(ZABBIX_USER,ZABBIX_PWD)
   route = get_object_or_404(get_edit_route(username, routename), name=routename)
   query = get_query(route.name, route.destination, route.source, username)
   #in order to access history log we need to send the dates as timestamp
-  if not timefrom=='' and not timetill=='':
-    from_date_obj = datetime.datetime.strptime(timefrom,"%Y/%m/%d %H:%M")
-    till_date_obj = datetime.datetime.strptime(timetill,"%Y/%m/%d %H:%M")
-
+  
+  if not timefrom == '' and not timetill =='':
+    tm_from = timefrom.replace('T',' ')
+    tm_till = timetill.replace('T',' ')
+    from_date_obj = datetime.datetime.strptime(tm_from,"%Y-%m-%d %H:%M")
+    till_date_obj = datetime.datetime.strptime(tm_till,"%Y-%m-%d %H:%M")
     ts_from = int(from_date_obj.timestamp())
     ts_till = int(till_date_obj.timestamp())
     #query for getting the itemid and the hostid
     item = zapi.do_request(method='item.get', params={"output": "extend","search": {"key_":query}})
-    print('ESTO ES LA QUERY: ',item)
     item_id = [i['itemid'] for i in item['result']]
     hostid = [i['hostid'] for i in item['result']]
     #if query fails it might be because parameters are not int parsed
 
     item_history = zapi.history.get(hostids=hostid,itemids=item_id,time_from=ts_from,time_till=ts_till)
-    
-      
+   
     beats_date = []; beats_hour = []; clock_value = []; beat_value = []; beats_fulltime = []; beats_values = []
 
     for x in item_history:
@@ -341,12 +438,14 @@ def graphs(timefrom,timetill, routename, username):
       y = datetime.datetime.fromtimestamp(int(x))
       beats_date.append(y.strftime("%d-%m"))
       beats_fulltime.append(y.strftime("%d-%m %H:%M"))
-      
+      beats_hour.append(y.strftime("%H:%M"))
+    
     beats_values = dict(zip(beats_hour,beat_value))
+
     return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
   else:
     beats_date, beats_hour, beat_value, beats_values, beats_fulltime = get_default_graph(routename)
-    return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
+    return beats_date, beats_hour, beat_value, beats_values, beats_fulltime, clock_value
 
 
 def get_default_graph(routename, username):
@@ -366,26 +465,35 @@ def get_default_graph(routename, username):
     
   item_history = zapi.history.get(hostids=hostid,itemids=item_id,time_from=ts_from,time_till=ts_till)
   
-      
   beats_date = []
   beats_hour = [] 
   clock_value = []
   beat_value = []
   beats_fulltime = []
   beats_values = []
+  i = 0 
   
   for x in item_history:
-    clock_value.append(x['clock'])
-    beat_value.append(x['value'])
-      
-  for x in clock_value:
-    y = datetime.datetime.fromtimestamp(int(x))
-    beats_date.append(y.strftime("%d-%m"))
-    beats_hour.append(y.strftime("%H:%M"))
-    beats_fulltime.append(y.strftime("%d-%m %H:%M"))
-      
-  beats_values = dict(zip(beats_hour,beat_value))
-  return beats_date, beats_hour, beat_value, beats_values, beats_fulltime
+    y = datetime.datetime.fromtimestamp(int(x['clock']))
+    """ y = x['clock'] """
+    if i == 60:
+      """ bisect.insort(clock_value,y.isoformat(sep='T', timespec='auto')) """ 
+      """beats_fulltime.append(y.strftime("%H:%M %d-%B"))"""
+      bisect.insort(clock_value,y.strftime("%d-%b %H:%M"))
+      beat_value.append(x['value'])
+      i = 0
+    if i!= 60 and x['value'] !=  '0' :
+
+      """ bisect.insort(clock_value,y.isoformat(sep='T', timespec='auto')) """
+      bisect.insort(clock_value,y.strftime("%d-%b %H:%M "))
+      beat_value.append(x['value'])
+    
+    i+=1  
+  beats_values = list(zip(beats_hour,beat_value))
+  # 2018-12-30T20:59
+  beats_fulltime.sort()
+  bvalues = list(beats_values)
+  return beats_date, beats_hour, beat_value, list(bvalues), clock_value
 
 
 
@@ -514,7 +622,6 @@ def get_edit_route(applier,rname):
     'URJC' : Route_URJC,
   } 
   peer_tag = get_peer_with_name(rname)
-  print('this is peer tag: ', peer_tag)
   user_routes = routes[peer_tag]
   return user_routes
 

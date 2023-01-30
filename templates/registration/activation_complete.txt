@@ -1,5 +1,5 @@
-Your account with username {{ user.username }} has been activated.
+Tu cuenta con usuario: {{ user.username }} ha sido activada.
 
-You may login to FoD using the following URL:
+Ahora puedes acceder a REM-e-DDoS a través del siguiente enlace:
 
-http://{{ site.domain }}{% url login %}
+http://{{ site.domain}}

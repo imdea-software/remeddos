@@ -8,9 +8,10 @@
   <meta http-equiv="Content-Type" content="text/html">
   <title>{{ BRANDING.name }} :: {% block title %}{% endblock %}</title>
 	<META HTTP-EQUIV="Pragma" CONTENT="no-cache">
+    <base href="{% static '/' %}">
 	<link rel="icon" type="image/x-icon" href="{% static 'logos/rem_favicon.ico' %}">
     <!-- Core CSS - Include with every page -->
-    <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+    
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" crossorigin="anonymous" referrerpolicy="no-referrer">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
@@ -24,7 +25,7 @@
     <!-- Font Awesome JS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.1/font/bootstrap-icons.css">
 
-    <base href="{% static '/' %}">
+   
     {% block extrahead %}{% endblock %}
 
     <!-- SB Admin CSS - Include with every page -->
@@ -40,6 +41,12 @@
      
   
     }
+    .bootstrap-datetimepicker-widget{
+    width: fit-content !important;
+  }
+  .bootstrap-datetimepicker-widget div{
+    border-style: none !important;
+  }
     .modal{
       position: fixed !important;
       right: 0 !important;
@@ -80,7 +87,7 @@
                     {% endif %}
                     <a href="{% url 'attack-list'  %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-table nav_icon text-danger' data-bs-toggle="tooltip" data-bs-placement="top" title="REM-GOLEM"></i> <span class="nav_name">REM - Golem</span></a>
                     {% if user.is_superuser %}
-                        <a href="{% url 'storage-dashboard' %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-cloud nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Storage"></i> <span class="nav_name">Almacenamiento</span> </a>
+                        <a href="{% url 'storage-dashboard' %}" class="nav_link text-white text-decoration-none font-weight-light"> <i class='bi-cloud nav_icon text-info' data-bs-toggle="tooltip" data-bs-placement="top" title="Opciones de Superusuario"></i> <span class="nav_name">Almacenamiento</span> </a>
                     
                     {% endif %}
                     {% if user.is_superuser%} 
@@ -97,33 +104,27 @@
       </div>
     <!-- ENDOFNAVBAR-->
     
-    <div class="content container-fluid p-5 height-100 bg-light">
-      {% if messages %}
-        <div class="row">
-              <div class="lg-col-12">
+    {% if messages %}
+        <div class="row mt-2">
+              <div class="col">
                   <div id="messages">
                       {% for message in messages %}
                       <div {% if message.tags %} class="alert alert-{{ message.tags }} alert-dismissible" role="alert" {% endif %}>
                         {{ message }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">&times;</button>
                                   {% endfor %}
                           </div>
                       </div>
           </div>
       </div>
 		{% endif %}
+
+    <div class="content container-fluid p-5 height-100 bg-light">
       
     {% block contentplaceholder %}
     {% endblock %}
 
 </div> 
-
-
-
-
-
-
-
+</body>
 
   
    <!-- ADD ROUTE - Modal -->
@@ -253,14 +254,15 @@
 </div>
 </div>
 		
-      </body>
+     
 <!-- Core Scripts - Include with every page -->
 <!-- <script src="{% static 'theme/js/jquery-1.10.2.js' %}"></script>
 <script src="{% static 'js/jquery_csrf_protect.js' %}" type="text/javascript"></script> -->
-    
-    <script src="{% static 'js/b5js.js' %}"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-    <script type="text/javascript" src="{% static 'js/jquery.cookie.js' %}"></script>  
+<script src="https://code.jquery.com/jquery-3.6.3.js" integrity="sha256-nQLuAZGRRcILA+6dMBOvcRh5Pe310sBpanc6+QBmyVM=" crossorigin="anonymous"></script>
+<script src="{% static 'js/b5js.js' %}"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script> -->
+<script type="text/javascript" src="{% static 'js/jquery.cookie.js' %}"></script>
+
     {% block pagejs %}{% endblock %}
 
     <!-- Page-Level Scripts  - Use for reference -->
@@ -311,6 +313,7 @@ function checkCookie(vname) {
             });
      });
      
+     
 var tooltipTriggerList1 = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
 var tooltipList1 = tooltipTriggerList1.map(function (tooltipTriggerEl) {
   return new bootstrap.Tooltip(tooltipTriggerEl)
@@ -328,5 +331,6 @@ var tooltipList1 = tooltipTriggerList1.map(function (tooltipTriggerEl) {
 	</script>
 
 </body>
-
+{% block endscript %}
+    {% endblock %}
 </html>

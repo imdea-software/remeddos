@@ -12,6 +12,8 @@ from dotenv import load_dotenv, find_dotenv
 import mimetypes
 mimetypes.add_type("text/css", ".css", True)
 
+
+
 load_dotenv(find_dotenv())
 
 #===Important variables
@@ -39,11 +41,13 @@ NETCONF_PORT_B=os.environ.get('NETCONF_PORT_B')
 
 STAFF_MAIL = os.environ.get('STAFF_MAIL')
 
+HOSTS = os.environ.get('ALLOWED_HOSTS') 
+
 DIR_GOLEM = os.environ.get('DIR_GOLEM')
 
 DEBUG = False
-DEBUG_PROPAGATE_EXCEPTIONS = True
-TEMPLATE_DEBUG = DEBUG
+DEBUG_PROPAGATE_EXCEPTIONS = False
+""" TEMPLATE_DEBUG = DEBUG """
 
 ADMINS = (
     ('Remadmin', STAFF_MAIL),
@@ -53,7 +57,7 @@ here = lambda x: os.path.join(os.path.abspath(os.path.dirname(__file__)), x)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
-ALLOWED_HOSTS = ['remedios.redimadrid.es','localhost','193.145.15.172','10.10.4.90','db','logs.redimadrid.es','2001:720:424:1::20:72']
+ALLOWED_HOSTS = ['remedios.redimadrid.es','localhost','127.0.0.1','193.145.15.172','10.10.4.90','db','logs.redimadrid.es','[2001:720:424:1::20:72]']
 SITE_ID = 1
 
 # Place a sequence of random chars here
@@ -231,22 +235,23 @@ LOGGING = {
         'require_debug_false': {
             '()': 'django.utils.log.RequireDebugFalse'
         }
-    },
-    'handlers': {
+    } }
+
+""" 'handlers': {
         'mail_admins': {
             'level': 'ERROR',
             'filters': ['require_debug_false'],
             'class': 'django.utils.log.AdminEmailHandler'
         }
-    },
-    'loggers': {
+    }, """
+""" 'loggers': {
         'django.request': {
             'handlers': ['mail_admins'],
             'level': 'ERROR',
             'propagate': True,
         },
-    }
-}
+    } """
+
 
 #==Django-Allauth Settings
 
@@ -468,6 +473,7 @@ CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_PRELOAD = True
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
 
 """ LDAP SERVER CONFIG  """
 

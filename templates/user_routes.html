@@ -2,7 +2,6 @@
 {% load i18n %}
 {% load static %}
 
-
 {% block extrahead %}
     <!-- <link href="{% static 'theme/css/plugins/dataTables/dataTables.bootstrap.css' %}" rel="stylesheet"> -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
@@ -19,13 +18,14 @@ select.form-select > option {
 {% endblock %}
 {% block title %}{% trans "Mis reglas" %}{% endblock %}
 {% block contentplaceholder %}
-{% csrf_token %}
+
 
 
 <div class="container">
 
     <!-- Table -->
 
+    <section id="section">
     
     <div class="row pt-3">
         <div class="col">
@@ -37,7 +37,7 @@ select.form-select > option {
                 <table id="routestable" class="table table-hover table-responsive compact w-100">
                     <thead>
                     <tr>
-                        <th>Creada</th><th>Nombre</th><th>Información</th><th>Pertenece a</th><th>Estado</th><th>Caduca</th><th>Otros</th><th>Otros</th>
+                        <th>Creada</th><th>Nombre</th><th>Información</th><th>Pertenece a</th><th>Estado</th><th>Caduca</th><th>Acción</th><th>Comentarios</th><th>Otros</th>
                     </tr>
                 </thead>
 
@@ -57,17 +57,16 @@ select.form-select > option {
                             
 
                             <td><small>
-                                {% if route.source %} <b>Dir Origen:</b> {{route.source}}<br> {% endif %} 
-                                {% if route.destination %} <b>Dir Destino:</b> {{route.destination}}<br> {% endif %}
-                                                               
+                                {% if route.source %} <b>Dir Origen:</b> {{route.source}}  <br> {% endif %} 
+                                {% if route.destination %} <b>Dir Destino:</b> {{route.destination}} <br> {% endif %}
                                 {% if route.source_port %} <b>Puerto origent:</b> {{route.source_port}}<br> {% endif %}
                                 {% if route.port %} <b>Puerto(s):</b> {{route.port}}<br> {% endif %}
                                 {% if route.destination_port %}<b>Puerto Destino:</b>{{route.destination_port}}<br> {% endif %}
                                 {% if route.protocol.all %}<b>Protocolo:</b> {% for p in route.protocol.all %} {{ p|upper }} {% endfor %}<br> {% endif %}
                                 {% if route.tcpflag.all %} <b>Tcpflag(s): </b>  {% for f in route.tcpflag.all %} {{ f|upper }} {% endfor %} <br>{% endif %}
-                                {% if route.icmptype %} <b>Icmptype: </b>{{route.icmptype} <br> {% endif %}
+                                {% if route.packetlength %} <b>Packet Length: </b>{{route.packetlength}} <br> {% endif %}
+                                {% if route.icmptype %} <b>Icmptype: </b>{{route.icmptype}} <br> {% endif %}
 								{% if route.icmpcode %} <b>Icmpcode: </b>{{route.icmpcode}} <br> {% endif %}
-                                {% if route.get_then %} <b> Acción: </b>{{route.get_then}}  {% endif %}
                             </small></td>
                              
                             <td><small>
@@ -95,6 +94,8 @@ select.form-select > option {
                             
 
                             <td><small>{% if route.expires %}{{route.expires}}{% else %}Esta regla no tiene fecha de caducidad establecida.{% endif %}</small></td>
+
+                            <td><small> {{route.get_then|upper}} </small></td>
 
                             <td><small>
                                 {% if route.comments %} <b> Otros comentarios: </b><br> {{route.comments}} <br> {% endif %}
@@ -139,6 +140,10 @@ select.form-select > option {
                                                     <a href="{% url 'edit-route' route.name %}" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Reactivar" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>
                                                     <a href="{% url 'exterminate' route.name %}" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar regla de REM-E-DDOS"><i class="bi-trash text-dark"></i></a>
                                                     {% endif %}
+                                                    {% if route.status == 'EXPIRED' %}
+                                                    <a href="{% url 'edit-route' route.name %}" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Reactivar" id="edit_button_{{route.pk}}"><i class="bi-cloud-arrow-up text-dark"></i></a>
+                                                    <a href="{% url 'exterminate' route.name %}" class="btn m-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar regla de REM-E-DDOS"><i class="bi-trash text-dark"></i></a>
+                                                    {% endif %}
                                                 {% if route.status == 'ERROR' %}
                                             <a href="{% url 'edit' route.name %}" class="btn btn-outline-warning btn-sm" id="edit_button_{{route.pk}}">{% trans "Arreglar" %}</a>
                                             {% endif %}
@@ -161,17 +166,19 @@ select.form-select > option {
         </div>
         </div>
     </div>
-
+</section>
+<section>
     <div class="row mb-3 pb-3">
         <div class="col">
           {% include "shortcuts.html" %}
         </div>
       
       </div>
-
+    
       <div class="row">
         {% include "bitacora.html" %}
       </div>
+    </section> 
 </div>
 
 {% endblock %}
@@ -197,7 +204,7 @@ $('.addbutton').click(function(){
 
 $(document).ready( function(){
     oTable = $('#routestable').dataTable( {
-        "order": [[ 0, "desc" ]],
+        "order": [[ 4, "asc" ]],
         "AutoWidth": true,
         "aLengthMenu" : [
             [5, 15, 20, -1],

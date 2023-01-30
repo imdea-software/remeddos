@@ -6,13 +6,13 @@
 
 
 {% block extrahead %}
+<link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
 <link rel="stylesheet" href="{% static 'css/dashboard_style.css' %}">
 <link rel="stylesheet" href="{% static 'css/section_style.css' %}">
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.12.1/datatables.min.css"/>
+
 <style>
-	.container{
-		display: grid ;
-	}
 	.page-item.active .page-link {
     background-color: lightgrey !important;
     border: 1px solid lightgrey;
@@ -52,84 +52,9 @@ td:first-child, th:first-child {
    }
 
 </style>
+
 {% endblock %}
 {% block title %}{% trans "Dashboard" %}{% endblock %}
-{% block contentplaceholder %}
-{% csrf_token %}
-<div class="container">
-					<div class="row">
-						<div class="col">
-							<i class="fa fa-shield ml-2"></i><span class="text-info font-monospace">  REM-e-DDOS</span> <br>
-						  <!-- <p>Aplicación diseñada para la mitigación de ataques, aquí podrá configurar reglas de firewall que le ayude a proteger su red. <br> 
-							Está aplicación también recoge información desde REM-Golem para informarle a través de Slack sobre los últimos ataques que haya recibido, proponiendo a su vez
-							distintas reglas que usted podrá personalizar a su gusto. Para más información:</p> -->
-						</div>
-					  </div>
-
-						  
-
-					  
-				  <!-- </section> -->
-				  <!--ENDINFO -->
-				  
-				 
-				  <!--  TABLE -->
-				  <div class="row p-2 mt-3">
-				  <div class="col">
-					{% if routes  %}
-        			<table id="routes_table" class="table table-hover table-responsive">
-						<thead class="">
-						<tr>
-							<th><small>Nombre</small></th><th><small>Caduca</small></th><th><small>Mas información</small></th><th><small>Estado</small></th>
-						</tr>
-						</thead>
-						<tbody>
-							{% for route in routes %}
-							<tr>
-								<td><small><a href="{% url 'route-details' route.name %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Gráficos y más información" class="text-decoration-none text-info">{{route.name}}</a></small></td>
-								<td> {% if route.expires %} <small>  {{route.expires|date:"d M Y"}} {% else %} No caduca </small> {% endif %} </td>
-								<td> 
-									{% if route.source %} <small id="routeSource" value="{{route.source}}">Origen: {{route.source}}</small> {% endif %} <br>
-									{% if route.destination %} <small id="routeDestination" value="{{route.destination}}">Destino: {{route.destination}}</small> {% endif %} <br> 
-									
-									{% if route.protocol.all %} <small>Protocolo: {% for p in route.protocol.all %} {{ p|upper }} {% endfor %}</small><br> {% endif %} 
-									{% if route.sourceport %} <small>Puerto origen: </small> {{route.sourceport}}<br> {% endif %}
-									{% if route.port %} <small>Puerto(s): </small> {{route.port}}<br> {% endif %}
-									{% if route.destinationport %}<small>Puerto Destino: {{route.destinationport}} </small><br> {% endif %}
-									{% if route.tcpflag.all %} <small>Tcpflag: {% for f in route.tcpflag.all %} {{ f | upper }} {% endfor %}</small><br> {% endif %}
-									{% if route.icmptype %} <small>Icmptype: {{route.icmptype}</small><br> {% endif %}
-									{% if route.icmpcode %} <small>Icmpcode: {{route.icmpcode}}</small><br> {% endif %}
-								</td>
-								{% if route.status == 'ACTIVE' %}
-									<td><span class="badge pill bg-success">{{route.status}}</span></td>
-								{% elif route.status == 'OUTOFSYNC' %}
-								<td>
-									<span class="badge pill bg-warning">{{route.status}}</span>
-								
-								</td>
-								{% endif %}
-							</tr>
-							{% endfor %}
-							</tbody>
-        </table>
-        {% else %}
-        <div class="alert alert-info" role="alert"><p class="fw-light">No hay reglas de firewall activas  </p></div>
-        {% endif %}
-				  </div>
-				
-				  {% include "shortcuts.html" %}
-
-				  
-				</div>
-					
-				{% include "bitacora.html" %}
-
-</div>		
-		
-		
-
-  
-{% endblock %}
 {% block pagejsbottom %}
 <script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/dt-1.11.5/af-2.3.7/b-2.2.2/datatables.min.js"></script>
 <script>
@@ -162,4 +87,84 @@ td:first-child, th:first-child {
     		});
 </script>
 
+{% endblock %}
+
+
+{% block contentplaceholder %}
+
+{% csrf_token %}
+<div class="container-fluid p-5 m-2">
+					<div class="row">
+						<div class="col">
+							<i class="fa fa-shield"></i><span class="text-info font-monospace">  REM-e-DDOS</span> <br>
+						  <!-- <p>Aplicación diseñada para la mitigación de ataques, aquí podrá configurar reglas de firewall que le ayude a proteger su red. <br> 
+							Está aplicación también recoge información desde REM-Golem para informarle a través de Slack sobre los últimos ataques que haya recibido, proponiendo a su vez
+							distintas reglas que usted podrá personalizar a su gusto. Para más información:</p> -->
+						</div>
+					  </div>
+	
+					  
+				  <!-- </section> -->
+				  <!--ENDINFO -->
+				  <!--  TABLE -->		  
+				  <div class="row p-2 mt-3">
+				  <div class="col">
+					{% if routes  %}
+        			<table id="routes_table" class="table table-hover table-responsive">
+						<thead class="">
+						<tr>
+							<th><small>Nombre</small></th><th><small>Caduca</small></th><th><small>Mas información</small></th><th><small>Acción</small></th><th><small>Estado</small></th>
+						</tr>
+						</thead>
+						<tbody>
+							{% for route in routes %}
+							<tr>
+								<td><small><a href="{% url 'route-details' route.name %}" data-bs-toggle="tooltip" data-bs-placement="top" title="Gráficos y más información" class="text-decoration-none text-info">{{route.name}}</a></small></td>
+								<td> {% if route.expires %} <small>  {{route.expires|date:"d M Y"}} </small> {% else %} <small> No caduca </small>  {% endif %} </td>
+								<td> 
+									{% if route.source %} <small id="routeSource" value="{{route.source}}"> <b>Origen:</b> {{route.source}}</small> {% endif %} <br>
+									{% if route.destination %} <small id="routeDestination" value="{{route.destination}}"><b> Destino: </b> {{route.destination}}</small> {% endif %} <br> 
+									
+									{% if route.protocol.all %} <small> <b>Protocolo:</b> {% for p in route.protocol.all %} {{ p|upper }} {% endfor %}</small><br> {% endif %} 
+									{% if route.sourceport %} <small><b> Puerto origen: </b>  {{route.sourceport}} </small><br> {% endif %}
+									{% if route.port %} <small><b>Puerto(s): </b>  {{route.port}} </small> <br> {% endif %}
+									{% if route.destinationport %}<small><b> Puerto Destino: </b> {{route.destinationport}} </small><br> {% endif %}
+									{% if route.tcpflag.all %} <small> <b> Tcpflag: </b> {% for f in route.tcpflag.all %} {{ f | upper }} {% endfor %}</small><br> {% endif %}
+									{% if route.packetlength %} <small> <b> Packet Length: </b> {{route.packetlength}} </small> <br> {% endif %}
+									{% if route.icmptype %} <small><b> Icmptype: </b> {{route.icmptype}</small><br> {% endif %}
+									{% if route.icmpcode %} <small><b> Icmpcode: </b> {{route.icmpcode}}</small><br> {% endif %}
+								</td>
+								<td><small>{{route.get_then|upper}}</small></td>
+								{% if route.status == 'ACTIVE' %}
+									<td><span class="badge pill bg-success">{{route.status}}</span></td>
+								{% elif route.status == 'OUTOFSYNC' %}
+								<td>
+									<span class="badge pill bg-warning">{{route.status}}</span>
+								
+								</td>
+								{% endif %}
+							</tr>
+							{% endfor %}
+							</tbody>
+        </table>
+	
+        {% else %}
+		
+        <div class="alert alert-info" role="alert"><p class="fw-light">No hay reglas de firewall activas  </p></div>
+	
+        {% endif %}
+				  </div>
+				
+				  {% include "shortcuts.html" %}
+
+				  
+				</div>
+					
+				{% include "bitacora.html" %}
+			
+</div>		
+		
+		
+
+  
 {% endblock %}

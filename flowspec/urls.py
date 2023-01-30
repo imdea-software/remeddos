@@ -36,5 +36,6 @@ urlpatterns = [
     path('delete_route/<str:route_slug>',views.exterminate_route, name="exterminate"),
     path('storage_dashboard/',views.storage_dashboard,name='storage-dashboard'),
     path('sync_routers/',views.sync_routers,name="sync-routers"),
+    path('activate/', views.activate_user_profile, name='activate-account'),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

@@ -203,7 +203,7 @@ def verify_commit_route(request, route_slug):
                             num = Validation.objects.latest('created_date')
                             response.set_cookie('token',value=num,max_age=900) 
                         except Exception as e:
-                            print('There was an exception when trying to assign the token, ',e)
+                            logger.info('There was an exception when trying to assign the token, ',e)
                         return response
                     else:
                         form = ValidationForm(request.GET)
@@ -250,15 +250,15 @@ def commit_to_router(request,route_slug):
         return HttpResponseRedirect(reverse("group-routes"))
     
     if not request.user.is_superuser:
-        source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
-        destination = IPNetwork('%s/%s' % (IPNetwork(route.destination).network.compressed, IPNetwork(route.destination).prefixlen)).compressed
-        route.source = clean_source(request.user, source)
-        route.destination = clean_destination(request.user, destination) 
-        peer = Peer.objects.get(pk__in=user_peers)
+        source = clean_source(request.user,route.source)
+        destination = clean_destination(request.user, route.destination)
+        route.source = source
+        route.destination = destination
+        """ peer = Peer.objects.get(pk__in=user_peers)
         network = peer.networks.filter(network__icontains=route.destination)
         if not network.exists():
             messages.add_message(request,messages.WARNING,('Estás intentando aplicacar una regla con direcciones que no pertenecen a tu espacio administrativo. Contacte con su administrador.'))
-            return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name})) 
+            return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name})) """ 
         
         route.applier = request.user
         route.expires = clean_expires(route.expires)

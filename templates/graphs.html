@@ -5,22 +5,13 @@
 {% block extrahead %}
 <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-<link rel="stylesheet" href="{% static 'datepicker/plugins/css/style.css' %}">
-<link rel="stylesheet" href="{% static 'datepicker/plugins/css/bootstrap-datetimepicker.min.css' %}">
-
 <link rel="stylesheet" href="{% static 'css/section_style.css' %}">
 
 {% endblock %}
 {% block pagejs %}
 <script src="{%  static 'js/functions.js' %}"></script>
     <script src="https://www.gstatic.com/charts/loader.js"></script> 
-    <script src="{%  static 'datepicker/plugins/js/popper.js' %}"></script>
-    <script src="{%  static 'datepicker/plugins/js/moment-with-locales.min.js' %}"></script>
-    <script src="{%  static 'datepicker/plugins/js/bootstrap-datetimepicker.min.js' %}"></script>
-    <script src="{%  static 'datepicker/plugins/js/bootstrap.min.js' %}"></script>
-    <script src="{% static 'datepicker/plugins/js/bootstrap-datetimepicker.min.js'%}"></script>
-    <script src="{% static 'datepicker/plugins/js/main.js' %}"></script>
-    
+     -->
 
 {% endblock %}
 
@@ -148,12 +139,14 @@ $('document').ready(function(){
                 datasets:[{
                   label:'Beats',
                   data: beats,
-                  borderColor:'rgb(75, 192, 192)',
-                  fill:false,
+                  borderColor:'#03BECD',
+                  fill:true,
                   tension: 0.1
                 }]
               },
               options: {
+                plugins:{ title:{ display: false}},
+                responsive: true,
                 scales:{
                   yAxes:[{
                     ticks:{
@@ -170,11 +163,6 @@ $('document').ready(function(){
                   display: true,
                   text:'Gráfico de {{route.name}}.'
                 },
-                elements:{
-                  line:{
-                    tension: 0,
-                  }
-                }
               }
             });
           }else{
@@ -214,14 +202,14 @@ $('document').ready(function(){
         <div class='p-2 bd-highlight'>
           <div class="form-group">
               <div class='input-group date' id='id_from'>
-                  <input type='text' class="form-control js-datetimepicker" id="from" name="from" placeholder="Desde">
+                  <input type='datetime-local' class="form-control" id="from" name="from" placeholder="Desde">
               </div>
           </div>
       </div>
       <div class='p-2 bd-highlight'>
         <div class="form-group">
             <div class='input-group date' id='id_till'>
-                <input type='text' class="form-control js-datetimepicker" id="till" name="till" placeholder="Hasta">
+                <input type='datetime-local' class="form-control" id="till" name="till" placeholder="Hasta">
             </div>
         </div>
     </div>
@@ -251,25 +239,26 @@ $('document').ready(function(){
     <div class="col">
       <div class="card">
         <h5 class="card-header text-success">{{route.name}}</h5>
-        <div class="card-body font-monospace">
+        <div class="card-body">
             <p class="card-text"> Status: <span class="badge bg-success">{{route.status}}</span>
             {% if route.expires != None %}
             <span class="text-muted"> Expires: {{route.expires}}</span></p>
           {% endif %}
-            <p class="card-text"><small class="text-muted font-monospace">Última actualización: {{route.last_updated}} por {{route.applier_username_nice}}. 
-
+            <p class="card-text"><small class="text-muted">Última actualización: {{route.last_updated}} by {{route.applier_username_nice}}. 
+            {% if route.expires != None %}  
+            Days to expire: {{route.days_to_expire}} 
+             {% endif %}
             </small></p>
             <div class="font-monospace">
-                  {% if route.source %} <small>Origen: {{route.source}}</small> {% endif %} <br>
-                  {% if route.destination %} <small>Destino: {{route.destination}}</small> {% endif %} <br> 									
+              {% if route.destination %} <small>Destino: {{route.destination}}</small> {% endif %} <br> 
+									{% if route.source %} <small>Origen: {{route.source}}</small> {% endif %} <br>
 									{% if route.protocol.all %} <small>Protocolo: {% for p in route.protocol.all %} {{p}} {% endfor %}</small><br> {% endif %} 
-									{% if route.sourceport %} <small>Puerto origen:<small> {{route.sourceport}}<br> {% endif %}
-                  {% if route.port %} <small>Puerto(s):</small> {{route.port}}<br> {% endif %}
-                  {% if route.destinationport %}<small>Puerto Destino: {{route.destinationport}} </small><br> {% endif %}
-									{% if route.tcpflag.all %} <small>Tcpflag: {% for tf in route.tcpflag.all %} {{tf}} {% endfor %}</small><br> {% endif %}
+									{% if route.port %} <small>Puerto(s): {{route.port}}</small><br> {% endif %}
+									{% if route.tcpflag.all %} <small>Tcpflag: {{route.tcpflag.all}}</small><br> {% endif %}
 									{% if route.icmptype %} <small>Icmptype: {{route.icmptype}</small><br> {% endif %}
 									{% if route.icmpcode %} <small>Icmpcode: {{route.icmpcode}}</small><br> {% endif %}
                   {% if route.thenaction %} <small>Acción: {{route.thenaction}}</small><br> {% endif %}
+
             </div>
         <div class="card-footer">
           {% if not request.COOKIES.token %}
@@ -293,4 +282,3 @@ $('document').ready(function(){
 
   
 {% endblock %}
-

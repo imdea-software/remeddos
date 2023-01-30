@@ -49,8 +49,7 @@ def add(route, callback=None):
 
         backup_applier = PR.Backup_Applier(route_object=route)
         b_commit, b_response = backup_applier.apply()
-
-        print('this is commit: ', commit, ' b_commit: ', b_commit)            
+                 
         if commit and b_commit:            
             status = "ACTIVE"
             route.status = status
@@ -150,7 +149,6 @@ def edit(route, callback=None):
         backup_applier = PR.Backup_Applier(route_object=route)
         b_commit, b_response = backup_applier.apply(operation="replace")
         
-        print('(edit) this is commit: ', commit, ' b_commit: ', b_commit)            
         if commit and b_commit:
             status = "ACTIVE"
             route.status = status
@@ -253,6 +251,7 @@ def delete(route, **kwargs):
                 route.response = b_response
                 route.save()
                 message = (f"Suspending rule:  {route.name}")
+            
                 send_message(message,peer,superuser=False)
                 message = (f"Ha habido un error cuando se intentaba eliminar la regla en el primer router. Regla suspendida en el back up router. Porfavor contacte con su administrador.")
                 send_message(message,peer,superuser=False)
@@ -445,13 +444,10 @@ def routes_sync():
     """ find every active route in db , first router and backup router """
     found_routers = set(fw_routes + list(set(backup_fw_routes) - set(fw_routes)))
     
-    found_diff = found_routers.difference(routenames_db)
-    found_diff1 = set(routenames_db).difference(found_routers)
-    found_diff.update(found_diff1)
-    
+    found_diff = set(list(found_routers) + list(set(routenames_db) - set(found_routers)))
+
     found_routes = list(found_diff)
     if found_routes:
-        print(found_routes)
         for routename in found_routes:
             peer_tag = get_peer_with_name(routename)
             try:
@@ -465,20 +461,21 @@ def routes_sync():
                                 logger.info('We tried to commit a route outofsync but it didnt work, please review if there is any conexion problem. Route: ', route.name)
                         if route.status == 'ACTIVE' and (not route.has_expired) and route.is_synced() and route.is_synced_backup():
                             pass
-                        if route.status == 'ACTIVE' and ((not route.is_synced()) or (not route.is_synced_backup)) and (not route.has_expired()):
+                        if route.status == 'ACTIVE'  and not route.has_expired() and (not route.is_synced() or not route.is_synced_backup()):
                             route.commit_add() 
-                            logger.info("The following route has been commited to the router due to an out of sync problem. ", routename)
+                            logger.info(f"The following route has been commited to the router due to an out of sync problem. ", route.name)
                         if route.is_synced() and route.is_synced_backup() and (not route.has_expired()):
                             route.status = 'ACTIVE'
                             route.save()
                         if route.has_expired() and ((route.is_synced()) or (route.is_synced_backup)):
+                            
                             route.status = 'EXPIRED'
                             route.save()
                             route.commit_delete()
-                            logger.info("The following route has been deleted from the router due to an out of sync problem. ", routename)
+                            logger.info(f"The following route has been deleted from the router due to an out of sync problem. ", routename)
                         if (not route.has_expired()) and (route.status == 'OUTOFSYNC'):
                             route.commit_add()
-                            logger.info('status: %s route out of sync: %s, saving route.' %(route.status, route.name))
+                            logger.info('Status: %s route out of sync: %s, saving route.' %(route.status, route.name))
                         if route.has_expired() and route.status == 'ACTIVE':
                             route.status == 'EXPIRED'
                             route.save()
@@ -509,7 +506,7 @@ def routes_sync():
                             route.status ='ACTIVE'
                             route.comments = 'Esta regla ha sido guardada por REMeDDoS de manera automática, porfavor revise esta regla.'
                             route.save()
-                            print('routes have been synced: ', route.name)
+                            logger.info('routes have been synced: ', route.name)
             except Exception as e:
                 logger.info(f"There following route does not belong to any peer: {routename}")
     else:

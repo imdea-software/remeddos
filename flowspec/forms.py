@@ -234,7 +234,6 @@ class RouteForm(forms.ModelForm):
             if destination != res:
                 raise forms.ValidationError(res)
             else:
-                print(res,type(res))
                 return res
         else:
             destination = '0.0.0.0'
@@ -242,13 +241,9 @@ class RouteForm(forms.ModelForm):
 
     def clean_expires(self):
         date = self.cleaned_data['expires']
-        print('THIS IS DATEEEE', date)
-        print ('this is date type bb: ',type(date))
         res = clean_expires(date)
         if not isinstance(date,datetime.date):
-            print('are we even here?')
             if date == None:
-                print('why not here tho')
                 return None
         else:
             if date != res:
@@ -300,6 +295,8 @@ class Route_IMDEAForm(RouteForm):
                 f = name.find('_')
                 pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
                 result = pattern.match(name[:f])
+                if peer in name:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
                 if not result:
                     raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
@@ -415,6 +412,8 @@ class Route_CVForm(RouteForm):
                 f = name.find('_')
                 pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
                 result = pattern.match(name[:f])
+                if peer in name:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
                 if not result:
                     raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
@@ -530,6 +529,8 @@ class Route_REMForm(RouteForm):
                 f = name.find('_')
                 pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
                 result = pattern.match(name[:f])
+                if peer in name:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
                 if not result:
                     raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
@@ -636,7 +637,7 @@ class Route_PunchForm(RouteForm):
         user = self.cleaned_data.get('applier', None)
 
         if name:
-            peer = get_peer_with_name(name)
+            peer = get_peer_with_name(name)            
             if not peer:
                 pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
                 result = pattern.match(name)
@@ -646,6 +647,8 @@ class Route_PunchForm(RouteForm):
                 f = name.find('_')
                 pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
                 result = pattern.match(name[:f])
+                if peer in name:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
                 if not result:
                     raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
@@ -716,7 +719,6 @@ class Route_PunchForm(RouteForm):
                 existing_url = reverse('edit-route', args=[route.name])
                 if IPNetwork(destination) in IPNetwork(route.destination) or IPNetwork(route.destination) in IPNetwork(destination):
                     raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
-        print('mandamos ', self.cleaned_data)
         return self.cleaned_data
 
     
@@ -767,6 +769,8 @@ class Route_CIBForm(RouteForm):
                 f = name.find('_')
                 pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
                 result = pattern.match(name[:f])
+                if peer in name:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
                 if not result:
                     raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
@@ -882,6 +886,8 @@ class Route_CEUForm(RouteForm):
                 f = name.find('_')
                 pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
                 result = pattern.match(name[:f])
+                if peer in name:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
                 if not result:
                     raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
@@ -997,6 +1003,8 @@ class Route_CSICForm(RouteForm):
                 f = name.find('_')
                 pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
                 result = pattern.match(name[:f])
+                if peer in name:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
                 if not result:
                     raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
@@ -1113,6 +1121,8 @@ class Route_CUNEFForm(RouteForm):
                 f = name.find('_')
                 pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
                 result = pattern.match(name[:f])
+                if peer in name:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
                 if not result:
                     raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
         
@@ -1229,6 +1239,8 @@ class Route_IMDEANETForm(RouteForm):
                 f = name.find('_')
                 pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
                 result = pattern.match(name[:f])
+                if peer in name:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
                 if not result:
                     raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
@@ -1344,6 +1356,8 @@ class Route_UAMForm(RouteForm):
                 f = name.find('_')
                 pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
                 result = pattern.match(name[:f])
+                if peer in name:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
                 if not result:
                     raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
@@ -1461,6 +1475,8 @@ class Route_UAHForm(RouteForm):
                 f = name.find('_')
                 pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
                 result = pattern.match(name[:f])
+                if peer in name:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
                 if not result:
                     raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
@@ -1576,6 +1592,8 @@ class Route_UC3MForm(RouteForm):
                 f = name.find('_')
                 pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
                 result = pattern.match(name[:f])
+                if peer in name:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
                 if not result:
                     raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
@@ -1691,6 +1709,8 @@ class Route_UCMForm(RouteForm):
                 f = name.find('_')
                 pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
                 result = pattern.match(name[:f])
+                if peer in name:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
                 if not result:
                     raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
@@ -1806,6 +1826,8 @@ class Route_UEMForm(RouteForm):
                 f = name.find('_')
                 pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
                 result = pattern.match(name[:f])
+                if peer in name:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
                 if not result:
                     raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
@@ -1921,6 +1943,8 @@ class Route_UPMForm(RouteForm):
                 f = name.find('_')
                 pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
                 result = pattern.match(name[:f])
+                if peer in name:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
                 if not result:
                     raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
@@ -2036,6 +2060,8 @@ class Route_UNEDForm(RouteForm):
                 f = name.find('_')
                 pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
                 result = pattern.match(name[:f])
+                if peer in name:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
                 if not result:
                     raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 
@@ -2151,6 +2177,8 @@ class Route_URJCForm(RouteForm):
                 f = name.find('_')
                 pattern = re.compile("^[a-zA-Z0-9\-\.]+$")
                 result = pattern.match(name[:f])
+                if peer in name:
+                    raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
                 if not result:
                     raise forms.ValidationError(_("Porfavor introduce un nombre válido."))
 

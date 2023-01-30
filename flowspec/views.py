@@ -4,6 +4,7 @@ from tkinter import N
 from django import forms
 from django.contrib.auth.decorators import login_required
 from allauth.account.decorators import verified_email_required
+from flowspec.decorators import verify_profile
 from django.contrib.auth import logout
 from django.contrib.sites.models import Site
 from django.contrib.auth.models import User
@@ -34,7 +35,7 @@ from flowspec.models import *
 from peers.models import *
 from flowspec.tasks import *
 from flowspec.helpers import *
-from flowspec.decorators import verify_profile
+
 #from registration.models import RegistrationProfile 
 
 from copy import deepcopy
@@ -559,13 +560,13 @@ def edit_route(request, route_slug):
             except:
                 pass
         form = find_edit_post_route(username, request_data, route_edit)
-        print(request_data)
+
         critical_changed_values = ['name','source', 'destination', 'sourceport', 'destinationport', 'port', 'protocol', 'then', 'packetlenght','tcpflags','expires']
         try:
             if form.is_valid():   
                 changed_data = form.changed_data
                 route = form.save(commit=False)
-                route.name = route_original.name
+                route.name = request_data['name']
                 route.status= route_original.status
                 route.response = route_original.response
                 route.applier = request.user
@@ -590,16 +591,20 @@ def edit_route(request, route_slug):
             logger.info('There has been an exception when trying to add a route: ', e)
             return HttpResponseRedirect(reverse("group-routes"))
         else:
-            routename = route_edit.name  
+            fd = route_slug.find('_')
+            routename = route_slug
+            routenamedit = route_slug[:fd]
             if not request.user.is_superuser:
                 form.fields['destinationport'].required=False
                 form.fields['sourceport'].required=False
                 form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
                 form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
                 form.fields['tcpflag'] = forms.ModelMultipleChoiceField(queryset=TcpFlag.objects.filter(flag__in=settings.UI_USER_TCPFLAG).order_by('flag'), required=False)
-            return render(request,'apply.html',{'form': form,'edit': True,'applier': applier,'routename':routename, 'maxexpires': settings.MAX_RULE_EXPIRE_DAYS})
+            return render(request,'apply.html',{'form': form,'edit': True,'applier': applier,'routename':routename,'routenamedit':routenamedit, 'maxexpires': settings.MAX_RULE_EXPIRE_DAYS})
     else:
-        routename = route_edit.name
+        fd = route_slug.find('_')
+        routename = route_slug
+        routenamedit = route_slug[:fd]
         #dictionary = model_to_dict(route_edit, fields=[], exclude=[])
         form  = get_instance_form(username, route_edit)
         form.fields['name'].required=False
@@ -609,7 +614,7 @@ def edit_route(request, route_slug):
             form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
             form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
             form.fields['tcpflag'] = forms.ModelMultipleChoiceField(queryset=TcpFlag.objects.filter(flag__in=settings.UI_USER_TCPFLAG).order_by('flag'), required=False)   
-        return render(request,'apply.html', {'form': form,'edit': True,'applier': applier,'routename':routename,'maxexpires': settings.MAX_RULE_EXPIRE_DAYS})
+        return render(request,'apply.html', {'form': form,'edit': True,'applier': applier,'routename':routename,'routenamedit':routenamedit,'maxexpires': settings.MAX_RULE_EXPIRE_DAYS})
 
 
 @login_required
@@ -924,17 +929,21 @@ def ajax_graphs(request):
     username = request.user.username
     if request.method == 'GET':
         routename = request.GET.get('routename')
-        beats_date, beats_hour, beats_value, beats_values, bfulltime = get_default_graph(routename, username)
+        beats_date, beats_hour, beats_value, date_values, bfulltime = get_default_graph(routename, username)
+        #beats_value.sort()
+        
         data = {
                 'beats_date':beats_date,
                 'beats_hour': beats_hour,
                 'beats' : beats_value,
                 'time' : bfulltime,
+                'beatsvalues' : date_values,
             }
         return JsonResponse(data,status=200)
     if request.method == "POST":
         from_time = request.POST.get('from')
         till_time = request.POST.get('till')
+
         routename = request.POST.get('routename')
         if from_time and till_time:
             beats_date, beats_hour, beats_value, beats_values, bfulltime = graphs(from_time, till_time, routename, username)
@@ -943,6 +952,8 @@ def ajax_graphs(request):
                 'beats_hour': beats_hour,
                 'beats' : beats_value,
                 'time' : bfulltime,
+                'init':from_time,
+                'end': till_time
             }
             return JsonResponse(data,status=200)
         else:
@@ -954,7 +965,6 @@ def ajax_graphs(request):
                 'time' : bfulltime,
             }
             return JsonResponse(data,status=200)
-
 
 @login_required
 @verify_profile
@@ -1068,7 +1078,6 @@ def sync_routers(request):
     
     found_routes = list(found_diff)
     if found_routes:
-        print(found_routes)
         for routename in found_routes:
             peer_tag = get_peer_with_name(routename)
             try:
@@ -1126,7 +1135,7 @@ def sync_routers(request):
                             route.status ='ACTIVE'
                             route.comments = 'Esta regla ha sido guardada por REMeDDoS de manera automática, porfavor revise esta regla.'
                             route.save()
-                            print('routes have been synced: ', route.name)
+                            logger.info('Routes have been synced: ', route.name)
                 else:
                     logger.info(f"The following route does not belong to any peer: {routename}")
                         
@@ -1180,8 +1189,7 @@ def sync_router(request):
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-code': icmpcode = c.text 
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}icmp-type': icmptype = c.text 
                             if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}packet-length' and c.text != '': packetlength = c.text
-                            if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source': source = c.text
-                
+                            if c.tag == '{http://xml.juniper.net/xnm/1.1/xnm}source': source = c.text    
                     #route = get_route(username)
                 peer = get_peer_with_name(name_fw)
                 if peer:
@@ -1397,3 +1405,40 @@ def restore_complete_db(request):
         return render(request,'storage/routes_synced.html',{'message':'Esta opción solo puede ser usada por un superusuario, disculpe las molestias.'})
 
 
+
+""" Activate User Profile """
+@login_required
+@verify_profile
+@verified_email_required
+@never_cache
+def activate_user_profile(request):
+    if request.method == "GET":
+        if request.user.is_superuser:
+            users = User.objects.all()
+            peers = Peer.objects.all()
+            return render(request,'registration/activate_edit.html',{'users':users, 'peers':peers})
+        else:
+            return render(request,'storage/dashboard.html',{'messages':'No tienes permisos para activar un perfil de usuario.'})
+
+    if request.method == "POST":
+        if request.user.is_superuser:
+            request_data = request.POST.copy()
+            if request.method == "POST":
+                try:
+                    request_data = request.POST.copy()
+                    user = User.objects.get(username=request_data['user'])
+                    peer = Peer.objects.get(peer_name=request_data['peer'])
+                    up = UserProfile(user=user)
+                    up.save()            
+                    up.peers.add(peer)
+                    up.save()
+                    mail_body = render_to_string('registration/activation_complete.txt', {'site': Site.objects.get_current(),'user': user})
+                    subject_mail = 'Cuenta activada en REM-e-DDoS'
+                    user_mail = user.email
+                    send_mail(subject_mail,mail_body,settings.SERVER_EMAIL, [user_mail])
+                    return render(request,'registration/activate.html',{'account':user})
+                except Exception as e:
+                    message =('Ha habido un error al intentar crear el perfil. Error: ',e)
+                    return render(request,'registration/activate_edit.html',{'messages':message})
+        else:
+            return render(request,'storage/dashboard.html',{'messages':'No tienes permisos para activar un perfil de usuario.'}) 

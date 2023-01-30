@@ -9,6 +9,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.conf.urls.i18n import i18n_patterns
 import flowspec.views
+#import accounts.views 
 import golem.views
 
 
@@ -38,6 +39,7 @@ urlpatterns = [
     path('service-desc',flowspec.views.service_desc,name="service-description"),
     re_path(r'^poll/', include('poller.urls')),
     re_path(r'^flowspec/', include('flowspec.urls')),
+    #path('profile/', include('accounts.views')),
     #ccre_path(r'^accounts/', include('accounts.urls')),
     path('accounts/', include('allauth.urls')),
     re_path(r'^setlang/?$', views.i18n.set_language),

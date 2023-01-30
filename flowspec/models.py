@@ -241,6 +241,9 @@ class Route(models.Model):
             super(Route, self).save(*args, **kwargs)
         elif not self.pk and (peer_suff not in self.name):
             name = self.name
+            self.name = "%s_%s" % (name, peer_suff)
+        elif peer_suff not in self.name:
+            name = self.name
             self.name = "%s_%s" % (name, peer_suff) 
         super(Route, self).save(*args, **kwargs) 
 
@@ -718,6 +721,7 @@ class Route(models.Model):
             ret = "%s <dt>ICMP code</dt><dd>%s</dd>" %(ret, self.icmpcode)
         if self.icmptype:
             ret = "%s <dt>ICMP Type</dt><dd>%s</dd>" %(ret, self.icmptype)
+            
         if self.packetlength:
             if ',' in self.packetlength:
                 pl = self.packetlength.split(',')
@@ -1590,7 +1594,7 @@ class Route_UNED(Route):
                 user_mail = user_mail.split(';')
                 send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
         except Exception as e:
-                print('There was an exception when trying to notify the user via e-mail, ',e)
+                logger.info('There was an exception when trying to notify the user via e-mail, ',e)
 
 
 class Route_UPM(Route):
@@ -1631,17 +1635,13 @@ class Route_UPM(Route):
         try:
             if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
                 fqdn = Site.objects.get_current().domain
-                admin_url = 'https://%s%s' % (
-                    fqdn,
-                    reverse('edit-route', kwargs={'route_slug': self.name})
-                )
-                mail_body = render_to_string(
-                    'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
+                admin_url = 'https://%s%s' % (fqdn,reverse('edit-route', kwargs={'route_slug': self.name}))
+                mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
                 send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
         except Exception as e:
-                print('There was an exception when trying to notify the user via e-mail, ',e)
+                logger.info('There was an exception when trying to notify the user via e-mail, ',e)
 
 
 class Route_URJC(Route):
@@ -1683,16 +1683,13 @@ class Route_URJC(Route):
             if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
                 fqdn = Site.objects.get_current().domain
                 admin_url = 'https://%s%s' % (
-                    fqdn,
-                    reverse('edit-route', kwargs={'route_slug': self.name})
-                )
-                mail_body = render_to_string(
-                    'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
+                    fqdn,reverse('edit-route', kwargs={'route_slug': self.name}))
+                mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
                 send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
         except Exception as e:
-                print('There was an exception when trying to notify the user via e-mail, ',e)
+                logger.info('There was an exception when trying to notify the user via e-mail, ',e)
 
 
 

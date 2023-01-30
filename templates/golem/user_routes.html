@@ -47,7 +47,7 @@
                     {% if route.protocol %} <small>Protocolo: {% for p in route.protocol.all %} {{p}} {% endfor %}</small><br> {% endif %} 
                     {% if route.sourceport %} <small>Puerto Origen: {{route.sourceport}}</small><br> {% endif %}
                     {% if route.destinationport %} <small>Puerto Dest: {{route.destinationport}}</small><br> {% endif %}
-                    {% if route.tcpflag %} <small>Tcpflag: {% for f in route.tcpflag.all %} {{ f }} {% endfor %}</small><br> {% endif %}
+                    {% if route.tcpflag.all %} <small>Tcpflag: {% for f in route.tcpflag.all %} {{ f }} {% endfor %}</small><br> {% endif %}
                     {% if route.icmptype %} <small>Icmptype: {{route.icmptype}</small><br> {% endif %}
                     {% if route.icmpcode %} <small>Icmpcode: {{route.icmpcode}}</small><br> {% endif %}
                 </td>
@@ -101,7 +101,7 @@
 </div>
 
 
-<div class="row mb-3 pb-3">
+<div class="row mb-3 pb-3 mt-5">
     <div class="col">
       {% include "shortcuts.html" %}
     </div>

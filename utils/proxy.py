@@ -185,7 +185,23 @@ class Applier(object):
                 route.match['icmp-type'].append(route_obj.icmptype)
             
             if route_obj.packetlength:
-                route.match['packet-length'].append(route_obj.packetlength)
+                try:
+                    if not ('-' in route_obj.packetlength) and not (',' in route_obj.packetlength):
+                        route.match['packet-length'].append(route_obj.packetlength)
+                    if '-' in route_obj.packetlength:
+                        packetlist = route_obj.packetlength.split('-')
+                        for packet in packetlist:
+                            route.match['packet-length'].append(packet)
+                    if ',' in route_obj.packetlength:
+                        packetlist = route_obj.packetlength.split(',')
+                        for packet in packetlist:
+                            print(packet)
+                            route.match['packet-length'].append(packet)
+                except Exception as e:
+                    print('there was an exception when assiging the packet-length: ', e)
+                
+                
+                
             try:
                 if route_obj.dscp:
                     for dscp in route_obj.dscp.all():
@@ -500,7 +516,19 @@ class Backup_Applier(object):
             if route_obj.icmptype:
                 route.match['icmp-type'].append(route_obj.icmptype)
             if route_obj.packetlength:
-                route.match['packet-length'].append(route_obj.packetlength)
+                try:
+                    if not ('-' in route_obj.packetlength) and not (',' in route_obj.packetlength):
+                        route.match['packet-length'].append(route_obj.packetlength)
+                    if '-' in route_obj.packetlength:
+                        packetlist = route_obj.packetlength.split('-')
+                        for packet in packetlist:
+                            route.match['packet-length'].append(packet)
+                    if ',' in route_obj.packetlength:
+                        packetlist = route_obj.packetlength.split(',')
+                        for packet in packetlist:
+                            route.match['packet-length'].append(packet)
+                except Exception as e:
+                    logger.info('There was an exception when assiging the packet-length: ', e)
             try:
                 if route_obj.dscp:
                     for dscp in route_obj.dscp.all():
