@@ -145,6 +145,7 @@ def display_golem_updates(request,golem_id):
 @verify_profile
 @verified_email_required
 @never_cache
+@verify_staff_account
 def delete_golem(request):
     username = request.user.username
     golem_id = request.POST['golem_id']
@@ -168,6 +169,7 @@ def delete_golem(request):
 @login_required
 @verify_profile
 @verified_email_required
+@verify_staff_account
 def verify_commit_route(request, route_slug):
     if 'token' in request.COOKIES:
         url = reverse('commit', kwargs={'route_slug': route_slug})
@@ -225,6 +227,7 @@ def verify_commit_route(request, route_slug):
 @login_required
 @verify_profile
 @never_cache
+@verify_staff_account
 def commit_to_router(request,route_slug):
     import datetime
 
@@ -254,20 +257,8 @@ def commit_to_router(request,route_slug):
         destination = clean_destination(request.user, route.destination)
         route.source = source
         route.destination = destination
-        """ peer = Peer.objects.get(pk__in=user_peers)
-        network = peer.networks.filter(network__icontains=route.destination)
-        if not network.exists():
-            messages.add_message(request,messages.WARNING,('Estás intentando aplicacar una regla con direcciones que no pertenecen a tu espacio administrativo. Contacte con su administrador.'))
-            return HttpResponseRedirect(reverse("golem-routes", kwargs={'golem_name': event_name})) """ 
-        
         route.applier = request.user
         route.expires = clean_expires(route.expires)
-        
-        """ try:
-            route.requesters_address = request.META['HTTP_X_FORWARDED_FOR']
-        except:
-            # in case the header is not provided
-            route.requesters_address = 'unknown' """
         try:
             route.save()
             route.commit_add()

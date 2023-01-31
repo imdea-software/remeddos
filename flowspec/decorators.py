@@ -24,3 +24,18 @@ def verify_profile(view_func):
             return render(request, "error/profile_error.html")
 
     return wrap
+
+
+def verify_staff_account(view_func):
+    def wrap(request, *args, **kwargs):
+        try:
+            if request.user.is_staff:
+                return view_func(request, *args, **kwargs)
+            else:
+                return render(request, "error/staff_error.html")
+        except ObjectDoesNotExist:
+            message = (f"El usuario: {request.user.username} ha intentado realizar una acción para la que no tiene permisos.")
+            send_message(message,peer=None,superuser=True)
+            return render(request, "error/staff_error.html")
+
+    return wrap

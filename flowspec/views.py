@@ -4,7 +4,7 @@ from tkinter import N
 from django import forms
 from django.contrib.auth.decorators import login_required
 from allauth.account.decorators import verified_email_required
-from flowspec.decorators import verify_profile
+from flowspec.decorators import verify_profile, verify_staff_account
 from django.contrib.auth import logout
 from django.contrib.sites.models import Site
 from django.contrib.auth.models import User
@@ -347,6 +347,7 @@ def build_routes_json(groutes, is_superuser):
 @login_required
 @verify_profile
 @verified_email_required
+@verify_staff_account
 def verify_add_user(request):
     if 'token' in request.COOKIES:
         url = reverse('add')
@@ -402,6 +403,7 @@ def verify_add_user(request):
 @verify_profile
 @verified_email_required
 @never_cache
+@verify_staff_account
 def add_route(request):
     applier_peer_networks = []
     applier = request.user.pk
@@ -480,7 +482,8 @@ def add_route(request):
 
 @login_required
 @verify_profile
-@verified_email_required             
+@verified_email_required
+@verify_staff_account           
 def verify_edit_user(request,route_slug):
     if 'token' in request.COOKIES:
         url = reverse('edit', kwargs={'route_slug':route_slug})
@@ -533,6 +536,7 @@ def verify_edit_user(request,route_slug):
 @verify_profile
 @verified_email_required
 @never_cache
+@verify_staff_account
 def edit_route(request, route_slug):
     applier = request.user.pk
     username = request.user.username
@@ -621,6 +625,7 @@ def edit_route(request, route_slug):
 @verify_profile
 @verified_email_required
 @never_cache
+@verify_staff_account
 def verify_delete_user(request, route_slug):
     if not 'token' in request.COOKIES != None:
         if request.method =='GET':
@@ -674,6 +679,7 @@ def verify_delete_user(request, route_slug):
 @verify_profile
 @verified_email_required
 @never_cache
+@verify_staff_account
 def delete_route(request, route_slug):
     uname = request.user.username
     route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
@@ -714,6 +720,7 @@ def delete_route(request, route_slug):
 @login_required
 @verify_profile
 @never_cache
+@verify_staff_account
 def exterminate_route(request,route_slug):
     from flowspec.helpers import get_peer_with_name
 
