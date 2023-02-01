@@ -476,14 +476,10 @@ def get_default_graph(routename, username):
   for x in item_history:
     y = datetime.datetime.fromtimestamp(int(x['clock']))
     if i == 60:
-      """ bisect.insort(clock_value,y.isoformat(sep='T', timespec='auto')) """ 
-      """beats_fulltime.append(y.strftime("%H:%M %d-%B"))"""
       bisect.insort(clock_value,y.strftime("%d-%b %H:%M"))
       beat_value.append(x['value'])
       i = 0
     if i!= 60 and x['value'] !=  '0' :
-
-      """ bisect.insort(clock_value,y.isoformat(sep='T', timespec='auto')) """
       bisect.insort(clock_value,y.strftime("%d-%b %H:%M "))
       beat_value.append(x['value'])
     
