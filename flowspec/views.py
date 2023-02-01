@@ -385,16 +385,16 @@ def verify_add_user(request):
                         return response
                     else:
                         form = ValidationForm(request.GET)
-                        message = "El código introducido es erróneo porfavor introduzca el último código enviado."
+                        message = "El código introducido es erróneo por favor introduzca el último código enviado."
                         return render(request,'values/add_value.html', {'form': form, 'message':message})
                 
                 except Exception as e:
                     form = ValidationForm(request.GET)
-                    message = "El código introducido es erróneo porfavor introduzca el último código enviado."
+                    message = "El código introducido es erróneo por favor introduzca el último código enviado."
                     return render(request,'values/add_value.html', {'form': form, 'message':message})
             else:
                 form = ValidationForm(request.GET)
-                message = "El código introducido es erróneo porfavor introduzca el último código enviado."
+                message = "El código introducido es erróneo por favor introduzca el último código enviado."
                 return render(request,'values/add_value.html', {'form': form, 'message':message})
 
 
@@ -524,12 +524,12 @@ def verify_edit_user(request,route_slug):
                         return response
                     else:
                         form = ValidationForm(request.GET)
-                        message = "El código introducido es erróneo porfavor introduzca el último código enviado."
+                        message = "El código introducido es erróneo por favor introduzca el último código enviado."
                         return render(request,'values/add_value.html', {'form': form, 'message':message})
 
                 except Exception as e:
                     form = ValidationForm(request.GET)
-                    message = "Ha sucedido un error, porfavor introduzca el último código enviado.", e
+                    message = "Ha sucedido un error, por favor introduzca el último código enviado.", e
                     return render(request,'values/add_value.html', {'form': form, 'message':message})
 
 @login_required
@@ -549,7 +549,7 @@ def edit_route(request, route_slug):
         for peer in user_peers:
             applier_peer_networks.extend(peer.networks.all())
     if not applier_peer_networks:
-        messages.add_message(request,messages.WARNING,('No se puede añadir la regla debido a que las direcciones usadas no están registradas dentro de tu institución, porfavor contacte con su administrador.') )
+        messages.add_message(request,messages.WARNING,('No se puede añadir la regla debido a que las direcciones usadas no están registradas dentro de tu institución, por favor contacte con su administrador.') )
         return HttpResponseRedirect(reverse("group-routes"))    
     route_original = deepcopy(route_edit)
     if request.POST:
@@ -1124,7 +1124,7 @@ def sync_routers(request):
                                 logger.info(f"Deactivating route: {route.name}..")
                                 route.commit_delete()
                         if not route.applier:
-                            route.comments = 'Esta regla ha sido guardada por REMeDDoS de manera automática, porfavor revise esta regla.'
+                            route.comments = 'Esta regla ha sido guardada por REMeDDoS de manera automática, por favor revise esta regla.'
                             route.save()
                             
                     else:
@@ -1140,7 +1140,7 @@ def sync_routers(request):
                                 logger.info('Ha habido un error al intentar configurar las reglas:',e)
                         elif (route.is_synced() and route.is_synced_backup):
                             route.status ='ACTIVE'
-                            route.comments = 'Esta regla ha sido guardada por REMeDDoS de manera automática, porfavor revise esta regla.'
+                            route.comments = 'Esta regla ha sido guardada por REMeDDoS de manera automática, por favor revise esta regla.'
                             route.save()
                             logger.info('Routes have been synced: ', route.name)
                 else:

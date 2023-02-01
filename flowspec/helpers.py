@@ -1200,7 +1200,7 @@ def find_match_route_config_router(routename):
   for flag in tcpflags:
     tcpflag = TcpFlag.objects.get(flag=flag)
     route.tcpflag.add(tcpflag)
-  send_message(f"Acabamos de encontrar una regla que no estaba sincronizada, la hemos activado durante un día más. Porfavor revise todas sus reglas activas. Regla: {route.name}",peer=peer_tag,superuser=False)
+  send_message(f"Acabamos de encontrar una regla que no estaba sincronizada, la hemos activado durante un día más. Por favor revise todas sus reglas activas. Regla: {route.name}",peer=peer_tag,superuser=False)
   route.save()
   
   return route

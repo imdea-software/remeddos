@@ -209,16 +209,16 @@ def verify_commit_route(request, route_slug):
                         return response
                     else:
                         form = ValidationForm(request.GET)
-                        message = "El código introducido es erróneo porfavor introduzca el último código enviado."
+                        message = "El código introducido es erróneo por favor introduzca el último código enviado."
                         return render(request,'values/add_value.html', {'form': form, 'message':message})
                     
                 except Exception as e:
                     form = ValidationForm(request.GET)
-                    message = "El código introducido es erróneo porfavor introduzca el último código enviado."
+                    message = "El código introducido es erróneo por favor introduzca el último código enviado."
                     return render(request,'values/add_value.html', {'form': form, 'message':message})
             else:
                 form = ValidationForm(request.GET)
-                message = "El código introducido es erróneo porfavor introduzca el último código enviado."
+                message = "El código introducido es erróneo por favor introduzca el último código enviado."
                 return render(request,'values/add_value.html', {'form': form, 'message':message})
 
 
