@@ -235,23 +235,22 @@ LOGGING = {
         'require_debug_false': {
             '()': 'django.utils.log.RequireDebugFalse'
         }
-    } }
+    },
 
-""" 'handlers': {
-        'mail_admins': {
-            'level': 'ERROR',
-            'filters': ['require_debug_false'],
-            'class': 'django.utils.log.AdminEmailHandler'
-        }
-    }, """
-""" 'loggers': {
+    'handlers': {
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': 'general.log',
+        },
+    }, 
+     'loggers': {
         'django.request': {
-            'handlers': ['mail_admins'],
+            'handlers': ['file'],
             'level': 'ERROR',
             'propagate': True,
         },
-    } """
-
+    }
+}
 
 #==Django-Allauth Settings
 
