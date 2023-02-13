@@ -50,7 +50,10 @@ class ProcessWebHookView(CsrfExemptMixin, View):
     def post(self, request, *args, **kwargs):
         message = json.loads(request.body)
         id_event = message['event']['id']
-        anomaly_ticket, anomaly_info = petition_geni(id_event)
+        try:            
+            anomaly_ticket, anomaly_info = petition_geni(id_event)
+        except Exception as e:
+            logger.info('There has been an error while trying to analyze the golem event.')
         try:
             last_updated = message['event']['datetime']['update_time']
         except Exception as e:

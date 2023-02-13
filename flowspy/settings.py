@@ -238,17 +238,44 @@ LOGGING = {
     },
 
     'handlers': {
-        'file': {
+        'errors_file': {
+            'level':'ERROR',
             'class': 'logging.FileHandler',
-            'filename': 'general.log',
+            'filename': '/var/log/fod/remeddos_error.log',
         },
+        'warning_file': {
+            'level':'WARNING',
+            'class': 'logging.FileHandler',
+            'filename': '/var/log/fod/remeddos_warning.log',
+        },
+        'info_file': {
+            'level':'WARNING',
+            'class': 'logging.FileHandler',
+            'filename': '/var/log/fod/remeddos_info.log',
+        },
+        
     }, 
      'loggers': {
-        'django.request': {
-            'handlers': ['file'],
+        'error_loger': {
+            'handlers': ['errors_file'],
             'level': 'ERROR',
             'propagate': True,
         },
+        'warning_logger':{
+            'handlers':['warning_file'],
+            'level':'WARNING',
+            'propagate':True,
+        },
+        'info_logger':{
+            'handlers':['info_file'],
+            'level':'INFO',
+            'propagate':True,
+        },
+        'django.request':{
+            'handlers':['errors_file'],
+            'level':'ERROR',
+            'propagate':True,
+        }
     }
 }
 
@@ -342,7 +369,7 @@ REM_SLACK_TOKEN = os.environ.get('REM_SLACK_TOKEN')
 API_KEY_T=os.getenv('API_KEY_TG')
 
 # BCC mail addresses
-NOTIFY_ADMIN_MAILS = [STAFF_MAIL]
+# NOTIFY_ADMIN_MAILS = [STAFF_MAIL]
 
 # Then actions in the ui (dropdown)
 UI_USER_THEN_ACTIONS = ['discard', 'rate-limit','accept']
@@ -370,7 +397,7 @@ TINYMCE_DEFAULT_CONFIG = {
 import _version
 SW_VERSION = _version.VERSION
 
-LOG_FILE_LOCATION = "/var/log/fod"
+LOG_FILE_LOCATION = "/var/log/fod/"
 
 
 BRANDING = {

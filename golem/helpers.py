@@ -55,7 +55,7 @@ def petition_geni(id_event):
             'institution_name': json_event['response']['result']['data'][0]['event']['resource']['name'][0], 'attack_name' : json_event['response']['result']['data'][0]['event']['attack']['name'],
             'initial_date' : json_event['response']['result']['data'][0]['event']['datetime']['start_time'], 'attack_duration' : json_event['response']['result']['data'][0]['event']['datetime']['duration'], 'ip_attacked' : json_event['response']['result']['data'][0]['event']['resource']['ip'],
             'typeof_attack':json_event['response']['result']['data'][0]['event']['attack']['type'],'typeof_value':json_event['response']['result']['data'][0]['event']['attack']['counter']}
-    except requests.exceptions.ConnectionError:
+    except Exception as e:
         logger.info(f"Error cuando se realizaba la petición a REM-Golem. Error: {response.status_code}")
     return (response.json(),event_data)
 
