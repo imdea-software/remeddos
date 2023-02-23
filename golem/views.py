@@ -50,29 +50,35 @@ class ProcessWebHookView(CsrfExemptMixin, View):
     def post(self, request, *args, **kwargs):
         message = json.loads(request.body)
         id_event = message['event']['id']
-        try:            
-            anomaly_ticket, anomaly_info = petition_geni(id_event)
-        except Exception as e:
-            logger.info('There has been an error while trying to analyze the golem event.')
-        try:
-            last_updated = message['event']['datetime']['update_time']
-        except Exception as e:
-            #if not found it means the field is not has not been sent yet
-            pass
-        print('New webhook event, ', id_event, anomaly_info['status'])   
-        if not anomaly_info['status'] == 'Recovered':   
-            try:
-                task = Process(target=golem, args=(anomaly_info,id_event,last_updated))
-                task.start()
+        if not id_event.startswith('B'):
+            try:            
+                anomaly_ticket, anomaly_info = petition_geni(id_event)
+                print('New webhook event, ', id_event, anomaly_info['status'])
+                if not anomaly_info['status'] == 'Recovered':   
+                    try:
+                        task = Process(target=golem, args=(anomaly_info,id_event,last_updated))
+                        task.start()
+                    except Exception as e:
+                        logger.info(f"There has been an error when processing the event: {id_event}. Error: {e}")
+                        pass
+                elif anomaly_info['status'] == 'Recovered' :
+                    dic_regla = assemble_dic(anomaly_ticket['response']['result']['data'][0]['traffic_characteristics'],anomaly_info)
+                    peer = find_peer(dic_regla['institution_name'])
+                    recovered(id_event,anomaly_info,peer)
             except Exception as e:
-                logger.info('Error while trying to analyze the golem event.')
+                logger.info(f"There has been an error while trying to analyze the golem event {id_event}. Error: {e}")
                 pass
-        elif anomaly_info['status'] == 'Recovered' :
-            dic_regla = assemble_dic(anomaly_ticket['response']['result']['data'][0]['traffic_characteristics'],anomaly_info)
-            peer = find_peer(dic_regla['institution_name'])
-            recovered(id_event,anomaly_info,peer)
+            try:
+                last_updated = message['event']['datetime']['update_time']
+            except Exception as e:
+                #if not found it means the field is not has not been sent yet
+                pass
+            
+            
 
-        return HttpResponse()
+            return HttpResponse()
+        else:
+            pass
 
 
 @login_required

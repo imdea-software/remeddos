@@ -49,10 +49,10 @@ DEBUG = False
 DEBUG_PROPAGATE_EXCEPTIONS = False
 """ TEMPLATE_DEBUG = DEBUG """
 
-ADMINS = (
+""" ADMINS = (
     ('Remadmin', STAFF_MAIL),
 )
-MANAGERS = ADMINS
+MANAGERS = ADMINS """
 here = lambda x: os.path.join(os.path.abspath(os.path.dirname(__file__)), x)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -231,10 +231,15 @@ DEFAULT_AUTO_FIELD='django.db.models.AutoField'
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'filters': {
-        'require_debug_false': {
-            '()': 'django.utils.log.RequireDebugFalse'
-        }
+     'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
     },
 
     'handlers': {
@@ -242,16 +247,20 @@ LOGGING = {
             'level':'ERROR',
             'class': 'logging.FileHandler',
             'filename': '/var/log/fod/remeddos_error.log',
+            'formatter': 'verbose',
+
         },
         'warning_file': {
             'level':'WARNING',
             'class': 'logging.FileHandler',
             'filename': '/var/log/fod/remeddos_warning.log',
+            'formatter': 'verbose',
         },
         'info_file': {
             'level':'WARNING',
             'class': 'logging.FileHandler',
             'filename': '/var/log/fod/remeddos_info.log',
+            'formatter': 'simple',
         },
         
     }, 

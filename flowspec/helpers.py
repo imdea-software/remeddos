@@ -995,46 +995,15 @@ def find_peer(peer_name):
   find = peer_name.find('_')
   pn = peer_name[find+1::]
   peers = Peer.objects.all()
-  for peer in peers:
-    if peer_name == 'punch.software.imdea.org' or peer_name == 'punch2.software.imdea.org' or peer_name == 'punch2.software.imdea.org(2)':
-      return Peer.objects.get(peer_name='Punch')
-    elif peer_name == 'CASA VELAZQUEZ' or peer_name == 'CASA VELAZQUEZ(2)' :
-      return Peer.objects.get(peer_tag='CV')
-    elif peer_name == 'IMDEA_NETWORK' or peer_name == 'IMDEA_NETWORK(2)':
-      return Peer.objects.get(peer_name='IMDEA Networks')
-    elif peer_name == 'REDIMADRID' or peer_name == 'REDIMADRID(2)':
-      return Peer.objects.get(peer_name='RediMadrid')
-    elif peer_name == 'CEU(2)' or peer_name == 'CEU':
-      return Peer.objects.get(peer_name='CEU')
-    elif peer_name == 'UEM' or peer_name == 'UEM(2)':
-      return Peer.objects.get(peer_tag='UEM')
-    elif peer_name == 'URJC' or peer_name == 'URJC(2)':
-      return Peer.objects.get(peer_tag='URJC')
-    elif peer_name == 'UNED' or peer_name == 'UNED(2)':
-      return Peer.objects.get(peer_tag='UNED')
-    elif peer_name == 'UAH' or peer_name == 'UAH(2)':
-      return Peer.objects.get(peer_tag='UAH')
-    elif peer_name == 'CSIC' or peer_name == 'CSIC(2)':
-      return Peer.objects.get(peer_tag='CSIC')
-    elif peer_name == 'CIB' or peer_name == 'CIB(2)':
-      return Peer.objects.get(peer_tag='CIB')
-    elif peer_name == 'CUNEF' or peer_name == 'CUNEF(2)':
-      return Peer.objects.get(peer_tag='CUNEF')
-    elif peer_name == 'UC3M' or peer_name == 'UC3M(2)' or peer_name=='NAT_UC3M' or peer_name=='NAT_UC3M(2)':
-      return Peer.objects.get(peer_tag='UC3M')
-    elif peer_name == 'CSIC' or peer_name == 'CSIC(2)':
-      return Peer.objects.get(peer_tag='CSIC')
-    elif peer_name == 'UCM' or peer_name == 'UCM(2)':
-      return Peer.objects.get(peer_tag='UCM')
-    elif peer_name == 'UAM' or peer_name == 'UAM(2)':
-      return Peer.objects.get(peer_tag='UAM')
-    elif peer_name == 'UPM' or peer_name == 'UPM(2)':
-      return Peer.objects.get(peer_tag='UPM')
-    elif peer == pn:
-      return Peer.objects.get(peer_name=peer) 
-    else:
-      logger.info(f'The following institution is not connected to REM-E-DDOS {peer_name}')
-      return False 
+  check = True
+  while check:
+    for peer in peers:
+      if peer.peer_tag in peer_name:
+        check = False
+        return Peer.objects.get(peer_name=peer.peer_name) 
+      """ else:
+        logger.info(f'The following institution is not connected to REM-E-DDOS {peer_name}')
+        return False """ 
 
 """ finds route missing in db and saves it  """
 
