@@ -992,18 +992,18 @@ def get_specific_route_pk(username, pk):
 
 def find_peer(peer_name):
   from peers.models import Peer
-  find = peer_name.find('_')
-  pn = peer_name[find+1::]
-  peers = Peer.objects.all()
-  check = True
-  while check:
-    for peer in peers:
-      if peer.peer_tag in peer_name:
-        check = False
-        return Peer.objects.get(peer_name=peer.peer_name) 
-      """ else:
-        logger.info(f'The following institution is not connected to REM-E-DDOS {peer_name}')
-        return False """ 
+  if peer_name:
+    find = peer_name.find('_')
+    pn = peer_name[find+1::]
+    peers = Peer.objects.all()
+    check = True
+    while check:
+      for peer in peers:
+        if peer.peer_tag in peer_name:
+          check = False
+          return Peer.objects.get(peer_name=peer.peer_name)
+  else:
+      return None
 
 """ finds route missing in db and saves it  """
 

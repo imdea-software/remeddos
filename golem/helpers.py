@@ -48,6 +48,7 @@ def petition_geni(id_event):
     response = ''
     response = requests.get(f'https://193.145.15.26/api/anomalyevent/application/{id_event}', data=data, verify=False, auth=(settings.GOLEM_USER, settings.GOLEM_PWD))
     json_event = response.json()
+    event_data = ''
     try:
         event_data = {
            'id':json_event['response']['result']['data'][0]['event']['id'],'status':json_event['response']['result']['data'][0]['event']['status'],'severity':json_event['response']['result']['data'][0]['event']['severity']['type'],
@@ -56,7 +57,7 @@ def petition_geni(id_event):
             'initial_date' : json_event['response']['result']['data'][0]['event']['datetime']['start_time'], 'attack_duration' : json_event['response']['result']['data'][0]['event']['datetime']['duration'], 'ip_attacked' : json_event['response']['result']['data'][0]['event']['resource']['ip'],
             'typeof_attack':json_event['response']['result']['data'][0]['event']['attack']['type'],'typeof_value':json_event['response']['result']['data'][0]['event']['attack']['counter']}
     except Exception as e:
-        logger.info(f"Error cuando se realizaba la petición a REM-Golem. Error: {response.status_code}")
+        logger.info(f"Error cuando se realizaba la petición a REM-Golem.")
     return (response.json(),event_data)
 
 
@@ -71,24 +72,23 @@ def open_event(id_event):
     from golem.models import GolemAttack
     from flowspec.models import MatchProtocol, TcpFlag
 
-
     time.sleep(90)
     event_ticket, event_info = petition_geni(id_event) 
     traffic_event = event_ticket['response']['result']['data'][0]['traffic_characteristics']
     dic_regla = assemble_dic(traffic_event,event_info)
-    peer = find_peer(dic_regla['institution_name'])
-    if event_info['status'] == 'Open' or event_info['status'] == 'Ongoing' :
-        # get together all the relevant information into one dictionary in order to create the proposed route
-        # also registered the attack and the proposed route to the DB
-        prt = traffic_event[4]['data'][0][0]
-        protocol = get_protocol(prt)
-        ip = get_ip_address(event_info['ip_attacked'])
-        try:
-            link = get_link(dic_regla['id_attack'])
-        except Exception as e:
-            logger.info('There was an exception when trying to get the REM-Golem link.')  
-        flags = translate_tcpflag(dic_regla['tcp_flag'])
-        if peer:
+    if dic_regla['institution_name']:
+        peer = find_peer(dic_regla['institution_name'])
+        if event_info['status'] == 'Open' or event_info['status'] == 'Ongoing' :
+            # get together all the relevant information into one dictionary in order to create the proposed route
+            # also registered the attack and the proposed route to the DB
+            prt = traffic_event[4]['data'][0][0]
+            protocol = get_protocol(prt)
+            ip = get_ip_address(event_info['ip_attacked'])
+            try:
+                link = get_link(dic_regla['id_attack'])
+            except Exception as e:
+                logger.info('There was an exception when trying to get the REM-Golem link.')  
+            flags = translate_tcpflag(dic_regla['tcp_flag'])
             geni_attack,created = GolemAttack.objects.get_or_create(id_name=dic_regla['id_attack'],peer=peer, ip_src = dic_regla['ip_src'],ip_dest=dic_regla['ip_dest'],port=dic_regla['port'], status = dic_regla['status'], max_value = dic_regla['max_value'], threshold_value = dic_regla['th_value'], nameof_attack = dic_regla['attack_name'] ,typeof_attack = dic_regla['typeofattack'], typeof_value=dic_regla['typeofvalue'], link=link)
             send_message(message = (f"Nuevo ataque DDoS contra el recurso '{ip}' con id {id_event} de tipo {event_info['attack_name']}. Consulte nuestra <https://remedios.redimadrid.es/|*web*> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link if link else ''}."), peer=peer.peer_tag,superuser=False)          
             if not created:
@@ -116,12 +116,12 @@ def open_event(id_event):
                 p=get_protocol(protocol)
                 geni_attack.protocol.add(p.pk)
                 geni_attack.save()
-        geni_attack.link = link
-        geni_attack.save()
-        
-        ongoing(id_event,peer)
-    elif event_info['status'] == 'Recovered':
-        recovered(id_event,event_info,peer)
+            geni_attack.link = link
+            geni_attack.save()
+            
+            ongoing(id_event,peer)
+        elif event_info['status'] == 'Recovered':
+            recovered(id_event,event_info,peer)
 
 
 

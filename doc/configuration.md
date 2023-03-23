@@ -180,7 +180,19 @@ Start the gunicorn server:
 REMeDDoS comes with a web interface, in which one can edit and apply new routes.
 
 
+### First steps 
+
+Whenever you start the app for the first time you can either load every object manually or use (or create) the already made for this application, this fixtures are located
+inside each application folder and just need to be loaded with the following command:
+
+	python3 manage.py loaddata <fixture_path>
+
+If you're running the command with docker it would look something like this:
+
+	docker-compose run --rm web python3 manage.py loaddata <fixture_path>
+
 ### Docker - Commands
+
 See what container are running:
 
 	docker ps
