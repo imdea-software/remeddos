@@ -48,18 +48,22 @@ logger.addHandler(handler)
 # Create your views here.
 class ProcessWebHookView(CsrfExemptMixin, View):
     def post(self, request, *args, **kwargs):
+        # everytime there's an event a webhook will be sent from rem-golem to remeddos
         message = json.loads(request.body)
         id_event = message['event']['id']
+        # we find the id and ask the api for more information regarding the attack
         anomaly_ticket, anomaly_info = petition_geni(id_event)
-
+        # we surrond the following line because the json message is different each time 
+        # and sometimes there is no update time
         try:
             last_updated = message['event']['datetime']['update_time']
         except Exception as e:
             #if not found it means the field is not has not been sent yet
             pass
-        print('New webhook event, ', id_event, anomaly_info['status'])   
+        print('New webhook event, ', id_event)   
         if not anomaly_info['status'] == 'Recovered':   
             try:
+                # open a new process that will analyse the attack
                 with multiprocessing.Pool(processes=50) as pool:
                     pool.apply_async(golem, args=(anomaly_info,id_event,last_updated))
                     pool.close()
@@ -97,10 +101,10 @@ def display(request):
 @verified_email_required
 @never_cache
 def display_routes(request,golem_name):
-
+    # dashboard where all the proposed routes are displayed
     all_routes = find_all_routes()
     golem_routes = []
-
+    # loop through array to append the found routes
     for x in all_routes:
         for route in x:
             if route.name.startswith(golem_name):
@@ -120,6 +124,7 @@ def display_routes(request,golem_name):
 @verified_email_required
 @never_cache
 def display_proposed_routes(request):
+    # dashboard where all the proposed routes are displayed
     try:
         user = request.user
         routes = find_routes(user.username)
@@ -133,6 +138,8 @@ def display_proposed_routes(request):
     return render(request,'pending_routes.html',{'routes':all_routes})
 
 
+
+# display the updates regarding each attach. THIS METHOD IS DEVELOPED BUT NOT IMPLEMENTED.
 @login_required
 @verify_profile   
 @verified_email_required

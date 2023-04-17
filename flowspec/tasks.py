@@ -49,7 +49,9 @@ def add(route, callback=None):
 
         backup_applier = PR.Backup_Applier(route_object=route)
         b_commit, b_response = backup_applier.apply()
-                 
+        
+
+        # conditions to see if the route has been commited in both routers or there has been an error. 
         if commit and b_commit:            
             status = "ACTIVE"
             route.status = status
@@ -398,12 +400,14 @@ def notify_expired():
                 logger.info(message)
                 pass
 
+#deletes used verification tokens
 @shared_task
 def expired_val_codes():
     from flowspec.models import Validation
     valid_codes = Validation.objects.all()
     for code in valid_codes:
         code.is_outdated()
+
 
 
 @shared_task
@@ -514,7 +518,8 @@ def routes_sync():
         logger.info('There are no routes out of sync.') 
 
 
-    
+
+# daily backup for the whole DB
 
 @shared_task
 def create_db_backup():
@@ -534,7 +539,7 @@ def create_db_backup():
         send_message(message)
     
     
-
+# Daily back up for each Route table
 
 @shared_task
 def daily_backup():
@@ -560,6 +565,7 @@ def daily_backup():
         send_message(message,peer=peer.peer_tag,superuser=False)
 
 
+# Restores the whole DB backup, this method is not on the celery.py file 
 def restore_complete_db():
     from django.core.management import call_command
     
@@ -573,7 +579,7 @@ def restore_complete_db():
 
 
 
-
+# Delete expired backups , days a save file is stored = 30
 @shared_task
 def expired_backups():
     from django.core.management import call_command
@@ -603,7 +609,7 @@ def expired_backups():
                     pass                    
         else:
             pass
-
+# Restores the whole DB backup, this method is not on the celery.py file 
 @shared_task 
 def restore_backups():
     from django.core.management import call_command
@@ -627,9 +633,9 @@ def restore_backups():
 
 
 
+# task for deleting attacks that are a week old and not relevant since the info will be saved in the rem-golem app
 @shared_task
 def delete_expired_events():
-    # task for deleting attacks and routes that are a week old and not relevant since the info will be saved in the rem-golem app
     from golem.models import GolemAttack
     from django.utils import timezone
     import datetime
@@ -640,7 +646,9 @@ def delete_expired_events():
         expired_date = event.received_at  + datetime.timedelta(days=5)
         if today > expired_date:
             event.delete()
-         
+
+
+# task for deleting proposed routes that are a week old and not relevant since the info will be saved in the rem-golem app
 @shared_task
 def delete_expired_proposed_routes():
     from django.utils import timezone

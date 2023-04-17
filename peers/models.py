@@ -22,7 +22,7 @@ from django.db import models
 from utils.whois import *
 from django.conf import settings
 
-
+# network ranges for each institution
 class PeerRange(models.Model):
     network = models.CharField(max_length=128)
     
