@@ -241,6 +241,8 @@ def delete(route, **kwargs):
             if "reason" in kwargs and kwargs['reason'] == 'EXPIRED':
                 status = 'EXPIRED'
                 reason_text = " Reason: %s " % status
+                message = (f"La siguiente regla ha sido eliminada {route.name}.")
+                send_message(message,peer,superuser=False)
         else:
             status = "ERROR"
             if b_commit:
@@ -451,6 +453,7 @@ def routes_sync():
     found_diff = set(list(found_routers) + list(set(routenames_db) - set(found_routers)))
 
     found_routes = list(found_diff)
+    print('H1', route.expires, route.name)
     if found_routes:
         for routename in found_routes:
             peer_tag = get_peer_with_name(routename)
@@ -462,24 +465,31 @@ def routes_sync():
                             try:
                                 route.commit_add()
                             except Exception as e:    
-                                logger.info('We tried to commit a route outofsync but it didnt work, please review if there is any conexion problem. Route: ', route.name)
+                                message = ('We tried to commit a route outofsync but it didnt work, please review if there is any conexion problem. Route: ', route.name)
+                                send_message(message=message,peer=None,superuser=True)
                         if route.status == 'ACTIVE' and (not route.has_expired) and route.is_synced() and route.is_synced_backup():
                             pass
                         if route.status == 'ACTIVE'  and not route.has_expired() and (not route.is_synced() or not route.is_synced_backup()):
                             route.commit_add() 
-                            logger.info(f"The following route has been commited to the router due to an out of sync problem. ", route.name)
+                            message = (f"The following route has been commited to the router due to an out of sync problem. ", route.name)
+                            send_message(message=message,peer=None,superuser=True)
+                        if route.status == 'ACTIVE'  and not route.has_expired() and (not route.is_synced() and not route.is_synced_backup()):
+                            route.commit_add() 
+                            message = (f"The following route has been commited to the router due to an out of sync problem. ", route.name)
+                            send_message(message=message,peer=None,superuser=True)
                         if route.is_synced() and route.is_synced_backup() and (not route.has_expired()):
                             route.status = 'ACTIVE'
                             route.save()
-                        if route.has_expired() and ((route.is_synced()) or (route.is_synced_backup)):
-                            
+                        if (route.has_expired() and (route.is_synced() or route.is_synced_backup())):
                             route.status = 'EXPIRED'
                             route.save()
                             route.commit_delete()
-                            logger.info(f"The following route has been deleted from the router due to an out of sync problem. ", routename)
+                            message = (f"The following route has been deleted from the router due to an out of sync problem. ", routename)
+                            send_message(message=message,peer=None,superuser=True)
                         if (not route.has_expired()) and (route.status == 'OUTOFSYNC'):
                             route.commit_add()
-                            logger.info('Status: %s route out of sync: %s, saving route.' %(route.status, route.name))
+                            message = ('Status: %s route out of sync: %s, saving route.' %(route.status, route.name))
+                            send_message(message=message,peer=None,superuser=True)
                         if route.has_expired() and route.status == 'ACTIVE':
                             route.status == 'EXPIRED'
                             route.save()
@@ -489,10 +499,11 @@ def routes_sync():
                             if route.has_expired() and expiration_days < 0:
                                 route.status == 'EXPIRED'
                                 route.save()
-                                logger.info(f"Deactivating route: {route.name}..")
+                                message = (f"Deactivating route: {route.name}..")
+                                send_message(message=message,peer=None,superuser=True)
                                 route.commit_delete()
                         if not route.applier:
-                            route.comments = 'Esta regla ha sido guardada por REMeDDoS de manera automática, porfavor revise esta regla.'
+                            route.comments = 'Esta regla ha sido guardada por REMeDDoS de manera automática, por favor revise esta regla.'
                             route.save()
                             
                     else:
@@ -508,9 +519,10 @@ def routes_sync():
                                 logger.info('Ha habido un error al intentar configurar las reglas:',e)
                         elif (route.is_synced() and route.is_synced_backup):
                             route.status ='ACTIVE'
-                            route.comments = 'Esta regla ha sido guardada por REMeDDoS de manera automática, porfavor revise esta regla.'
+                            route.comments = 'Esta regla ha sido guardada por REMeDDoS de manera automática, por favor revise esta regla.'
                             route.save()
-                            logger.info('routes have been synced: ', route.name)
+                            message = (f"Regla activada automaticamente por REMeDDos debido a una falta de sincronización: {route.name}. Caducará mañana, por favor entrar en el portal para revisar los datos.")
+                            send_message(message=message,peer=peer_tag,superuser=False)
             except Exception as e:
                 logger.info(f"There following route does not belong to any peer: {routename}")
     else:

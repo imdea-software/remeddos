@@ -8,3 +8,4 @@ flowspec/fixtures
 peers/fixtures
 *.pyc
 data/
+celerybeat-schedule

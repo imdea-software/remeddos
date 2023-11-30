@@ -57,7 +57,12 @@ here = lambda x: os.path.join(os.path.abspath(os.path.dirname(__file__)), x)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
-ALLOWED_HOSTS = ['remedios.redimadrid.es','localhost','127.0.0.1','193.145.15.172','10.10.4.90','db','logs.redimadrid.es','[2001:720:424:1::20:72]']
+#ALLOWED_HOSTS = ['81.43.168.252','remedios-pre.redimadrid.es','localhost','127.0.0.1','193.145.15.172','10.10.4.90','db','logs.redimadrid.es','[2001:720:424:1::20:72]']
+allowed_hosts_env = os.environ.get('ALLOWED_HOSTS', '')
+
+# Divide la cadena en una lista usando la coma como delimitador
+ALLOWED_HOSTS = [host.strip("'") for host in allowed_hosts_env.split(',')] if allowed_hosts_env else []
+print(ALLOWED_HOSTS)
 SITE_ID = 1
 
 # Place a sequence of random chars here

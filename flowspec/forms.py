@@ -242,6 +242,7 @@ class RouteForm(forms.ModelForm):
     def clean_expires(self):
         date = self.cleaned_data['expires']
         res = clean_expires(date)
+        print('this is res in clean_expires: ', res)
         if not isinstance(date,datetime.date):
             if date == None:
                 return None
