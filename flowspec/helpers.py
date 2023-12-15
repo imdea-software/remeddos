@@ -46,16 +46,21 @@ def send_new_mail(subject, message, recipient_list, bcc_list):
 
 
 def send_message(message, peer=None, superuser=False):
-  slack_channels = {'CEU':'C03GQM0MN0K','CIB':'C03GA4HK8FR','CSIC':'C03HEF23RAL','CUNEF':'C03H3B3G3G9','CV':'C03GQMFQ519','IMDEA':'C03H3B7GBND','IMDEANET':'C03GJ3M124E',
-  'Punch':'C03H3B7GBND','UAH':'C03H3B9BTGR','UAM':'C03GQML0JP5','UC3M':'C03GQN6P9MG','UCM':'C03GJ3RENLE','UEM':'C03H3BE7EBB',
-  'UNED':'C03GA56STTR','UPM':'C03GJ3W32KY', 'URJC':'C03GJ3X931C','REM':'C03H3B7GBND', 'RediMadrid':'C03H3B7GBND'}
+  slack_channels = {'CEU':'C03GQM0MN0K','CIB':'C03GA4HK8FR','CSIC':'C03HEF23RAL','CUNEF':'C03H3B3G3G9','CV':'C03GQMFQ519','IMDEA':'C0687AWU5M0','IMDEANET':'C03GJ3M124E',
+  'Punch':'C0687AWU5M0','UAH':'C03H3B9BTGR','UAM':'C03GQML0JP5','UC3M':'C03GQN6P9MG','UCM':'C03GJ3RENLE','UEM':'C03H3BE7EBB',
+  'UNED':'C03GA56STTR','UPM':'C03GJ3W32KY', 'URJC':'C03GJ3X931C','REM':'C0687AWU5M0', 'RediMadrid':'C0687AWU5M0'}
   # if there is no peer, the message will be sent to the default testing slack channel, the one used for redimadrid staff
   if not peer or superuser:
     client = slack.WebClient(token=settings.SLACK_TOKEN)
+    print("***************")
+    print(client)
     client.chat_postMessage(channel=settings.SLACK_CHANNEL, text=message)
   else:
     channel = slack_channels[peer]
+    print ("****************")
+    print(channel)
     client = slack.WebClient(token=settings.REM_SLACK_TOKEN)
+    print(client)
     client.chat_postMessage(channel=channel, text=message) 
 
 

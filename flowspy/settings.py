@@ -375,8 +375,8 @@ PREFIX_LENGTH = 16
 POLL_SESSION_UPDATE = 60.0
 
 #==Slack Notifications
-SLACK_TOKEN=os.environ.get('SLACK_TOKEN')
-SLACK_CHANNEL=os.environ.get('CHANNEL')
+SLACK_TOKEN = os.environ.get('SLACK_TOKEN')
+SLACK_CHANNEL = os.environ.get('CHANNEL')
 REM_SLACK_TOKEN = os.environ.get('REM_SLACK_TOKEN')
 
 #==Telegram Bot
