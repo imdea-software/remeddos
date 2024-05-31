@@ -50,9 +50,15 @@ class ProcessWebHookView(CsrfExemptMixin, View):
     def post(self, request, *args, **kwargs):
         # everytime there's an event a webhook will be sent from rem-golem to remeddos
         message = json.loads(request.body)
+        print("********** MENSAJE")
+        print(message)
         id_event = message['event']['id']
         # we find the id and ask the api for more information regarding the attack
         anomaly_ticket, anomaly_info = petition_geni(id_event)
+        print("*****resouesta quer rem-golem-Anomaly_ticket")
+        print(anomaly_ticket)
+        print("Anomaly_info")
+        print(anomaly_info)
         # we surrond the following line because the json message is different each time 
         # and sometimes there is no update time
         try:
@@ -60,12 +66,17 @@ class ProcessWebHookView(CsrfExemptMixin, View):
         except Exception as e:
             #if not found it means the field is not has not been sent yet
             pass
-        print('New webhook event, ', id_event)   
-        if not anomaly_info['status'] == 'Recovered':   
+        print('New webhook event, ', id_event)
+        print("Estado concreto de anomaly")
+        print(anomaly_info['status'])
+        if not anomaly_info['status'] == 'Recovered':
+            print("Entra en primer if")
             try:
                 # open a new process that will analyse the attack
                 with multiprocessing.Pool(processes=50) as pool:
-                    pool.apply_async(golem, args=(anomaly_info,id_event,last_updated))
+                    result=pool.apply_async(golem, args=(anomaly_info,id_event,last_updated))
+                    print("pool")
+                    print(result.get())
                     pool.close()
                     pool.join()
                 
@@ -73,8 +84,13 @@ class ProcessWebHookView(CsrfExemptMixin, View):
                 logger.info('Error while trying to analyze the golem event. Error: ', e)
                 pass
         elif anomaly_info['status'] == 'Recovered' :
+            print("recuperado")
             dic_regla = assemble_dic(anomaly_ticket['response']['result']['data'][0]['traffic_characteristics'],anomaly_info)
+            print("DICT REGLA")
+            print(dic_regla)
+            print("PEER")
             peer = find_peer(dic_regla['institution_name'])
+            print(peer)
             recovered(id_event,anomaly_info,peer)
 
         return HttpResponse()

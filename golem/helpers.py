@@ -68,6 +68,7 @@ def check_golem_conexion(anomaly_info):
 
 
 def open_event(id_event):
+    print("Entra en Helpers/open_event")
     import time
     from golem.models import GolemAttack
     from flowspec.models import MatchProtocol, TcpFlag
@@ -75,44 +76,65 @@ def open_event(id_event):
     time.sleep(90)
     event_ticket, event_info = petition_geni(id_event) 
     traffic_event = event_ticket['response']['result']['data'][0]['traffic_characteristics']
+    print("Traffic_event")
+    print(traffic_event)
     dic_regla = assemble_dic(traffic_event,event_info)
+    print("Dict regla:")
+    print(dic_regla)
     if dic_regla['institution_name']:
+        print("Entra en primer if-helpers/open_event")
         peer = find_peer(dic_regla['institution_name'])
+        print("PEER-open_event-helpers-golem")
+        print(peer)
         if event_info['status'] == 'Open' or event_info['status'] == 'Ongoing' :
             # get together all the relevant information into one dictionary in order to create the proposed route
             # also registered the attack and the proposed route to the DB
+            print("PRT-open_event-helpers-golem")
             prt = traffic_event[4]['data'][0][0]
+            print(prt)
             protocol = get_protocol(prt)
+            print("PROTO")
             ip = get_ip_address(event_info['ip_attacked'])
+            print("IP")
+            print(ip)
             try:
                 link = get_link(dic_regla['id_attack'])
+                print("LINK-openevent-helpers-golem")
+                print(link)
             except Exception as e:
                 logger.info('There was an exception when trying to get the REM-Golem link.')  
             flags = translate_tcpflag(dic_regla['tcp_flag'])
+            print("FLAGS-helpers-golem-open_event")
+            print(flags)
             geni_attack,created = GolemAttack.objects.get_or_create(id_name=dic_regla['id_attack'],peer=peer, ip_src = dic_regla['ip_src'],ip_dest=dic_regla['ip_dest'],port=dic_regla['port'], status = dic_regla['status'], max_value = dic_regla['max_value'], threshold_value = dic_regla['th_value'], nameof_attack = dic_regla['attack_name'] ,typeof_attack = dic_regla['typeofattack'], typeof_value=dic_regla['typeofvalue'], link=link)
             send_message(message = (f"Nuevo ataque DDoS contra el recurso '{ip}' con id {id_event} de tipo {event_info['attack_name']}. Consulte nuestra <https://remedios.redimadrid.es/|*web*> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link if link else ''}."), peer=peer.peer_tag,superuser=False)          
             if not created:
+                print("entra en not created-golem-helpers-openevent")
                 geni_attack.save()        
             route_dic = {'name':dic_regla['id_attack']+'_'+peer.peer_tag,'source_port':dic_regla['source_port'],'dest_port':dic_regla['dest_port'],'ipdest':dic_regla['ip_dest'],'ipsrc':dic_regla['ip_src'],'protocol':dic_regla['protocol'],'protocol_pk':protocol.pk,'tcpflag':dic_regla['tcp_flag'],'typeofport':dic_regla['typeofport'],'port':dic_regla['port']}
             create_route(dic_regla['id_attack'],route_dic, peer.peer_tag, protocol, flags)
             if flags:
                 if isinstance(flags,(list)):
+                    print("entra en instance-helpers-golem-open_event")
                     for tcpflag in flags:
                         flag, created = TcpFlag.objects.get_or_create(flag=tcpflag)
                         geni_attack.tcpflag.add(flag.pk)
                         geni_attack.save()
                 else:
+                    print("entra en else flag open_event")
                     flag, created = TcpFlag.objects.get_or_create(flag=flags)
                     geni_attack.tcpflag.add(flag.pk)
                     geni_attack.save()
 
             if isinstance(protocol,(list)):
+                print("entra en protocol openevent")
                 for p in protocol:
                     fs = p.find('(')
                     prot, created = MatchProtocol.objects.get_or_create(protocol=p[:fs].lower())
                     geni_attack.protocol.add(prot.pk)
                     geni_attack.save()
             else:
+                print("entra en else protocol openevent")
                 p=get_protocol(protocol)
                 geni_attack.protocol.add(p.pk)
                 geni_attack.save()
@@ -121,12 +143,14 @@ def open_event(id_event):
             
             ongoing(id_event,peer)
         elif event_info['status'] == 'Recovered':
+            print("entra recovered de openevent")
             recovered(id_event,event_info,peer)
 
 
 
 
 def ongoing(id_event,peer):
+    print("ongoing función de helpers golem")
     import time
     from flowspec.models import MatchProtocol
     from golem.models import GolemAttack, MatchProtocol, TcpFlag
@@ -136,9 +160,14 @@ def ongoing(id_event,peer):
     time.sleep(210)
     event_data, info = petition_geni(id_event)
     if info['status'] == 'Ongoing':
+        print("Salta metodo Ongoing")
         traffic_characteristics = event_data['response']['result']['data'][0]['traffic_characteristics']
+        print("Traffic Ongoing")
+        print(traffic_characteristics)
         dic_regla2 = assemble_dic(traffic_characteristics,info)
         link1 = get_link(id_event)
+        print("imprime link1 ongoing")
+        print(link1)
         flags = translate_tcpflag(dic_regla2['tcp_flag'])
         attack = GolemAttack.objects.get(id_name=id_event)
         attack.status, attack.max_value, attack.threshold_value,attack.link = dic_regla2['status'], dic_regla2['max_value'], dic_regla2['th_value'], link1
@@ -148,23 +177,28 @@ def ongoing(id_event,peer):
         route_info = {'name':dic_regla2['id_attack']+'_'+peer.peer_tag,'typeofport':dic_regla2['typeofport'],'ipdest':dic_regla2['ip_dest'],'ipsrc':dic_regla2['ip_src'],'protocol_pk':match_protocol.pk,'port':dic_regla2['port'],'source_port':dic_regla2['source_port'],'dest_port':dic_regla2['dest_port']}
         
         if flags:
+            print("flags ongoing")
             if isinstance(flags,(list)):
                 for tcpflag in flags:
+                    print("tcp flag Ongoing")
                     flag, created = TcpFlag.objects.get_or_create(flag=tcpflag)
                     attack.tcpflag.add(flag.pk)
                     attack.save()
             else:
+                print("flag else ongoing")
                 flag, created = TcpFlag.objects.get_or_create(flag=flags)
                 attack.tcpflag.add(flag.pk)
                 attack.save()
 
         if isinstance(protocol,(list)):
+            print("instance ongoing")
             for p in protocol:
                 fs = p.find('(')
                 prot, created = MatchProtocol.objects.get_or_create(protocol=p[:fs].lower())
                 attack.protocol.add(prot.pk)
                 attack.save()
         else:
+            print("else proto ongoing")
             p=get_protocol(protocol)
             attack.protocol.add(p.pk)
             attack.save()
@@ -180,6 +214,7 @@ def ongoing(id_event,peer):
     
     not_recovered = True 
     while not_recovered:
+        print("no recovered ongoing-entra en bucle")
         time.sleep(300)
         attack_data, attack_info = petition_geni(id_event)
         if attack_info['status'] == 'Ongoing':
@@ -240,8 +275,10 @@ def recovered(id_event, info, peer):
     from django.utils import timezone
 
     try:
+        print("recovered metodo helpers")
         attack = GolemAttack.objects.get(id_name=id_event)
         if not attack.finished:
+            print("recovered helpers-Ataque no finalizado")
             peer = find_peer(info['institution_name'])    
             attack.status = info['status']
             attack.max_value = info['max_value']
@@ -251,6 +288,7 @@ def recovered(id_event, info, peer):
             attack.save()                          
             send_message(message=(f"El ataque DDoS con id {id_event} a la institución {info['institution_name']} ha terminado. Más información en <https://remedios.redimadrid.es/|REMeDDoS> o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
         else:
+            print("ataque recovered finalizado helpers-Pass")
             #means the attack has already finished and the user has been notified 
             pass  
     except ObjectDoesNotExist:
