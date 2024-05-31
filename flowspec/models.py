@@ -41,6 +41,8 @@ logging.basicConfig(format=FORMAT)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+import flowspec.logging_utils
+logger = flowspec.logging_utils.logger_init_default(__name__, "flowspec_models.log", False)
 
 FRAGMENT_CODES = (
     ("dont-fragment", "Don't fragment"),
@@ -185,7 +187,8 @@ class Route(models.Model):
     then = models.ManyToManyField(ThenAction, verbose_name=_("Then"), default='discard')
     filed = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
-    expires = models.DateField(default=days_offset, verbose_name=_("Expires"), blank=True, null=True)
+    #expires = models.DateField(default=days_offset, verbose_name=_("Expires"), blank=True, null=True)
+    expires = models.DateField(verbose_name=_("Expires"), blank=True, null=True)
     response = models.CharField(max_length=512, blank=True, null=True, verbose_name=_("Response"))
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
@@ -231,20 +234,34 @@ class Route(models.Model):
 
 
     def save(self, *args, **kwargs):
+        print("Entra en la función SAVE.Imprimo self.applier")
+        print(self.applier)
         peer_suff = ''
+        print("self.pk")
+        print(self.pk)
         
         if self.applier == None or self.applier.is_superuser:
             peer_suff = get_peer_with_name(self.name)
+            print("Entra en el primer if de save")
+            print("peer_suf es ")
+            print(peer_suff)
         else:
             peer_suff = get_peer_tag(self.applier.username)
+            print("Entra en el else de save")
+            print("peer_suf es ")
+            print(peer_suff)
         if not self.pk and self.name.endswith('_%s'%(peer_suff)):
+            print("entra en el tercer if e save")
             super(Route, self).save(*args, **kwargs)
         elif not self.pk and (peer_suff not in self.name):
+            print("entra en cuarto if save")
             name = self.name
             self.name = "%s_%s" % (name, peer_suff)
         elif peer_suff not in self.name:
+            print("entra quinto if save")
             name = self.name
-            self.name = "%s_%s" % (name, peer_suff) 
+            self.name = "%s_%s" % (name, peer_suff)
+        print("ahora debería aplicar el save en la BD")
         super(Route, self).save(*args, **kwargs) 
 
                   
@@ -265,7 +282,14 @@ class Route(models.Model):
                 self.source = address.exploded
             except Exception:
                 raise ValidationError(_('Invalid network address format at Source Field'))
-    
+
+    def sync_commit_add(self, *args, **kwargs):
+        route =  Route.objects.get(name = self.name)
+        routename = route
+        print("DE LA NUEVA FUNCIÓN EL NOMBRE DEL ROUTER ES")
+        print(routename)
+
+
     def commit_add(self, *args, **kwargs):
         if self.applier:
             peers = self.applier.profile.peers.all()
@@ -306,7 +330,7 @@ class Route(models.Model):
                     'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
+                #send_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
         except Exception as e:
                 logger.info('There was an exception when trying to notify the user via e-mail, ',e)
      
@@ -338,12 +362,12 @@ class Route(models.Model):
                 mail_body=render_to_string('rule_action.txt',{'route':self,'address':self.requesters_address,'action':'edit','url':admin_url,'peer':username})
                 user_mail='%s' % self.applier.email
                 user_mail=user_mail.split(';')
-                send_mail(
+                '''send_mail(
                     settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
                     mail_body,
                     settings.SERVER_EMAIL, 
                     user_mail,
-                )
+                )'''
         except Exception as e:
                 print('There was an exception when trying to notify the user via e-mail, ',e)
         logger.info('Got edit job id: %s' % response)
@@ -372,7 +396,8 @@ class Route(models.Model):
             peer = username.peer_tag
         else:
             peer = None
-        response = delete(self, reason=reason)
+        #response = delete(self, reason=reason)
+        response = del_sync(self, reason=reason,deletePR=kwargs.get('deletePR'),deletePRB=kwargs.get('deletePRB'))
         logger.info('Got delete job id: %s' % response)
         try:
             if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
@@ -382,12 +407,12 @@ class Route(models.Model):
                 mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'removal','url': admin_url,'peer': username})
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_mail(
+                '''send_mail(
                     settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
                     mail_body,
                     settings.SERVER_EMAIL,
                     user_mail
-                )
+                )'''
         except Exception as e:
                 logger.info('There was an exception when trying to notify the user via e-mail, ',e)
     def has_expired(self):
@@ -861,7 +886,8 @@ class Route_Punch(Route):
             peer = None
         route =  Route_Punch.objects.get(name = self.name)
         routename = route
-        response = add(routename)
+        #response = add(routename)
+        response = add_sync(routename, addPR=kwargs.get('addPR'),addPRB=kwargs.get('addPRB'))
         logger.info('Got add job id: %s' % response)
         if not settings.DISABLE_EMAIL_NOTIFICATION and self.applier:
             fqdn = Site.objects.get_current().domain
@@ -870,7 +896,7 @@ class Route_Punch(Route):
             try:
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
+                #send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
             except Exception as e:
                 logger.info('There was an exception when trying to notify the user via e-mail, ',e)
 
@@ -922,7 +948,7 @@ class Route_REM(Route):
             try:
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
+                #send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
             except Exception as e:
                 print('There was an exception when trying to notify the user via e-mail, ',e)
 
@@ -974,7 +1000,7 @@ class Route_CV(Route):
             try:
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
+                #send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
             except Exception as e:
                 print('There was an exception when trying to notify the user via e-mail, ',e)
 
@@ -1024,7 +1050,7 @@ class Route_IMDEA(Route):
             try:
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
+                #send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
             except Exception as e:
                 print('There was an exception when trying to notify the user via e-mail, ',e)
 
@@ -1076,7 +1102,7 @@ class Route_CIB(Route):
             try:
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
+                #send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
             except Exception as e:
                 print('There was an exception when trying to notify the user via e-mail, ',e)
 
@@ -1128,7 +1154,7 @@ class Route_CEU(Route):
             try:
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
+                #send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
             except Exception as e:
                 print('There was an exception when trying to notify the user via e-mail, ',e)
 
@@ -1180,7 +1206,7 @@ class Route_CSIC(Route):
             try:
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
+                #send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
             except Exception as e:
                 print('There was an exception when trying to notify the user via e-mail, ',e)
 
@@ -1232,7 +1258,7 @@ class Route_CUNEF(Route):
                     'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
+                #send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
         except Exception as e:
                 print('There was an exception when trying to notify the user via e-mail, ',e)
   
@@ -1284,7 +1310,7 @@ class Route_IMDEANET(Route):
                     'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
+                #send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
         except Exception as e:
                 print('There was an exception when trying to notify the user via e-mail, ',e)
 
@@ -1336,7 +1362,7 @@ class Route_UAM(Route):
                     'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
+                #send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
         except Exception as e:
                 print('There was an exception when trying to notify the user via e-mail, ',e)
 
@@ -1388,7 +1414,7 @@ class Route_UAH(Route):
                     'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
+               #send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
         except Exception as e:
                 print('There was an exception when trying to notify the user via e-mail, ',e)
 
@@ -1439,7 +1465,7 @@ class Route_UC3M(Route):
                     'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
+                #send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
         except Exception as e:
                 print('There was an exception when trying to notify the user via e-mail, ',e)
 
@@ -1490,7 +1516,7 @@ class Route_UCM(Route):
                     'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
+                #send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
         except Exception as e:
                 print('There was an exception when trying to notify the user via e-mail, ',e)
 
@@ -1540,7 +1566,7 @@ class Route_UEM(Route):
                     'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
+                #send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
         except Exception as e:
                 print('There was an exception when trying to notify the user via e-mail, ',e)
 
@@ -1592,7 +1618,7 @@ class Route_UNED(Route):
                     'rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
+                #send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
         except Exception as e:
                 logger.info('There was an exception when trying to notify the user via e-mail, ',e)
 
@@ -1639,7 +1665,7 @@ class Route_UPM(Route):
                 mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
+                #send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
         except Exception as e:
                 logger.info('There was an exception when trying to notify the user via e-mail, ',e)
 
@@ -1687,7 +1713,7 @@ class Route_URJC(Route):
                 mail_body = render_to_string('rule_action.txt',{'route': self,'address': self.requesters_address,'action': 'creation','url': admin_url,'peer': username})
                 user_mail = '%s' % self.applier.email
                 user_mail = user_mail.split(';')
-                send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
+                #send_new_mail(settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),mail_body,settings.SERVER_EMAIL, user_mail)
         except Exception as e:
                 logger.info('There was an exception when trying to notify the user via e-mail, ',e)
 

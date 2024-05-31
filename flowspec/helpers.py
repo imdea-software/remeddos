@@ -997,18 +997,20 @@ def get_specific_route_pk(username, pk):
 
 def find_peer(peer_name):
   from peers.models import Peer
+  result=None
   if peer_name:
     find = peer_name.find('_')
     pn = peer_name[find+1::]
     peers = Peer.objects.all()
-    check = True
-    while check:
-      for peer in peers:
-        if peer.peer_tag in peer_name:
-          check = False
-          return Peer.objects.get(peer_name=peer.peer_name)
-  else:
-      return None
+    print("Medoto find_peer entra flowspec")
+    for peer in peers:
+        print(peer.peer_tag.lower())
+        print((peer_name.split('.')[0]).lower())
+        if peer.peer_tag.lower() in (peer_name.split('.')[0]).lower():
+            print("Entra en el if de find_peer")
+            result=Peer.objects.get(peer_name=peer.peer_name)
+  print(result)
+  return result
 
 """ finds route missing in db and saves it  """
 

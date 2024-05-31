@@ -35,56 +35,6 @@ logger.addHandler(handler)
 
 
 #add helper for finding a peer based on a route name
-@shared_task(ignore_result=True, serializer='json')
-def add_sync(route, callback=None, **kwargs):
-    from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
-    from utils import proxy as PR
-
-    peer = get_peer_with_name(route.name)
-
-    try:
-        applier = PR.Applier(route_object=route)
-        commit, response = applier.apply()
-        backup_applier = PR.Backup_Applier(route_object=route)
-        b_commit, b_response = backup_applier.apply()
-
-        isroutePR=kwargs.get('addPR')
-        isroutePRB=kwargs.get('addPRB')
-        print("------funcion add_sync de taskpy")
-    
-        if (commit and b_commit) or ((not isroutePR or not isroutePRB) and (commit or b_commit)):
-            print("entra primer if de add_sync")
-            print("is routePR y commit resultado")
-            print(isroutePR)
-            print(commit)
-            print("isPRB an bcommir resultado")
-            print("isroutePRB")
-            print(b_commit)
-            status = 'ACTIVE'
-            route.status = status
-            reason_text = " Reason: %s " % status
-            route.save()
-        elif ((not isroutePR and not isroutePRB) and (not commit and not b_commit)):
-            print("entra en el segundo add_sync")
-            route.status ='ERROR'
-            route.response = response
-            route.save()
-            message = (f"Ha habido un error cuando se intentaba añadir las reglas en los routers. Por favor contacte con su administrador.")
-            #send_message(message,peer,superuser=False)
-        elif (not isroutePR and not commit) or (not isroutePRB and not b_commit):
-            print("entra en el else de add_sync")
-            route.status ='OUTOFSYNC'
-            route.response = response
-            route.save()
-            message = (f"Ha habido un error cuando se intentaba añadir una regla en algún router. Por favor contacte con su administrador.")
-            #send_message(message,peer,superuser=False)
-    except (TimeLimitExceeded, SoftTimeLimitExceeded, Exception):
-        route.status = 'ERROR'
-        route.response = response
-        route.save()
-        message = (f"Ha habido un error cuando se intentaba añadir la regla en los routers. Por favor contacte con su administrador.")
-        #send_message(message,peer,superuser=False)
-
 
 @shared_task(ignore_result=True, serializer='json')
 def add(route, callback=None):
@@ -115,7 +65,7 @@ def add(route, callback=None):
             route.response = b_response
             route.save()
             message = (f"[{route.applier_username_nice}] Rule add: {route.name} - Result: {route.response}, {response}")
-            #send_message(message,peer,superuser=False)
+            send_message(message,peer,superuser=False)
             if not commit:
                 message = (f"Ha habido un error cuando se intentaba configurar la regla en el primer router. Regla activa en el back up router. Porfavor contacte con su administrador.")
                 send_message(message,peer,superuser=False)
@@ -268,123 +218,6 @@ def edit(route, callback=None):
         except Exception as e:
             message = (f"There was an error when trying to edit the route on to the second router {e}")
             send_message(message,peer,superuser=False)
-
-@shared_task(ignore_result=True)
-def delete_sync(route, **kwargs):
-    from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
-    from utils import proxy as PR
-
-    peer = get_peer_with_name(route.name)
-    isroutePR=kwargs.get('deletePR')
-    isroutePRB=kwargs.get('deletePRB')
-    print("ESTA FUNCION ES DELETESYNC de TASK:Los valores pasados por kwargs son:")
-    print(isroutePR)
-    print(isroutePRB)
-    if isroutePR and isroutePRB :
-        print("NUEVO DELETE TASKPY- RUTAS EN AMBOS TOUTERS")
-        try:
-            backup_applier = PR.Backup_Applier(route_object=route)
-            b_commit, b_response = backup_applier.apply(operation="delete")
-            applier = PR.Applier(route_object=route)
-            commit, response = applier.apply(operation="delete")
-            if commit and b_commit:
-                status='DEACTIVATED'
-                route.status = status
-                reason_text = " Reason: %s " % status
-                route.save()
-            else:
-                route.status = 'ERROR'
-                route.save()
-        except (TimeLimitExceeded, SoftTimeLimitExceeded, Exception):
-            route.status = 'ERROR'
-            route.response = "Error"
-            route.save()
-            message = (f"Ha habido un error cuando se intentaba eliminar la regla de los routers. Por favor contacte con su administrador.")
-            send_message(message,peer,superuser=False)
-	
-    elif isroutePR:
-        print("NUEVO DELETE TASKPY- RUTAS SOLO EN PR")
-        try:
-            applier = PR.Applier(route_object=route)
-            commit, response = applier.apply(operation="delete")
-            if commit:
-                status = 'DEACTIVATED'
-                route.status = status
-                reason_text = " Reason: %s " % status
-                route.save()
-            else:
-                route.status = 'OUTOFSYNC'
-                route.save()
-        except (TimeLimitExceeded, SoftTimeLimitExceeded, Exception):
-            route.status = "OUTOFSYNC"
-            route.response = response
-            route.save()
-            message = (f"Ha habido un error cuando se intentaba eliminar la regla en el router principal. Por favor contacte con su administrador.")
-            send_message(message,peer,superuser=False)
-
-    elif isroutePRB:
-        print("NUEVO DELETE TASKPY- RUTAS SOLO EN PRB")
-        try:
-            backup_applier = PR.Backup_Applier(route_object=route)
-            b_commit, b_response = backup_applier.apply(operation="delete")
-            if b_commit:
-                status = 'DEACTIVATED'
-                route.status = status
-                reason_text = " Reason: %s " % status
-                route.save()
-            else:
-                route.status = 'OUTOFSYNC'
-                route.save()
-        except (TimeLimitExceeded, SoftTimeLimitExceeded, Exception):
-            route.status = 'OUTOFSYNC'
-            route.response = response
-            route.save()
-            message = (f"Ha habido un error cuando se intentaba eliminar la regla en el router de backup. Por favor contacte con su administrador.")
-            send_message(message,peer,superuser=False)
-
-@shared_task(ignore_result=True)
-def del_sync(route, **kwargs):
-    from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
-    from utils import proxy as PR
-    try:
-        applier = PR.Applier(route_object=route)
-        commit, response = applier.apply(operation="delete")
-        backup_applier = PR.Backup_Applier(route_object=route)
-        b_commit, b_response = backup_applier.apply(operation="delete")
-
-        isroutePR=kwargs.get('deletePR')
-        isroutePRB=kwargs.get('deletePRB')
-
-        if(commit and b_commit):
-            status = 'INACTIVE'
-            route.status = status
-            reason_text = " Reason: %s " % status
-            route.save()
-
-        if((isroutePR and isroutePRB) and (commit and b_commit)) or ((isroutePR or isroutePRB) and (commit or b_commit)):
-            status = 'DEACTIVATED'
-            route.status = status
-            reason_text = " Reason: %s " % status
-            route.save()
-        elif((isroutePR and isroutePRB) and (not commit and not b_commit)):
-            route.status ='ERROR'
-            route.response = response
-            route.save()
-            message = (f"Ha habido un error cuando se intentaba eliminar las reglas en los routers. Por favor contacte con su administrador.")
-            #send_message(message,peer,superuser=False)
-        elif(isroutePR and not commit) or (isroutePRB and not b_commit):
-            route.status = 'OUTOFSYNC'
-            route.response=response
-            route.save()
-            message = (f"Ha habido un error cuando se intentaba eliminar la regla en uno de los dos routers. Por favor contacte con su administrador.")
-            #send_message(message,peer,superuser=False)
-
-    except (TimeLimitExceeded, SoftTimeLimitExceeded, Exception):
-        route.status = 'ERROR'
-        route.response = response
-        route.save()
-        message = (f"Ha habido un error cuando se intentaba eliminar la regla de los routers. Por favor contacte con su administrador.")
-        #send_message(message,peer,superuser=False)
 
 
 @shared_task(ignore_result=True)
@@ -594,118 +427,44 @@ def expired_val_codes():
 
 @shared_task
 def routes_sync():
-    import datetime
     print("*************************EMPIEZA LA TAREA ROUTE SYNC***************")
-    #today = datetime.date.today()
+    today = datetime.date.today()
     
     try:
+        print("PRIMER ROUTEER")
         first_router = get_routes_router()
-        print("RUTAS DEL R1")
         print(first_router)
+        print("SEGUNDO ROUTER")
         backup_router = get_routes_backuprouter()
-        print("RUTAS DEL R2")
         print(backup_router)
     except Exception as e:
         logger.info(f"There was an error when trying to retrieve the routes from the routers. Error: {e}")
 
-    # Obtiene todas las reglas de la Base de datos
-    routes_db = find_all_routes() 
-    print("Routes DB. SE HAN OBTENIDO CON EL SCRIPT")
-    print(routes_db)
+    routes_db = find_all_routes()
 
-    
     routenames_db = []
-    routenames_Rfirst=[]
-    routenames_Rbackup=[]
+    fw_routes = []
+    backup_fw_routes = []
+    print("************************************IMPRIMIR LOS ROUTERS_DB*************")
+    print(routes_db)
+    for x in routes_db:
+        print("PARA EL ROUTE:")
+        print(x)
+        for route in x:
+            print("--------------PARA CADA UNA DE LAS RUTAS EN X---------------")
+            if route.status == 'ACTIVE' or route.status == 'OUTOFSYNC':
+                print("estado activo o outofsync")
+                routenames_db.append(route.name)
 
-    #fw_routes = []
-    #backup_fw_routes = []
-
-    #Se obtienen los nombres de las rutas de la base de datos y se añaden a una lista
-    for rules in routes_db:
-        for rule in rules:
-            if(rule.name):
-                routenames_db.append(rule.name)
-
-    print("ROUTE DB NAMES")
-    print(routenames_db)
-
-    #Se obtiene el nombre de rutas del router principal
-    for rules in first_router:
-        for rule in rules:
-            if rule.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
-                routenames_Rfirst.append(rule.text)
-
-    #Se obtiene el nombre de las rutas en el router de backup
-    for rules in backup_router:
-        for rule in rules:
-            if rule.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
-                routenames_Rbackup.append(rule.text)
-
-    print("NOMBRE RUtas del primer Firewall")
-    print( routenames_Rfirst)
-
-    print("NOMBRE Rutas del fw backup")
-    print(routenames_Rbackup)
-
-    ######Flujo primero: Se obtienen las reglas que se han añadido a los routers manualmente pero que no están en la DB.Se avisaría al administrador para que elimine las reglas
-    routes_delete_Rfirst=list(set(routenames_Rfirst)-set(routenames_db))
-    print("*******Se han obtenido las reglas de R1 que no estan en DB")
-    print(routes_delete_Rfirst)
-    if(routes_delete_Rfirst):
-        print("Hay rutas en R1 que no están en la DB - Avisar al administrador.ESTAS RUTAS SON:")
-        for route in routes_delete_Rfirst:
-            print(route)
-
-    routes_delete_Rbackup=list(set(routenames_Rbackup)-set(routenames_db))
-    print("*****Se han obtenido las reglas de R2 que no están en DB.ESTAS RUTAS SON:")
-    print(routes_delete_Rbackup)
-    if(routes_delete_Rbackup):
-        print("Hay rutas en R2 que no están en la DB - Avisar al administrador")
-        for route in routes_delete_Rbackup:
-            print(route)
-
-    #############Flujo segundo: obtengo las reglas de la DB, compruebo ciertos estados. La existencia de esas reglas en los routers y se elimina o borran de los routers según caso.
-    print("****AHORA EMPIEZA EL FLUJO REVISANDO LA BASE DE DATOS****")
-    for nameroute in routenames_db:
-        print("---------------------------------------Organizacion es:---------------------")
-        print("NOMBRE DE RUTA A REVISAR:")
-        print(nameroute)
-        peer_tag = get_peer_with_name(nameroute)
-        print(peer_tag)
-        try:
-            if peer_tag:
-                route=get_specific_route(applier=None,peer=peer_tag,route_slug=nameroute)
-                if route is not None:
-                    print("Fecha EXPIRA")
-                    print(route.expires)
-                    print("ESTADO REGLA")
-                    print(route.status)
-                    if route.status == 'INACTIVE' and (not route.has_expired()):
-                        print("El estado es inactivo pero no ha caducado.Se modifica la fecha")
-                        route.expires=(datetime.date.today() - datetime.timedelta(days=1))
-                        route.save()
-                        print("AHora modificada es ")
-                        print(route.expires)
-                    if route.has_expired() and route.status!='DEACTIVATED':
-                        print("la ruta ha expirado o el estado es desactivado")
-                        if nameroute in set(routenames_Rfirst) or nameroute in set(routenames_Rbackup):
-                            print("La ruta ha expirado pero sigue existiendo en uno de los dos routers, hay que eliminarla")
-                            route.commit_delete(deletePR=nameroute in set(routenames_Rfirst),deletePRB=nameroute in set(routenames_Rbackup))
-                        else:
-                            route.status='DEACTIVATED'
-                            route.save()
-                    elif(not route.has_expired() and (route.status=='ACTIVE' or route.status=='ERROR' or route.status=='OUTOFSYNC')):
-                            print("La regla no ha expirado y es error o activa")
-                            if (not nameroute in set(routenames_Rfirst)) or (not nameroute in set(routenames_Rbackup)):
-                                print("La regla no está añadida en algun router.Tengo que añadirla")
-                                route.commit_add(addPR=nameroute in set(routenames_Rfirst),addPRB=nameroute in set(routenames_Rbackup))
-                            elif(route.status!='ACTIVE'):
-                                route.status ='ACTIVE'
-                                route.save()
-        except Exception as e:
-	        logger.info(f"There following route does not belong to any peer: {routename}")
-    '''
+    for children in first_router:
+        for child in children:
+            if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
+                fw_routes.append(child.text)
+    
+    for children in backup_router:
+        for child in children:
+            if child.tag == '{http://xml.juniper.net/xnm/1.1/xnm}name':
+                backup_fw_routes.append(child.text)
     """ routes from both routers """
     fw_routes.sort()
     backup_fw_routes.sort()     
@@ -813,7 +572,7 @@ def routes_sync():
         pass
         logger.info('There are no routes out of sync.') 
 
-'''
+
 
 # daily backup for the whole DB
 
