@@ -26,8 +26,9 @@ logger.addHandler(handler)
 
 @shared_task
 def golem(anomaly_info, id_event,last_updated=None):
-
+    print("Entra en Task/golem")
     if not anomaly_info['institution_name'] == 'Non-Home':
+        print("Institution_name!=Non-home")
         # start the process util the attack has finished
         if anomaly_info['status'] == 'Open':
             open_event(id_event)
@@ -43,6 +44,7 @@ def golem(anomaly_info, id_event,last_updated=None):
    
     else:
         if anomaly_info['institution_name'] == 'Non-Home':
+            print("Institution_name=Non-home")
             # check up in case it's the false positive we make every morning to check remeddos keeps working
             check_golem_conexion(anomaly_info)
         #event doesn't belong to peer

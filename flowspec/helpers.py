@@ -105,10 +105,12 @@ def get_link(id_golem):
   try:
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    path = "/home/remedios/.ssh/id_rsa"
+    path="/srv/redifod/flowspy/id_rsa"
     k = paramiko.RSAKey.from_private_key_file(path)
-    ssh.connect(hostname="logs.redimadrid.es", port=22, pkey=k, username="alicia.cardenosa")
+    #ssh.connect(hostname="logs.redimadrid.es", port=22, pkey=k, username="remedios")
+    ssh.connect(hostname="193.145.15.28", port=22, pkey=k, username="remedios")
     try:
+        print("GET_LINK EN HELPERS.PY-- HA ENTRADO EN EL TRY POST CONEXION SSH")
         stdin, stdout, stderr = ssh.exec_command(f'grep {id_golem} /var/log/remote/{settings.DIR_GOLEM}/`date +%Y-%m-%d`.log')
         res,err = stdout.read(),stderr.read()
         result = res if res else err
@@ -117,15 +119,21 @@ def get_link(id_golem):
         fe = decode_result.find('>') 
         fc = decode_result.find('=')
         html_link = decode_result[fs:fe+1]
+        print("HTML_LINK ES")
+        print(html_link)
         link = decode_result[fc+1:fe]
+        print("EL LINK ES")
+        print(link)
         return link
     except Exception as e:
       link = False
       logger.info('There was an error when trying to read the configuration file: ',e)
+      print(e)
       return link
   except Exception as e:
     link = False
     logger.info('There was an error when trying to connect via ssh.')
+    print(e)
     return link
     
 
@@ -992,18 +1000,26 @@ def get_specific_route_pk(username, pk):
 
 def find_peer(peer_name):
   from peers.models import Peer
+  result=None
   if peer_name:
     find = peer_name.find('_')
     pn = peer_name[find+1::]
     peers = Peer.objects.all()
-    check = True
-    while check:
-      for peer in peers:
-        if peer.peer_tag in peer_name:
-          check = False
-          return Peer.objects.get(peer_name=peer.peer_name)
-  else:
-      return None
+    print("Medoto find_peer entra helpers.py/ flowspec")
+    #check = True
+    #while check:
+    for peer in peers:
+        print(peer)
+        print(peer.peer_tag.lower())
+        print(peer_name)
+        print((peer_name.split('.')[0]).lower())
+        if peer.peer_tag.lower() in (peer_name.split('.')[0]).lower():
+            #check = False
+            print("Entra en el if de find_peer")
+            result= Peer.objects.get(peer_name=peer.peer_name)
+    print("RESULT DEL METODO FIND_PEER ES:")
+    print(result)
+    return result
 
 """ finds route missing in db and saves it  """
 

@@ -85,9 +85,14 @@ def open_event(id_event):
             protocol = get_protocol(prt)
             ip = get_ip_address(event_info['ip_attacked'])
             try:
+                print("SE LLAMA AL METODO GET_LINK CON EL CODIGO")
+                print(dic_regla['id_attack'])
                 link = get_link(dic_regla['id_attack'])
+                print("EL LINK EN OPEN_EVENT ES:")
+                print(link)
             except Exception as e:
                 logger.info('There was an exception when trying to get the REM-Golem link.')  
+                print(e)
             flags = translate_tcpflag(dic_regla['tcp_flag'])
             geni_attack,created = GolemAttack.objects.get_or_create(id_name=dic_regla['id_attack'],peer=peer, ip_src = dic_regla['ip_src'],ip_dest=dic_regla['ip_dest'],port=dic_regla['port'], status = dic_regla['status'], max_value = dic_regla['max_value'], threshold_value = dic_regla['th_value'], nameof_attack = dic_regla['attack_name'] ,typeof_attack = dic_regla['typeofattack'], typeof_value=dic_regla['typeofvalue'], link=link)
             send_message(message = (f"Nuevo ataque DDoS contra el recurso '{ip}' con id {id_event} de tipo {event_info['attack_name']}. Consulte nuestra <https://remedios.redimadrid.es/|*web*> donde se podrán ver las reglas propuestas para mitigar el ataque. Para más información sobre el ataque visite el siguiente link: {link if link else ''}."), peer=peer.peer_tag,superuser=False)          
@@ -136,9 +141,12 @@ def ongoing(id_event,peer):
     time.sleep(210)
     event_data, info = petition_geni(id_event)
     if info['status'] == 'Ongoing':
+        print("Salta metodo Ongoing")
         traffic_characteristics = event_data['response']['result']['data'][0]['traffic_characteristics']
         dic_regla2 = assemble_dic(traffic_characteristics,info)
         link1 = get_link(id_event)
+        print("imprime link1 ongoing")
+        print(link1)
         flags = translate_tcpflag(dic_regla2['tcp_flag'])
         attack = GolemAttack.objects.get(id_name=id_event)
         attack.status, attack.max_value, attack.threshold_value,attack.link = dic_regla2['status'], dic_regla2['max_value'], dic_regla2['th_value'], link1
@@ -180,6 +188,7 @@ def ongoing(id_event,peer):
     
     not_recovered = True 
     while not_recovered:
+        print("no recovered ongoing-entra en bucle")
         time.sleep(300)
         attack_data, attack_info = petition_geni(id_event)
         if attack_info['status'] == 'Ongoing':
@@ -240,6 +249,7 @@ def recovered(id_event, info, peer):
     from django.utils import timezone
 
     try:
+        print("recovered metodo helpers")
         attack = GolemAttack.objects.get(id_name=id_event)
         if not attack.finished:
             peer = find_peer(info['institution_name'])    
@@ -251,6 +261,7 @@ def recovered(id_event, info, peer):
             attack.save()                          
             send_message(message=(f"El ataque DDoS con id {id_event} a la institución {info['institution_name']} ha terminado. Más información en <https://remedios.redimadrid.es/|REMeDDoS> o REM-GOLEM."),peer=peer.peer_tag,superuser=False)
         else:
+            print("ataque recovered finalizado helpers-Pass")
             #means the attack has already finished and the user has been notified 
             pass  
     except ObjectDoesNotExist:

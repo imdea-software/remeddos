@@ -102,7 +102,7 @@
 				{% if user.is_superuser %}
                 <div class="row p-4 g-3 form-group align-items-center">
                         <div class="form-text {% if form.peer.errors %} has-error {% endif %}"></div>
-                		<label for="id_peer" class="col col-2 control-label"><b>{% trans "Institutición:" %}</b></label>
+                		<label for="id_peer" class="col col-2 control-label"><b>{% trans "Institutición (*):" %}</b></label>
                         <div class="col-auto">
                             {% render_field form.peer class+="form-select form-select-md" %}
                             {% if form.peer.errors %} <span class="help-block"> {{ form.peer.errors|join:", " }} </span>

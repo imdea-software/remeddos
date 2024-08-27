@@ -22,6 +22,7 @@ services:
             python3.8 manage.py runserver 0.0.0.0:8000"
         volumes:
             - ./:/srv/redifod/
+            - /home/remedios/.ssh/id_rsa:/srv/redifod/flowspy/id_rsa
         environment:
             - DB_HOST=db
             - DB_NAME=remeddos
