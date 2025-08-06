@@ -1040,7 +1040,9 @@ def find_peer(peer_name):
         print(peer.peer_tag.lower())
         print(peer_name)
         print((peer_name.split('.')[0]).lower())
-        if peer.peer_tag.lower() in (peer_name.split('.')[0]).lower() and "imdea_network" not in peer_name.lower():
+        if peer_name == 'IMDEA_NETWORK' or peer_name == 'IMDEA_NETWORK(2)':
+            result= Peer.objects.get(peer_name='IMDEA Networks')
+        elif peer.peer_tag.lower() in (peer_name.split('.')[0]).lower():
             #check = False
             print("Entra en el if de find_peer")
             result= Peer.objects.get(peer_name=peer.peer_name)
