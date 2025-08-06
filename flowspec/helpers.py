@@ -59,6 +59,13 @@ def send_message(message, peer=None, superuser=False):
     client.chat_postMessage(channel=channel, text=message) 
 
 
+#############NUEVA FUNCION PEER##
+
+def get_peer_name_id(peer_id):
+    peer=Peer.objects.get(peer_id=peer_id)
+    return peer.peer_name
+
+###
 #  find peer tag based on a routename 
 def get_peer_with_name(routename):
   peers = Peer.objects.all()
@@ -687,11 +694,24 @@ def find_get_form(applier):
     'UPM' : Route_UPMForm(),
     'URJC' : Route_URJCForm(),
   }
+  print("Esty en Helpers.py metodo find_get_form")
+  print("apllier is")
+  print(applier)
+  print("perr_tag es")
   peer_tag = get_peer_tag(applier)
+  print(peer_tag)
   form_class = route_forms[peer_tag]
+  print("Form_class devuelto es")
+  print(form_class)
   return form_class
 
-def find_post_form(applier, data):
+def find_get_form_prueba(applier,superuser,peer):
+    print("*******************ESTE ES EL METODO DET_FORM_NUEVO")
+    print(applier)
+    print(superuser)
+    print(peer)
+
+def find_post_form(applier,peer_tag, data):
   from flowspec.forms import Route_PunchForm, Route_REMForm, Route_IMDEAForm, Route_CVForm, Route_CIBForm, Route_CSICForm, Route_CEUForm, Route_CUNEFForm, Route_IMDEANETForm, Route_UAMForm, Route_UC3MForm, Route_UCMForm, Route_UAHForm, Route_UEMForm, Route_UNEDForm, Route_UPMForm, Route_URJCForm
   route_forms = {
     'Punch': Route_PunchForm(data),
@@ -712,8 +732,15 @@ def find_post_form(applier, data):
     'UPM' : Route_UPMForm(data),
     'URJC' : Route_URJCForm(data),
   }
-  peer_tag = get_peer_tag(applier)
+  print("Ahora estoy en find_post_form de la clase helpers.py")
+  print("applier is ")
+  print(applier)
+  #peer_tag = get_peer_tag(applier)
+  print("TOTAL peer_tag is")
+  print(peer_tag)
   form_class = route_forms[peer_tag]
+  print("form devuelto")
+  print(form_class)
   return form_class
 
 def get_instance_form(applier, route):
@@ -1013,7 +1040,7 @@ def find_peer(peer_name):
         print(peer.peer_tag.lower())
         print(peer_name)
         print((peer_name.split('.')[0]).lower())
-        if peer.peer_tag.lower() in (peer_name.split('.')[0]).lower():
+        if peer.peer_tag.lower() in (peer_name.split('.')[0]).lower() and "imdea_network" not in peer_name.lower():
             #check = False
             print("Entra en el if de find_peer")
             result= Peer.objects.get(peer_name=peer.peer_name)

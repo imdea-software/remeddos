@@ -171,7 +171,7 @@ class Validation(models.Model):
 class Route(models.Model):    
     name = models.CharField(max_length=128, verbose_name=_("Name"), unique=True)
     applier = models.ForeignKey(User, blank=True, null=True,on_delete=models.CASCADE)
-    peer = models.ForeignKey(Peer, blank=False, null=True,on_delete=models.CASCADE)
+    peer = models.ForeignKey(Peer, blank=True, null=True,on_delete=models.CASCADE)
     source = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Source Address"),blank=False, null=False)
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Usar la notación CIDR"), verbose_name=_("Destination Address"),blank=False, null=False)
@@ -233,7 +233,12 @@ class Route(models.Model):
 
 
 
+    def peer_selected(self):
+        return get_peer_with_name(self.name)
+
     def save(self, *args, **kwargs):
+        print("Guardando en clase")
+        print(self.__class__.__name__)
         print("Entra en la función SAVE.Imprimo self.applier")
         print(self.applier)
         peer_suff = ''
@@ -241,6 +246,8 @@ class Route(models.Model):
         print(self.pk)
         
         if self.applier == None or self.applier.is_superuser:
+            print("SELF NAME PARA PEER SUPER USER ES")
+            print(self.name)
             peer_suff = get_peer_with_name(self.name)
             if peer_suff == False:
                 peer_suff = self.peer.peer_name
@@ -258,13 +265,20 @@ class Route(models.Model):
         elif not self.pk and (peer_suff not in self.name):
             print("entra en cuarto if save")
             name = self.name
+            print("name del cuarto if es ")
+            print(name)
             self.name = "%s_%s" % (name, peer_suff)
+            print("self name del cuarto if es ")
+            print("self.name")
         elif peer_suff not in self.name:
             print("entra quinto if save")
             name = self.name
             self.name = "%s_%s" % (name, peer_suff)
         print("ahora debería aplicar el save en la BD")
-        super(Route, self).save(*args, **kwargs) 
+        print("Guardando en clase")
+        print(self.__class__.__name__)
+        super(Route, self).save(*args, **kwargs)
+        print("no se si este mesaje saldrá seguido y antes de cambiar a route imadea")
 
                   
 
@@ -293,6 +307,7 @@ class Route(models.Model):
 
 
     def commit_add(self, *args, **kwargs):
+        print("COMMIT_ADD DE MODELS.PY EN FLOWSPEC")
         if self.applier:
             peers = self.applier.profile.peers.all()
             username = None
@@ -1044,6 +1059,7 @@ class Route_IMDEA(Route):
         verbose_name = "Rule IMDEA"
         verbose_name_plural = "Rules IMDEA"
     def commit_add(self, *args, **kwargs):
+        print("ENTRA EN COMMIT ADD IMDEA")
         if self.applier:
             peers = self.applier.profile.peers.all()
             username = None

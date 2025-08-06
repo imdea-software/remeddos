@@ -47,12 +47,15 @@ logger.addHandler(handler)
 
 # Create your views here.
 class ProcessWebHookView(CsrfExemptMixin, View):
+    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Entro en el método webhook")
     def post(self, request, *args, **kwargs):
         # everytime there's an event a webhook will be sent from rem-golem to remeddos
         message = json.loads(request.body)
         print("###########Mensaje view.py/Golem")
         print(message)
         id_event = message['event']['id']
+        print("#####EL IDENTIFICADOR DEL EVENTO ES ######")
+        print(id_event)
         # we find the id and ask the api for more information regarding the attack
         anomaly_ticket, anomaly_info = petition_geni(id_event)
         print("*****respuesta quer rem-golem-Anomaly_ticket")
@@ -64,10 +67,11 @@ class ProcessWebHookView(CsrfExemptMixin, View):
         try:
             #last_updated = message['event']['datetime']['update_time']
             last_updated = message['event']['datetime']['start_time']
+            print(last_update)
         except Exception as e:
             #if not found it means the field is not has not been sent yet
             pass
-        print('New webhook event, ', id_event)
+        print('################New webhook event', id_event)
         print("Estado concreto de anomaly")
         print(anomaly_info['status'])
         if not anomaly_info['status'] == 'Recovered': 

@@ -3,6 +3,7 @@ from django.core.exceptions import MultipleObjectsReturned
 from flowspec.helpers import *
 from flowspy import settings
 import requests
+import json
 
 def translate_tcpflag(flags):
     tcpf = {'-----F':'fin', '----S-':'syn', '----SF':'syn,fin', '---R--':'rst', '---R-F':'rst,fin','---RS-':'rst,syn' ,'---RSF':'rst,syn,fin' ,'push' : '--P---' , 'push,fin' : '--P--F' , 'push,syn': '--P-S-', '--P-SF':'push,syn,fin', '--PR--':'push,rst','--PR-F':'push,rst,fin' ,'--PRS-':'push,rst,syn','--PRSF':'push,rst,syn,fin','ack':'-A----', '-A---F':'ack,fin','-A--S-':'ack,syn', '-A--SF':'ack,syn,fin','-A-R--':'ack,rst','-A-R-F':'ack,rst,fin','-A-RS-':'ack,rst,syn','-A-RSF':'ack,rst,syn,fin','-AP---':'ack,push','-AP--F':'ack,push,fin','-AP-S-':'ack,push,syn','-AP-SF':'ack,push,syn,fin','-APR--':'ack,push,rst','-APR-F':'ack,push,rst,fin', '-APRS-':'ack,push,rst,syn', '-APRSF':'ack,push,rst,syn,fin'}
@@ -47,6 +48,19 @@ def petition_geni(id_event):
     data = {'request': '{"display_data":"yes"}'}
     response = ''
     response = requests.get(f'https://193.145.15.26/api/anomalyevent/application/{id_event}', data=data, verify=False, auth=(settings.GOLEM_USER, settings.GOLEM_PWD))
+    print("###########GOLE-HELPER.PY PETITION_GENI()")
+    print(response.text)
+    #print("Status respuesta")
+    #print(response.status_code)
+    #print("Response text")
+    #print(response.text)
+    #ADD NEW 
+    #match = re.search(r'({.*})\s*<br', response.text, re.DOTALL)
+    #json_text = match.group(1)
+    #print("JOSN TEXT")
+    #print(json_text)
+    #json_event = json.loads(json_text)
+
     json_event = response.json()
     event_data = ''
     try:

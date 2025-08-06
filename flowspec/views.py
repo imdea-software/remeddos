@@ -376,9 +376,13 @@ def verify_add_user(request):
         if request.is_ajax and request.method == "GET":
             if not 'token' in request.COOKIES:
                 num = get_code()
+                print("EL CODIGO SLACK ES ")
+                print(num)
                 user = request.user
                 peer = user.profile.get_peer_tag()   
                 code = Validation(value=num,user=request.user)
+                print("CODIGO SLACK")
+                print(code)
                 code.save()
                 msg = "El usuario {user} ha solicitado un codigo de seguridad para añadir una nueva regla. Código: '{code}'.".format(user=user,code=num)
                 if request.user.is_superuser:
@@ -429,27 +433,41 @@ does the user belongs to, this check is necessary so nobody perfoms an action in
 @never_cache
 @verify_staff_account
 def add_route(request):
+    print("ENTRAMOS EN ADD ROUTE CLASS ROUTE")
     applier_peer_networks = []
     applier = request.user.pk
     user = request.user.username
     if request.user.is_superuser:       
+        print("add-route ROUTE -entra en superuser")
         applier_peer_networks = PeerRange.objects.all()
         user_peers = request.user.profile.peers.all()
+        print("user_peers")
+        print(user_peers)
     else:
         user_peers = request.user.profile.peers.all()
+        print("si no es superuser-user_peers")
+        print(user_peers)
         for peer in user_peers:
             applier_peer_networks.extend(peer.networks.all())
     if not applier_peer_networks:
         messages.add_message(request,messages.WARNING,('Insufficient rights on administrative networks. Cannot add rule. Contact your administrator'))
         return HttpResponseRedirect(reverse("group-routes"))
     if request.method == "GET":
+        print("ENTRAA EN GET")
         form = find_get_form(user)
+        #prueba
+        result_prueba=find_get_form_prueba(user,request.user.is_superuser,applier)
+        #print("FORM GET es ")
+        #print(form)
         form.applier = applier
         form.fields['destinationport'].required=False
         form.fields['sourceport'].required=False
         form.fields['port'].required=False
         if request.user.is_superuser:
+            print("ES SUPER USER GET")
             peer = Peer.objects.filter(pk__in=user_peers)
+            print("peer super user es GET")
+            peint(peer)
             network = []
             for p in peer:
                 network.append(p.networks.all())
@@ -458,12 +476,14 @@ def add_route(request):
             network = peer.networks.all()
 
         if not request.user.is_superuser:
+            print("SI GET NO SUPER USER")
             form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
             form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
             form.fields['tcpflag'] = forms.ModelMultipleChoiceField(queryset=TcpFlag.objects.filter(flag__in=settings.UI_USER_TCPFLAG).order_by('flag'), required=False)
             #form.fields['tcpflag'] = forms.ModelMultipleChoiceField(choices=settings.UI_USER_TCPFLAGS), required=False)
         return render(request,'apply.html',{'form': form,'applier': applier,'maxexpires': settings.MAX_RULE_EXPIRE_DAYS,'peers':network})
     else:
+        print("SI NO ES UN METODO GET")
         request_data = request.POST.copy()
         if request.user.is_superuser:
             request_data['issuperuser'] = request.user.username
@@ -474,12 +494,18 @@ def add_route(request):
             except:
                 pass
         form = find_post_form(user, request_data)
+        #print("NO GET form")
+        #print(form)
         if form.is_valid():
+            print("FORM ES VALIDO")
             route = form.save(commit=False)
+            print("ROUTE ES")
+            print(route)
             if not request.user.is_superuser:
+                print("NO ES SUPERUSER EN FORM")
                 route.applier = request.user
             #route.status= "PENDING"
-            if not request.user.is_superuser:
+            #if not request.user.is_superuser:
                 peer = Peer.objects.get(pk__in=user_peers)
                 route.peer = peer
             route.response = "Applying"
@@ -490,11 +516,14 @@ def add_route(request):
             except:
                 # in case the header is not provided
                 route.requesters_address = 'unknown'
+            print("AQUI LLAMA A ROUTE :SAVE()")
             route.save()
             form.save_m2m()
                 # We have to make the commit after saving the form
                 # in order to have all the m2m relations.
+            print("AQUI LLAMA A ROUTE:COMMIT_ADD ---- NO SE SI SERÁ EL COMMIT-ADD DE CADA CLASS ROUTE")
             route.commit_add()
+            print("devuelve un http redirect group-routes")
             return HttpResponseRedirect(reverse("group-routes"))
         else:
             if not request.user.is_superuser:
@@ -651,19 +680,32 @@ def edit_route(request, route_slug):
 @never_cache
 @verify_staff_account
 def verify_delete_user(request, route_slug):
+    print("Verify_delete de VIEWS.PY DE FLOWSPEC")
     if not 'token' in request.COOKIES != None:
+        print("primer if not")
         if request.method =='GET':
+            print("Metodo get")
             num = get_code()
+            print("num")
+            print(num)
             user = request.user
+            print("user")
+            print(user)
             username = request.user.username
+            print("username")
+            print(username)
             peer = get_peers(username)
+            print("peer")
+            print(peer)
             msg = "El usuario: {user} ha solicitado un código para poder eliminar una regla. Código: '{code}'.".format(user=user,code=num)
             code = Validation(value=num,user=request.user)
             code.save()
             if request.user.is_superuser:
-                send_message(msg,peer,superuser=True)
+                print("is super user")
+                #send_message(msg,peer,superuser=True)
             else:
-                send_message(msg,peer,superuser=False)
+                print("no super user-otro")
+                #send_message(msg,peer,superuser=False)
             form = ValidationForm(request.GET)
             route = get_specific_route(applier=username,peer=None,route_slug=route_slug)
             message = f"CUIDADO. Seguro que quiere eliminar la siguiente regla {route_slug}?"
@@ -694,6 +736,7 @@ def verify_delete_user(request, route_slug):
                     message = "The code used is not valid. Please introduce it again."
                     return render(request,'values/add_value.html', {'form': form, 'message':message})
     else:
+        print("else de verify-detele-user")
         url = reverse('delete', kwargs={'route_slug': route_slug})
         response = HttpResponseRedirect(url)
         return response 
@@ -705,30 +748,50 @@ def verify_delete_user(request, route_slug):
 @never_cache
 @verify_staff_account
 def delete_route(request, route_slug):
+    print("DELETE_ROUTE DE VIEWS.PY DE FLOWSPEC")
     uname = request.user.username
+    print("delete-route username")
+    print(uname)
     route = get_object_or_404(get_edit_route(uname, rname=route_slug), name=route_slug)
-
+    print("delete-route route")
+    print(route)
     peers = get_peer_with_name(route_slug)
+    print("delete-route peers")
+    print(peers)
     peer = Peer.objects.get(peer_tag=peers)
+    print("delete-route peer")
+    print(peer)
     username = None
+    print("delete-route ahora viene un for")
     for network in peer.networks.all():
         net = IPNetwork(network)
+        print("delete-route network")
+        print(net)
         if IPNetwork(route.destination) in net:
+            print("IPNetwork(route.destination) in net")
             username = peer
+            print("delete-route username post if es ")
+            print(username)
             break
     applier_peer = username
-    username = None
-    for network in peer.networks.all():
-        net = IPNetwork(network)
-        if IPNetwork(route.destination) in net:
-            username = peer
-            break
+    print("delete -route applier-peer")
+    print(applier-peer)
+    #username = None
+    #for network in peer.networks.all():
+     #   net = IPNetwork(network)
+      #  if IPNetwork(route.destination) in net:
+       #     username = peer
+        #    break
     requester_peer = username
+    print("delete-route requester-peer")
+    print(requester_peer)
     if applier_peer == requester_peer or request.user.is_superuser:
+        print("delete -route entra en if applier peer")
         route.status= "INACTIVE"
-        route.status="INACTIVE"
+        #route.status="INACTIVE"
         route.expires = datetime.date.today()
         if not request.user.is_superuser:
+            print("if not request.user.is_superuser")
             route.applier = request.user
         route.response = "Deactivating"
         try:
@@ -1646,6 +1709,7 @@ def build_routes_json(groutes, is_superuser):
 @verified_email_required
 @verify_staff_account
 def verify_add_user(request):
+    print("Este es el segundo VERIFY")
     if 'token' in request.COOKIES:
         url = reverse('add')
         response = HttpResponseRedirect(url)
@@ -1702,13 +1766,18 @@ def verify_add_user(request):
 @never_cache
 @verify_staff_account
 def add_route(request):
+    print("ENCONTRAMOS UN SEGUNDO ADD_ROUTE")
     applier_peer_networks = []
     applier = request.user.pk
+    print("applier uno es ")
+    print(applier)
     user = request.user.username
-    if request.user.is_superuser:       
+    if request.user.is_superuser:
+        print("Es super user")
         applier_peer_networks = PeerRange.objects.all()
         user_peers = request.user.profile.peers.all()
     else:
+        print("NO ES superuser")
         user_peers = request.user.profile.peers.all()
         for peer in user_peers:
             applier_peer_networks.extend(peer.networks.all())
@@ -1717,18 +1786,23 @@ def add_route(request):
         return HttpResponseRedirect(reverse("group-routes"))
     if request.method == "GET":
         form = find_get_form(user)
+        #prueba
+        result_prueba=find_get_form_prueba(user,request.user.is_superuser,applier)
         form.applier = applier
         form.fields['destinationport'].required=False
         form.fields['sourceport'].required=False
         form.fields['port'].required=False
         if request.user.is_superuser:
+            print("segungo request superuser dentro de get")
             peer = Peer.objects.filter(pk__in=user_peers)
+            print("el peer es ")
             network = []
             for p in peer:
                 network.append(p.networks.all())
         else:
             peer = Peer.objects.get(pk__in=user_peers)
             network = peer.networks.all()
+            print("sino peer es ")
 
         if not request.user.is_superuser:
             form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
@@ -3023,6 +3097,7 @@ def build_routes_json(groutes, is_superuser):
 @verified_email_required
 @verify_staff_account
 def verify_add_user(request):
+    print("Este es el tercera verify")
     if 'token' in request.COOKIES:
         url = reverse('add')
         response = HttpResponseRedirect(url)
@@ -3079,13 +3154,20 @@ def verify_add_user(request):
 @never_cache
 @verify_staff_account
 def add_route(request):
+    print("ENCONTRAMOS UN TERCER ADD_ROUTE")
     applier_peer_networks = []
     applier = request.user.pk
     user = request.user.username
-    if request.user.is_superuser:       
+    if request.user.is_superuser:
+        print("Es superUser")
         applier_peer_networks = PeerRange.objects.all()
+        print("applier_peer_networks es ")
+        print(applier_peer_networks)
         user_peers = request.user.profile.peers.all()
+        print("user_peers es")
+        print(user_peers)
     else:
+        print("no es super user")
         user_peers = request.user.profile.peers.all()
         for peer in user_peers:
             applier_peer_networks.extend(peer.networks.all())
@@ -3093,19 +3175,27 @@ def add_route(request):
         messages.add_message(request,messages.WARNING,('Insufficient rights on administrative networks. Cannot add rule. Contact your administrator'))
         return HttpResponseRedirect(reverse("group-routes"))
     if request.method == "GET":
+        #añadido nuevo
+        #hasta aqui
         form = find_get_form(user)
+        #prueba
+        result_prueba=find_get_form_prueba(user,request.user.is_superuser,applier)
         form.applier = applier
         form.fields['destinationport'].required=False
         form.fields['sourceport'].required=False
         form.fields['port'].required=False
         if request.user.is_superuser:
+            print("segundo request.superuser")
             peer = Peer.objects.filter(pk__in=user_peers)
+            print("peer es segundo ")
+            print(peer)
             network = []
             for p in peer:
                 network.append(p.networks.all())
         else:
             peer = Peer.objects.get(pk__in=user_peers)
             network = peer.networks.all()
+            print("sino peer es")
 
         if not request.user.is_superuser:
             form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
@@ -3114,16 +3204,37 @@ def add_route(request):
             #form.fields['tcpflag'] = forms.ModelMultipleChoiceField(choices=settings.UI_USER_TCPFLAGS), required=False)
         return render(request,'apply.html',{'form': form,'applier': applier,'maxexpires': settings.MAX_RULE_EXPIRE_DAYS,'peers':network})
     else:
+        print("EL METODO SELECCIONADO ES POST")
+    
         request_data = request.POST.copy()
+        print("REQUEST DATA-ESTAN AQUI TODOS LOS DATOS")
+        print(request_data)
+        #LLAMADA A LA FUNCION NUEVA PARA SABER EL NAME DEL PEER, TRAS HABER OBTENIDO EL PEER ID INTRODUCIDO POR EL USUARIO
+        print("++++------++++--- EL NUEVO DATO PEER NAME OBTENIDO ES ")
+        print(get_peer_name_id(7))
         if request.user.is_superuser:
             request_data['issuperuser'] = request.user.username
+            peer_tag=get_peer_name_id(request_data.get('peer'))
+            print("PEER TAG ANTES DEL FORM EN ELSE DE VIEWS:PYPARA SUPERUSER ES")
+            print(peer_tag)
+            form = find_post_form(user,peer_tag,request_data)
+    
         else:
+            print("PEER TAG SI NO ES SUPER USUARIO ES")
+            peer_tag=get_peer_tag(user)
             request_data['applier'] = applier
+            form = find_post_form(user,peer_tag,request_data)
             try:
                 del request_data['issuperuser']
             except:
                 pass
-        form = find_post_form(user, request_data)
+        print("USER POST FORM")
+        print(user)
+        print("REQUEST DATA POST FORM")
+        print(request_data)
+        print("NOS DICE QUE ES SUPERUSER O NO")
+        print(request.user.is_superuser)
+        #form = find_post_form(user,request.user.is_superuser,request_data)
         if form.is_valid():
             route = form.save(commit=False)
             if not request.user.is_superuser:

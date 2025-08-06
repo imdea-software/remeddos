@@ -286,7 +286,7 @@ def del_sync(route, **kwargs):
             reason_text = " Reason: %s " % status
             route.save()
             message = (f"Se ha eliminado la siguiente regla: {route.name}")
-            send_message(message,peer,superuser=False)
+            #send_message(message,peer,superuser=False)
 
         if((isroutePR and isroutePRB) and (commit and b_commit)) or ((isroutePR or isroutePRB) and (commit or b_commit)):
             print(" Del_sync segundo if ")
@@ -295,28 +295,28 @@ def del_sync(route, **kwargs):
             reason_text = " Reason: %s " % status
             route.save()
             message = (f"El estado de la siguiente regla ha pasado a Deactivated: {route.name}")
-            send_message(message,peer,superuser=False)
+            #send_message(message,peer,superuser=False)
         elif((isroutePR and isroutePRB) and (not commit and not b_commit)):
             print("Del_sync estado error")
             route.status ='ERROR'
             route.response = response
             route.save()
             message = (f"Ha habido un error cuando se intentaba eliminar la siguiente regla en los routers: {route.name}. Por favor contacte con su administrador.")
-            send_message(message,peer,superuser=False)
+            #send_message(message,peer,superuser=False)
         elif(isroutePR and not commit) or (isroutePRB and not b_commit):
             print("Del_sync outofsync")
             route.status = 'OUTOFSYNC'
             route.response=response
             route.save()
             message = (f"Ha habido un error de sincronización entre los routers con la siguiente regla: {route.name}. Por favor contacte con su administrador.")
-            send_message(message,peer,superuser=False)
+            #send_message(message,peer,superuser=False)
 
     except (TimeLimitExceeded, SoftTimeLimitExceeded, Exception):
         route.status = 'ERROR'
         route.response = response
         route.save()
         message = (f"Ha habido un error cuando se intentaba eliminar la regla de los routers. Por favor contacte con su administrador.")
-        send_message(message,peer,superuser=False)
+        #send_message(message,peer,superuser=False)
 
 
 @shared_task(ignore_result=True)
